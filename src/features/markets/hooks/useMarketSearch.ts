@@ -30,8 +30,7 @@ export const useMarketSearch = (request: MarketSearchRequest | null) => {
     refetchOnReconnect: true,
   });
 };
-export const getMarketSearchQueryKey = (searchRequest: MarketSearchRequest | null) => 
-  ['markets', searchRequest];
+
 export const useDistanceOptions = () => {
   return MarketService.getDistanceOptions();
 };

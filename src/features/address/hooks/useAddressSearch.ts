@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { AddressService } from '@/services/addressService';
 import { ParsedAddress } from '@/types';
 
@@ -26,17 +26,3 @@ export const useAddressSearch = (query: string) => {
 };
 
 export const getAddressSearchQueryKey = (query: string) => ['addresses', query];
-
-export const usePrefetchAddresses = () => {
-  const queryClient = useQueryClient();
-  
-  return (query: string) => {
-    if (query.length >= 2) {
-      queryClient.prefetchQuery({
-        queryKey: getAddressSearchQueryKey(query),
-        queryFn: () => AddressService.searchAddresses(query),
-        staleTime: 5 * 60 * 1000,
-      });
-    }
-  };
-};
