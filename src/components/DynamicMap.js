@@ -1,6 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
@@ -8,8 +7,9 @@ import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 // Global map instance tracker to prevent double initialization
 let mapInstanceCounter = 0;
 
-// Leaflet routing machine import
+// Leaflet routing machine import - Using dynamic import for better ESLint compatibility
 if (typeof window !== 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   require('leaflet-routing-machine');
 }
 
@@ -23,186 +23,15 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Özel marker iconları
-const createUserIcon = () => new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-const createStoreIcon = () => new L.Icon({
-  iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
-
-// Routing component
-const RoutingMachine = ({ userCoords, storeCoords, onRouteFound }) => {
-  const map = useMap();
-  const routingControlRef = useRef(null);
-  const cleanupExecutedRef = useRef(false);
-  const mountedRef = useRef(true);
-  const initializingRef = useRef(false);
-
-  useEffect(() => {
-    if (!map || !userCoords || !storeCoords || !userCoords.lat || !userCoords.lng || !storeCoords.lat || !storeCoords.lng) {
-      return;
-    }
-
-    if (typeof window === 'undefined' || !window.L || !window.L.Routing) {
-      return;
-    }
-
-    // Prevent double initialization
-    if (initializingRef.current) {
-      return;
-    }
-
-    const cleanup = () => {
-      if (cleanupExecutedRef.current) return;
-      cleanupExecutedRef.current = true;
-      initializingRef.current = false;
-      
-      if (routingControlRef.current) {
-        try {
-          // Remove all event listeners first
-          routingControlRef.current.off();
-          
-          // Check if control is still attached to map before removing
-          if (map && routingControlRef.current._map === map) {
-            map.removeControl(routingControlRef.current);
-          }
-        } catch (error) {
-          console.warn('Routing control cleanup error:', error);
-        }
-        routingControlRef.current = null;
-      }
-    };
-
-    try {
-      // Clean up any existing control
-      cleanup();
-      
-      // Reset flags
-      cleanupExecutedRef.current = false;
-      initializingRef.current = true;
-
-      // Add a small delay to ensure map is ready
-      const timeoutId = setTimeout(() => {
-        if (!mountedRef.current || !initializingRef.current) return;
-
-        try {
-          const routingControl = window.L.Routing.control({
-            waypoints: [
-              window.L.latLng(userCoords.lat, userCoords.lng),
-              window.L.latLng(storeCoords.lat, storeCoords.lng)
-            ],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            createMarker: () => null,
-            lineOptions: {
-              styles: [{ color: '#3388ff', weight: 4, opacity: 0.7 }]
-            },
-            show: false,
-            collapsible: true,
-            router: window.L.Routing.osrmv1({
-              serviceUrl: 'https://router.project-osrm.org/route/v1'
-            })
-          });
-
-          routingControl.on('routesfound', function(e) {
-            if (!mountedRef.current) return;
-            
-            const routes = e.routes;
-            if (routes && routes.length > 0) {
-              const route = routes[0];
-              const distance = (route.summary.totalDistance / 1000).toFixed(1);
-              const time = Math.round(route.summary.totalTime / 60);
-              
-              if (onRouteFound) {
-                onRouteFound({
-                  distance: distance,
-                  time: time,
-                  timeText: `${time} dakika`,
-                  routeType: 'Arabayla'
-                });
-              }
-            }
-          });
-
-          routingControl.on('routingerror', function(e) {
-            console.error('Routing error:', e);
-            if (onRouteFound && mountedRef.current) {
-              onRouteFound({
-                distance: 'N/A',
-                time: 'N/A',
-                timeText: 'Hesaplanamadı',
-                routeType: 'Arabayla',
-                error: 'Rota hesaplanamadı'
-              });
-            }
-          });
-
-          if (mountedRef.current && map) {
-            routingControl.addTo(map);
-            routingControlRef.current = routingControl;
-            initializingRef.current = false;
-          }
-
-        } catch (error) {
-          console.error('Routing control creation error:', error);
-          initializingRef.current = false;
-          if (onRouteFound && mountedRef.current) {
-            onRouteFound({
-              distance: 'N/A',
-              time: 'N/A',
-              timeText: 'Hata',
-              routeType: 'Arabayla',
-              error: 'Rota oluşturulamadı'
-            });
-          }
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timeoutId);
-        cleanup();
-      };
-
-    } catch (error) {
-      console.error('Routing setup error:', error);
-      initializingRef.current = false;
-    }
-
-  }, [map, userCoords?.lat, userCoords?.lng, storeCoords?.lat, storeCoords?.lng, onRouteFound]);
-
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      initializingRef.current = false;
-    };
-  }, []);
-
-  return null;
-};
-
 // Map wrapper component that prevents double initialization
 const MapWrapper = ({ 
   center, 
-  userCoords, 
   selectedStore, 
   onRouteFound,
   searchSettings 
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
-  const [isMapReady, setIsMapReady] = useState(false);
   const instanceId = useRef(++mapInstanceCounter);
 
   useEffect(() => {
@@ -308,7 +137,7 @@ const MapWrapper = ({
           }
         });
 
-        routingControl.on('routingerror', function(e) {
+        routingControl.on('routingerror', function() {
           if (onRouteFound) {
             onRouteFound({
               distance: 'N/A',
@@ -330,8 +159,6 @@ const MapWrapper = ({
       storeMarker,
       routingControl
     };
-
-    setIsMapReady(true);
 
     // Add error handling for DOM position issues
     map.on('error', function(e) {

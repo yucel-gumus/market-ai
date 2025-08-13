@@ -52,7 +52,67 @@ export interface ApiResponse<T> {
   message?: string;
   error?: string;
 }
+
 export interface DistanceOption {
   value: number;
   label: string;
+}
+
+// Product search related types
+export interface ProductSearchRequest {
+  keywords: string;
+  pages: number;
+  size: number;
+  latitude: number;
+  longitude: number;
+  distance: number;
+  depots: string[];
+}
+
+export interface ProductDepotInfo {
+  depotId: string;
+  depotName: string;
+  price: number;
+  unitPrice: string;
+  marketAdi: string;
+  latitude?: number;
+  longitude?: number;
+  id?: string;
+}
+
+export interface Product {
+  id: string;
+  title: string;
+  refinedVolumeOrWeight?: string;
+  productDepotInfoList: ProductDepotInfo[];
+}
+
+export interface ProductSearchResponse {
+  content: Product[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface SearchSettings {
+  latitude: number;
+  longitude: number;
+  distance: number;
+  pages: number;
+  size: number;
+  depots: string[];
+  selectedMarkets: Market[];
+}
+
+export interface SearchStats {
+  totalResults: number;
+}
+
+export interface RouteInfo {
+  distance: string | number;
+  time: string | number;
+  timeText?: string;
+  routeType?: string;
+  error?: string;
 }

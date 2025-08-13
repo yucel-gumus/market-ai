@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Store, MapPin, Navigation } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import { cn, getMarketLogo } from '@/lib/utils';
 import { Market } from '@/types';
 import { MarketService } from '@/services/marketService';
 
@@ -14,36 +14,6 @@ interface MarketCardProps {
   onToggleMarket: (market: Market) => void;
 }
 
-function getMarketLogo(marketName: string): string | null {
-  const normalizedName = marketName.toLowerCase().trim();
-  
-  const logoMap: Record<string, string> = {
-    'bim': '/bim.svg',
-    'a101': '/a101.svg',
-    'a 101': '/a101.svg',
-    'migros': '/migros.svg',
-    'carrefour': '/carrefour.svg',
-    'carrefoursa': '/carrefour.svg',
-    'sok': '/sok.svg',
-    'şok': '/sok.svg',
-    'tarım kredi': '/tarim_kredi.svg',
-    'tarim kredi': '/tarim_kredi.svg',
-    'tarim_kredi': '/tarim_kredi.svg',
-    'tarımkredi': '/tarim_kredi.svg',
-  };
-
-  if (logoMap[normalizedName]) {
-    return logoMap[normalizedName];
-  }
-
-  for (const [key, value] of Object.entries(logoMap)) {
-    if (normalizedName.includes(key) || key.includes(normalizedName)) {
-      return value;
-    }
-  }
-
-  return null;
-}
 export function MarketCard({ market, isVisible, onToggleMarket }: MarketCardProps) {
   const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
 
