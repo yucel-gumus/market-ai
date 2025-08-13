@@ -75,7 +75,7 @@ export function useMarketFiltering(markets: Market[]) {
   };
 
   return {
-    markets: filteredMarkets, // Tüm filtrelenmiş marketleri döndür, gizlileri değil
+    markets: filteredMarkets,
     uniqueBrands,
     selectedBrands,
     hiddenMarkets,

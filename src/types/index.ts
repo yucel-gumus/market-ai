@@ -58,7 +58,6 @@ export interface DistanceOption {
   label: string;
 }
 
-// Product search related types
 export interface ProductSearchRequest {
   keywords: string;
   pages: number;

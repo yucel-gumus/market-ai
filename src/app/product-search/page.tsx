@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-// Feature components
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
@@ -15,39 +13,27 @@ import { SelectedProductDisplay } from '@/features/products/components/SelectedP
 import { RouteModal } from '@/features/products/components/RouteModal';
 import { ErrorDisplay, SearchErrorDisplay } from '@/features/products/components/ErrorDisplay';
 import { SearchTips } from '@/features/products/components/SearchTips';
-
-// Hooks
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useDebounce } from '@/hooks/useDebounce';
-
-// Types
 import { Product, ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
 
 export default function ProductSearchPage() {
   const router = useRouter();
-  
-  // States
-  const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [selectedStore, setSelectedStore] = useState<ProductDepotInfo | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  
-  // Debounced search query
-  const debouncedQuery = useDebounce(searchQuery, 300);
-  
-  // Custom hooks
-  const {
+    const debouncedQuery = useDebounce(searchQuery, 300);
+    const {
     searchSettings,
     isLoading: isSettingsLoading,
     error: settingsError,
     getMarketDistance,
     getMarketDistanceByName
   } = useLocalStorageSettings();
-
-  // Product search hook
   const {
     data: products = [],
     isLoading: isProductsLoading,
@@ -56,13 +42,9 @@ export default function ProductSearchPage() {
     query: debouncedQuery,
     searchSettings: searchSettings
   });
-
-  // Search stats
   const searchStats: SearchStats = {
     totalResults: products.length
   };
-
-  // Event handlers
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setIsDropdownOpen(value.length >= 2);
@@ -111,7 +93,6 @@ export default function ProductSearchPage() {
     router.push('/');
   };
 
-  // Loading state
   if (isSettingsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
@@ -120,7 +101,6 @@ export default function ProductSearchPage() {
     );
   }
 
-  // Error state
   if (settingsError) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">

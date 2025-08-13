@@ -26,8 +26,6 @@ export function ProductDropdown({
   className
 }: ProductDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Dışarı tıklama kontrolü
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -40,8 +38,6 @@ export function ProductDropdown({
   }, [onClose]);
 
   if (!isOpen) return null;
-
-  // Benzersiz ürünleri getir
   const uniqueProducts = getUniqueProducts(products);
 
   return (
@@ -86,7 +82,6 @@ interface ProductDropdownItemProps {
 }
 
 function ProductDropdownItem({ product, onClick }: ProductDropdownItemProps) {
-  // En ucuz mağazayı bulalım
   const cheapestDepot = product.productDepotInfoList?.reduce((min, depot) => 
     parseFloat(depot.price.toString()) < parseFloat(min.price.toString()) ? depot : min
   );
@@ -164,10 +159,6 @@ function NoResultsMessage({ query }: NoResultsMessageProps) {
     </div>
   );
 }
-
-/**
- * Ürünleri benzersiz hale getirir ve sıralar
- */
 function getUniqueProducts(products: Product[]): Product[] {
   const seen = new Set<string>();
   

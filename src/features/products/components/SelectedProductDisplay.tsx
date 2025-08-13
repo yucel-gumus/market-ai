@@ -98,11 +98,9 @@ function StoreItem({
   getMarketDistance,
   getMarketDistanceByName 
 }: StoreItemProps) {
-  // Mesafe hesapla
   const distance = getMarketDistance(depot.depotId) || 
                   getMarketDistanceByName(depot.depotName);
   
-  // Market logosu
   const logoPath = getMarketLogo(depot.marketAdi || '');
 
   return (
@@ -117,7 +115,6 @@ function StoreItem({
               </span>
             </div>
             
-            {/* Market logosu veya adı */}
             <div className="flex items-center gap-2">
               {logoPath ? (
                 <div className="flex items-center gap-2">

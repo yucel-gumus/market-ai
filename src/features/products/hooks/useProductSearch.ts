@@ -7,10 +7,6 @@ interface UseProductSearchProps {
   searchSettings: SearchSettings | null;
   enabled?: boolean;
 }
-
-/**
- * Ürün arama için TanStack Query hook'u
- */
 export const useProductSearch = ({ 
   query, 
   searchSettings, 
@@ -42,8 +38,8 @@ export const useProductSearch = ({
       query.length >= 2
     ),
     
-    staleTime: 30 * 1000, // 30 saniye
-    gcTime: 2 * 60 * 1000, // 2 dakika
+    staleTime: 30 * 1000, 
+    gcTime: 2 * 60 * 1000,
     
     retry: (failureCount, error) => {
       if (error.message.includes('400') || error.message.includes('404')) {

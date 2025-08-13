@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react';
 import { SearchSettings } from '@/types';
 import { safeIncludes } from '@/lib/stringUtils';
 
-/**
- * localStorage'dan marketSearchData verilerini çeken hook
- */
 export const useLocalStorageSettings = () => {
   const [searchSettings, setSearchSettings] = useState<SearchSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -47,20 +44,13 @@ export const useLocalStorageSettings = () => {
     }
   }, []);
 
-  /**
-   * Market ID'sine göre mesafe bilgisi getirir
-   */
   const getMarketDistance = (marketId: string): number | null => {
     if (!searchSettings) return null;
     
-    // Önce depotId ile eşleştir
     const market = searchSettings.selectedMarkets.find(m => m.id === marketId);
     return market ? market.distance : null;
   };
 
-  /**
-   * Market adına göre mesafe bilgisi getirir (fallback)
-   */
   const getMarketDistanceByName = (depotName: string): number | null => {
     if (!searchSettings || !depotName) return null;
     

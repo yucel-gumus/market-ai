@@ -1,13 +1,6 @@
-/**
- * Market Brand Detection ve Logo Utilities
- * Centralized market logic to avoid code duplication
- */
 
 export type MarketBrand = 'bim' | 'a101' | 'migros' | 'carrefour' | 'sok' | 'tarim_kredi' | 'other';
 
-/**
- * Market adından brand'ı tespit eder
- */
 export function detectMarketBrand(marketName: string): MarketBrand {
   const normalizedName = marketName.toLowerCase().trim();
   
@@ -24,9 +17,6 @@ export function detectMarketBrand(marketName: string): MarketBrand {
   return 'other';
 }
 
-/**
- * Market brand'ına göre uygun SVG logo path'ini döndürür
- */
 export function getMarketLogo(marketName: string): string | null {
   const brand = detectMarketBrand(marketName);
   
@@ -43,9 +33,6 @@ export function getMarketLogo(marketName: string): string | null {
   return logoMap[brand];
 }
 
-/**
- * Market brand display isimleri
- */
 export function getMarketDisplayName(brand: MarketBrand): string {
   const displayNames: Record<MarketBrand, string> = {
     'bim': 'BİM',
@@ -60,9 +47,6 @@ export function getMarketDisplayName(brand: MarketBrand): string {
   return displayNames[brand];
 }
 
-/**
- * Tüm mevcut market brand'larını listeler
- */
 export function getAllMarketBrands(): MarketBrand[] {
   return ['bim', 'a101', 'migros', 'carrefour', 'sok', 'tarim_kredi', 'other'];
 }

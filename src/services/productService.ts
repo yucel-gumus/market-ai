@@ -1,9 +1,7 @@
 import { ProductSearchRequest, ProductSearchResponse } from '@/types';
 
 export class ProductService {
-  /**
-   * Ürün arama API'si
-   */
+
   static async searchProducts(request: ProductSearchRequest): Promise<ProductSearchResponse> {
     const response = await fetch('https://api.marketfiyati.org.tr/api/v2/search', {
       method: 'POST',
@@ -21,10 +19,6 @@ export class ProductService {
     const data = await response.json();
     return data;
   }
-
-  /**
-   * Birden fazla sayfa için tüm ürünleri arar
-   */
   static async searchAllProducts(request: Omit<ProductSearchRequest, 'pages'>): Promise<ProductSearchResponse> {
     const allProducts = [];
     let currentPage = 0;

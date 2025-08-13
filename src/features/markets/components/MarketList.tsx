@@ -37,8 +37,7 @@ export function MarketList({
     hiddenMarkets,
     toggleBrand,
     toggleMarket,
-    visibleCount,
-    hiddenMarketsCount
+    visibleCount
   } = useMarketFiltering(markets);
 
   const handleSaveAndNavigate = () => {
