@@ -127,7 +127,7 @@ export default function HomePage() {
                 <MarketList
                   markets={markets}
                   distance={selectedDistance}
-                  address={selectedAddress?.fullAddress || ''}
+                  selectedAddress={selectedAddress}
                   isLoading={isLoadingMarkets}
                   error={marketsError}
                   onRetry={() => refetchMarkets()}

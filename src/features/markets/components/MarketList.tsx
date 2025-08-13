@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Market } from '@/types';
+import { Market, ParsedAddress } from '@/types';
 import { useMarketFiltering } from '@/features/markets/hooks/useMarketFiltering';
 import { MarketFilter } from './MarketFilter';
 import { MarketCard } from './MarketCard';
@@ -13,7 +13,7 @@ import { LoadingState, ErrorState, EmptyState } from './MarketListStates';
 interface MarketListProps {
   markets: Market[];
   distance?: number;
-  address?: string;
+  selectedAddress?: ParsedAddress | null;
   isLoading?: boolean;
   error?: Error | null;
   onRetry?: () => void;
@@ -23,7 +23,7 @@ interface MarketListProps {
 export function MarketList({ 
   markets, 
   distance = 5,
-  address = '',
+  selectedAddress = null,
   isLoading = false,
   error = null,
   onRetry,
@@ -58,7 +58,15 @@ export function MarketList({
 
       const marketData = {
         distance,
-        address,
+        selectedAddress: selectedAddress ? {
+          fullAddress: selectedAddress.fullAddress,
+          street: selectedAddress.street,
+          neighborhood: selectedAddress.neighborhood,
+          district: selectedAddress.district,
+          city: selectedAddress.city,
+          latitude: selectedAddress.latitude,
+          longitude: selectedAddress.longitude
+        } : null,
         selectedMarkets,
         timestamp: new Date().toISOString(),
         totalMarkets: markets.length,
