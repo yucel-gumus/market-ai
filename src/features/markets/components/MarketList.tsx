@@ -31,22 +31,19 @@ export function MarketList({
 }: MarketListProps) {
   const router = useRouter();
   const {
+    markets: filteredMarkets,
     uniqueBrands,
     selectedBrands,
     hiddenMarkets,
-    filteredMarkets,
-    selectedMarketsCount,
     toggleBrand,
-    toggleMarket
+    toggleMarket,
+    visibleCount,
+    hiddenMarketsCount
   } = useMarketFiltering(markets);
 
   const handleSaveAndNavigate = () => {
     try {
       const selectedMarkets = filteredMarkets
-        .filter(market => {
-          const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-          return !hiddenMarkets.has(marketKey);
-        })
         .map(market => ({
           id: market.id,
           name: market.name,
@@ -104,10 +101,10 @@ export function MarketList({
         <div className="flex items-center gap-2">
           <Store className="h-4 w-4" />
           <span>{markets.length} market bulundu</span>
-          <span className="text-xs">({selectedMarketsCount} seçili)</span>
+          <span className="text-xs">({visibleCount} seçili)</span>
         </div>
         
-        {selectedMarketsCount > 0 && (
+        {visibleCount > 0 && (
           <Button 
             onClick={handleSaveAndNavigate}
             size="sm" 
@@ -119,7 +116,7 @@ export function MarketList({
               </svg>
               <span>Kaydet ve Devam Et</span>
               <div className="bg-white/20 text-xs px-2 py-0.5 rounded-full font-bold">
-                {selectedMarketsCount}
+                {visibleCount}
               </div>
               <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -133,13 +130,13 @@ export function MarketList({
       <div className="h-96 overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         {filteredMarkets.map((market, index) => {
           const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-          const isIndividualMarketSelected = !hiddenMarkets.has(marketKey);
+          const isVisible = !hiddenMarkets.has(marketKey);
           
           return (
             <MarketCard
               key={`${market.id}-${index}`}
               market={market}
-              isVisible={isIndividualMarketSelected}
+              isVisible={isVisible}
               onToggleMarket={toggleMarket}
             />
           );

@@ -76,12 +76,4 @@ export class AddressService {
 
     return parts.length > 0 ? parts.join(', ') : address.fullAddress;
   }
-  static getShortAddress(address: ParsedAddress): string {
-    const parts = [
-      address.neighborhood,
-      address.district,
-    ].filter(Boolean);
-
-    return parts.length > 0 ? parts.join(', ') : address.city || address.fullAddress;
-  }
 }

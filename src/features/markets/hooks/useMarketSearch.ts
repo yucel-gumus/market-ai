@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { MarketService } from '@/services/marketService';
-import { MarketSearchRequest, Market } from '@/types';
+import { Market, MarketSearchRequest } from '@/types';
+import { isApiError, getErrorMessage } from '@/lib/errorUtils';
 
 export const useMarketSearch = (request: MarketSearchRequest | null) => {
   return useQuery<Market[], Error>({
     queryKey: ['markets', request],
-    
-    queryFn: () => request ? MarketService.searchNearbyMarkets(request) : Promise.resolve([]),
+    queryFn: () => {
+      if (!request) throw new Error('Search request is required');
+      return MarketService.searchNearbyMarkets(request);
+    },
     
     enabled: Boolean(
       request && 
@@ -19,7 +22,7 @@ export const useMarketSearch = (request: MarketSearchRequest | null) => {
     gcTime: 5 * 60 * 1000,
     
     retry: (failureCount, error) => {
-      if (error.message.includes('400') || error.message.includes('404')) {
+      if (isApiError(error)) {
         return false;
       }
       return failureCount < 3;
@@ -28,6 +31,9 @@ export const useMarketSearch = (request: MarketSearchRequest | null) => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     refetchOnWindowFocus: true,
     refetchOnReconnect: true,
+    meta: {
+      errorMessage: (error: Error) => getErrorMessage(error)
+    }
   });
 };
 

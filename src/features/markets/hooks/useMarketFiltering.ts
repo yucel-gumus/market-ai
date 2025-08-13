@@ -2,22 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Market } from '@/types';
+import { detectMarketBrand, type MarketBrand } from '@/lib/marketUtils';
 
 export function useMarketFiltering(markets: Market[]) {
-  const [selectedBrands, setSelectedBrands] = useState<Set<string>>(new Set());
+  const [selectedBrands, setSelectedBrands] = useState<Set<MarketBrand>>(new Set());
   const [hiddenMarkets, setHiddenMarkets] = useState<Set<string>>(new Set());
 
   const uniqueBrands = useMemo(() => {
-    const brands = new Set<string>();
+    const brands = new Set<MarketBrand>();
     markets.forEach(market => {
-      const normalizedName = market.name.toLowerCase().trim();
-      if (normalizedName.includes('bim')) brands.add('bim');
-      else if (normalizedName.includes('a101') || normalizedName.includes('a 101')) brands.add('a101');
-      else if (normalizedName.includes('migros')) brands.add('migros');
-      else if (normalizedName.includes('carrefour')) brands.add('carrefour');
-      else if (normalizedName.includes('sok') || normalizedName.includes('şok')) brands.add('sok');
-      else if (normalizedName.includes('tarım kredi') || normalizedName.includes('tarim kredi') || normalizedName.includes('tarim_kredi') || normalizedName.includes('tarımkredi')) brands.add('tarim_kredi');
-      else brands.add('other');
+      brands.add(detectMarketBrand(market.name));
     });
     return Array.from(brands);
   }, [markets]);
@@ -28,25 +22,19 @@ export function useMarketFiltering(markets: Market[]) {
 
   const filteredMarkets = useMemo(() => {
     return markets.filter(market => {
-      const normalizedName = market.name.toLowerCase().trim();
-      if (normalizedName.includes('bim')) return selectedBrands.has('bim');
-      if (normalizedName.includes('a101') || normalizedName.includes('a 101')) return selectedBrands.has('a101');
-      if (normalizedName.includes('migros')) return selectedBrands.has('migros');
-      if (normalizedName.includes('carrefour')) return selectedBrands.has('carrefour');
-      if (normalizedName.includes('sok') || normalizedName.includes('şok')) return selectedBrands.has('sok');
-      if (normalizedName.includes('tarım kredi') || normalizedName.includes('tarim kredi') || normalizedName.includes('tarim_kredi') || normalizedName.includes('tarımkredi')) return selectedBrands.has('tarim_kredi');
-      return selectedBrands.has('other');
+      const brand = detectMarketBrand(market.name);
+      return selectedBrands.has(brand);
     });
   }, [markets, selectedBrands]);
 
-  const selectedMarketsCount = useMemo(() => {
+  const visibleMarkets = useMemo(() => {
     return filteredMarkets.filter(market => {
       const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
       return !hiddenMarkets.has(marketKey);
-    }).length;
+    });
   }, [filteredMarkets, hiddenMarkets]);
 
-  const toggleBrand = (brand: string) => {
+  const toggleBrand = (brand: MarketBrand) => {
     const newSelectedBrands = new Set(selectedBrands);
     if (newSelectedBrands.has(brand)) {
       newSelectedBrands.delete(brand);
@@ -59,21 +47,46 @@ export function useMarketFiltering(markets: Market[]) {
   const toggleMarket = (market: Market) => {
     const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
     const newHiddenMarkets = new Set(hiddenMarkets);
+    
     if (newHiddenMarkets.has(marketKey)) {
       newHiddenMarkets.delete(marketKey);
     } else {
       newHiddenMarkets.add(marketKey);
     }
+    
     setHiddenMarkets(newHiddenMarkets);
   };
 
+  const hideMarket = (marketId: string) => {
+    setHiddenMarkets(prev => new Set([...prev, marketId]));
+  };
+
+  const showMarket = (marketId: string) => {
+    setHiddenMarkets(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(marketId);
+      return newSet;
+    });
+  };
+
+  const resetFilters = () => {
+    setSelectedBrands(new Set(uniqueBrands));
+    setHiddenMarkets(new Set());
+  };
+
   return {
+    markets: filteredMarkets, // Tüm filtrelenmiş marketleri döndür, gizlileri değil
     uniqueBrands,
     selectedBrands,
     hiddenMarkets,
-    filteredMarkets,
-    selectedMarketsCount,
     toggleBrand,
-    toggleMarket
+    toggleMarket,
+    hideMarket,
+    showMarket,
+    resetFilters,
+    hiddenMarketsCount: hiddenMarkets.size,
+    totalFilteredCount: filteredMarkets.length,
+    visibleCount: visibleMarkets.length,
+    originalCount: markets.length,
   };
 }

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SearchSettings } from '@/types';
+import { safeIncludes } from '@/lib/stringUtils';
 
 /**
  * localStorage'dan marketSearchData verilerini çeken hook
@@ -64,7 +65,7 @@ export const useLocalStorageSettings = () => {
     if (!searchSettings || !depotName) return null;
     
     const market = searchSettings.selectedMarkets.find(m => 
-      depotName.toLowerCase().includes(m.address?.toLowerCase() || '')
+      safeIncludes(depotName, m.address)
     );
     
     return market ? market.distance : null;

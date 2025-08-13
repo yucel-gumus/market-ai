@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Package, Store, Ruler, Search, ArrowRight } from 'lucide-react';
 import { Product } from '@/types';
 import { cn, getMarketLogo } from '@/lib/utils';
+import { generateKey } from '@/lib/stringUtils';
 
 interface ProductDropdownProps {
   products: Product[];
@@ -171,8 +172,8 @@ function getUniqueProducts(products: Product[]): Product[] {
   const seen = new Set<string>();
   
   return products
-    .filter(product => {
-      const key = product.title.toLowerCase().trim();
+    .filter((product, index) => {
+      const key = generateKey(product.title, index);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
