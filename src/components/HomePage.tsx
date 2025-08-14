@@ -119,7 +119,7 @@ export default function HomePage() {
                   Yakındaki Marketler
                 </CardTitle>
                 <CardDescription>
-                  {selectedAddress.neighborhood}, {selectedAddress.district} konumunun 
+                  {selectedAddress.neighborhood}, {selectedAddress.district} konumunun { }
                   {selectedDistance} km yakınındaki marketler
                 </CardDescription>
               </CardHeader>

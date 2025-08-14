@@ -10,9 +10,6 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(
   (config) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔄 ${config.method?.toUpperCase()} ${config.url}`);
-    }
     return config;
   },
   (error) => Promise.reject(error)

@@ -14,7 +14,6 @@ if (typeof window !== 'undefined') {
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   });
 
-  // Custom CSS for market markers
   const style = document.createElement('style');
   style.textContent = `
     .custom-market-marker {
@@ -215,7 +214,6 @@ const MapWrapper = ({
       const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
       const isHidden = hiddenMarkets.has(marketKey);
       
-      // Market logosunu al (eğer yoksa market isminden brand tespit et)
       const marketLogo = market.logo || getMarketLogo(market.name);
       const brandName = market.brand || detectMarketBrand(market.name);
       
@@ -327,7 +325,7 @@ const MapWrapper = ({
       }
     }
 
-  }, [markets, hiddenMarkets, onMarkerClick]);
+  }, [markets, hiddenMarkets, onMarkerClick, userLocation]);
 
   return (
     <div 

@@ -46,7 +46,3 @@ export function getMarketDisplayName(brand: MarketBrand): string {
 
   return displayNames[brand];
 }
-
-export function getAllMarketBrands(): MarketBrand[] {
-  return ['bim', 'a101', 'migros', 'carrefour', 'sok', 'tarim_kredi', 'other'];
-}

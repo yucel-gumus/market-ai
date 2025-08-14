@@ -38,13 +38,13 @@ export function MarketCard({ market, isVisible, onToggleMarket }: MarketCardProp
             <div className="flex items-start gap-3">
               <div className="p-3 rounded-lg bg-primary/10 flex items-center justify-center">
                 {getMarketLogo(market.name) ? (
-                  <div className="h-8 w-8 relative">
+                  <div className="h-8 w-8 flex items-center justify-center">
                     <Image
                       src={getMarketLogo(market.name)!}
                       alt={`${market.name} logo`}
                       width={32}
                       height={32}
-                      className="object-contain"
+                      className="max-w-8 max-h-8 object-contain"
                     />
                   </div>
                 ) : (

@@ -139,13 +139,15 @@ function RouteStepCard({ step }: RouteStepCardProps) {
             {step.stepNumber}
           </div>
           {marketLogo && (
-            <Image
-              src={marketLogo}
-              alt={step.marketName}
-              width={20}
-              height={20}
-              className="rounded"
-            />
+            <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+              <Image
+                src={marketLogo}
+                alt={step.marketName}
+                width={20}
+                height={20}
+                className="max-w-5 max-h-5 object-contain rounded"
+              />
+            </div>
           )}
           <div>
             <div className="font-medium text-sm">{step.depot.depotName}</div>

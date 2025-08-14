@@ -1,27 +1,42 @@
 import { Product, ProductDepotInfo, CartItem, OptimizedShopping, MarketGroup, RouteStep } from '@/types';
 
 /**
- * Haversine formula to calculate distance between two points
+ * Get saved market data from localStorage
  */
-export function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371; // Earth's radius in km
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-    Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+function getSavedMarketData(): { selectedMarkets?: Array<{ name: string; distance: number; latitude: number; longitude: number; }> } | null {
+  try {
+    const saved = localStorage.getItem('marketSearchData');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (error) {
+    console.error('Error loading market data from localStorage:', error);
+  }
+  return null;
 }
 
-function toRad(value: number): number {
-  return (value * Math.PI) / 180;
+/**
+ * Find distance for a market from saved data
+ */
+function findMarketDistance(marketName: string, latitude?: number, longitude?: number): number {
+  const marketData = getSavedMarketData();
+  if (!marketData?.selectedMarkets) return 0;
+
+  // Try to find market by name first
+  let market = marketData.selectedMarkets.find((m) => 
+    m.name?.toLowerCase().includes(marketName.toLowerCase()) ||
+    marketName.toLowerCase().includes(m.name?.toLowerCase())
+  );
+
+  // If not found by name, try to find by coordinates
+  if (!market && latitude && longitude) {
+    market = marketData.selectedMarkets.find((m) => 
+      Math.abs(m.latitude - latitude) < 0.001 && 
+      Math.abs(m.longitude - longitude) < 0.001
+    );
+  }
+
+  return market?.distance || 0;
 }
 
 /**
@@ -80,7 +95,7 @@ export function groupItemsByMarket(cartItems: CartItem[]): MarketGroup[] {
 }
 
 /**
- * Optimize shopping route using greedy nearest neighbor algorithm
+ * Optimize shopping route using saved market distances
  */
 export function optimizeRoute(
   userLat: number,
@@ -89,11 +104,19 @@ export function optimizeRoute(
 ): RouteStep[] {
   if (marketGroups.length === 0) return [];
   if (marketGroups.length === 1) {
+    const distance = findMarketDistance(
+      marketGroups[0].marketName,
+      marketGroups[0].depotInfo.latitude,
+      marketGroups[0].depotInfo.longitude
+    );
+    
     return [{
       marketName: marketGroups[0].marketName,
       depot: marketGroups[0].depotInfo,
       items: marketGroups[0].items,
       stepNumber: 1,
+      distanceFromPrevious: distance,
+      estimatedTime: Math.round(distance * 2), // 2 min per km estimate
       coordinates: {
         latitude: marketGroups[0].depotInfo.latitude || 0,
         longitude: marketGroups[0].depotInfo.longitude || 0
@@ -103,21 +126,21 @@ export function optimizeRoute(
   
   const route: RouteStep[] = [];
   const unvisited = [...marketGroups];
-  let currentLat = userLat;
-  let currentLon = userLon;
   let stepNumber = 1;
   
   while (unvisited.length > 0) {
     let nearestIndex = 0;
     let minDistance = Infinity;
     
-    // Find nearest unvisited market
+    // Find nearest unvisited market using saved distances
     unvisited.forEach((group, index) => {
-      const lat = group.depotInfo.latitude || 0;
-      const lon = group.depotInfo.longitude || 0;
-      const distance = calculateDistance(currentLat, currentLon, lat, lon);
+      const distance = findMarketDistance(
+        group.marketName,
+        group.depotInfo.latitude,
+        group.depotInfo.longitude
+      );
       
-      if (distance < minDistance) {
+      if (distance > 0 && distance < minDistance) {
         minDistance = distance;
         nearestIndex = index;
       }
@@ -126,23 +149,25 @@ export function optimizeRoute(
     const nearestMarket = unvisited[nearestIndex];
     const lat = nearestMarket.depotInfo.latitude || 0;
     const lon = nearestMarket.depotInfo.longitude || 0;
+    const distance = findMarketDistance(
+      nearestMarket.marketName,
+      lat,
+      lon
+    );
     
     route.push({
       marketName: nearestMarket.marketName,
       depot: nearestMarket.depotInfo,
       items: nearestMarket.items,
       stepNumber,
-      distanceFromPrevious: stepNumber === 1 ? minDistance : minDistance,
-      estimatedTime: Math.round(minDistance * 2), // Rough estimate: 2 min per km
+      distanceFromPrevious: distance,
+      estimatedTime: Math.round(distance * 2), // Rough estimate: 2 min per km
       coordinates: {
         latitude: lat,
         longitude: lon
       }
     });
     
-    // Update current position and remove visited market
-    currentLat = lat;
-    currentLon = lon;
     unvisited.splice(nearestIndex, 1);
     stepNumber++;
   }
@@ -165,20 +190,17 @@ export function calculateOptimization(cartItems: CartItem[]): OptimizedShopping 
 }
 
 /**
- * Add distance information to market groups
+ * Add distance information to market groups using saved data
  */
 export function addDistanceToMarketGroups(
-  marketGroups: MarketGroup[],
-  userLat: number,
-  userLon: number
+  marketGroups: MarketGroup[]
 ): MarketGroup[] {
   return marketGroups.map(group => ({
     ...group,
-    distance: calculateDistance(
-      userLat,
-      userLon,
-      group.depotInfo.latitude || 0,
-      group.depotInfo.longitude || 0
+    distance: findMarketDistance(
+      group.marketName,
+      group.depotInfo.latitude,
+      group.depotInfo.longitude
     )
   }));
 }

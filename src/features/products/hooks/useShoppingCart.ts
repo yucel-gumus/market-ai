@@ -87,39 +87,12 @@ export function useShoppingCart() {
   }, []);
 
   const generateRoute = useCallback((userLat: number, userLon: number): RouteStep[] => {
-    console.log('🛒 Rota Oluşturuluyor...');
-    console.log('🏠 Kullanıcı Konumu:', { latitude: userLat, longitude: userLon });
-    
     if (!optimization || optimization.marketGroups.length === 0) {
-      console.log('❌ Optimizasyon bulunamadı veya market grubu yok');
       return [];
     }
-
-    const groupsWithDistance = addDistanceToMarketGroups(
-      optimization.marketGroups,
-      userLat,
-      userLon
-    );
-
-    console.log('📊 Market Grupları (Mesafeli):', groupsWithDistance.map(group => ({
-      marketName: group.marketName,
-      depotName: group.depotInfo.depotName,
-      latitude: group.depotInfo.latitude,
-      longitude: group.depotInfo.longitude,
-      distance: group.distance,
-      totalPrice: group.items.reduce((sum, item) => sum + item.selectedDepot.price, 0)
-    })));
+    const groupsWithDistance = addDistanceToMarketGroups(optimization.marketGroups);
 
     const route = optimizeRoute(userLat, userLon, groupsWithDistance);
-    console.log('🗺️ Optimize Edilmiş Rota:', route.map(step => ({
-      stepNumber: step.stepNumber,
-      marketName: step.marketName,
-      depotName: step.depot.depotName,
-      coordinates: step.coordinates,
-      distanceFromPrevious: step.distanceFromPrevious,
-      estimatedTime: step.estimatedTime
-    })));
-
     return route;
   }, [optimization]);
 

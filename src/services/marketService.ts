@@ -99,7 +99,15 @@ export class MarketService {
 
   private static parseDistance(value: unknown): number {
     const distance = typeof value === 'string' ? parseFloat(value) : Number(value);
-    return isNaN(distance) ? 0 : Math.max(0, distance);
+    if (isNaN(distance)) return 0;
+    
+    // API'den gelen mesafe metre cinsindeyse km'ye çevir
+    // Eğer değer 100'den büyükse metre cinsinden olduğunu varsay
+    if (distance > 100) {
+      return Math.round((distance / 1000) * 100) / 100; // metre'den km'ye çevir
+    }
+    
+    return Math.max(0, distance);
   }
   private static parseCoordinate(value: unknown): number {
     const coordinate = typeof value === 'string' ? parseFloat(value) : Number(value);

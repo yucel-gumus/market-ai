@@ -13,11 +13,9 @@ interface ProductDropdownProps {
   query: string;
   isOpen: boolean;
   onClose: () => void;
-  onSelectProduct: (product: Product) => void;
   onAddToCart?: (product: Product) => void;
   onProductAdded?: () => void; // Yeni prop: ürün sepete eklendikten sonra çağrılacak
   isProductInCart?: (productId: string) => boolean;
-  isLoading?: boolean;
   className?: string;
 }
 
@@ -26,7 +24,6 @@ export function ProductDropdown({
   query,
   isOpen,
   onClose,
-  onSelectProduct,
   onAddToCart,
   onProductAdded,
   isProductInCart,
@@ -72,7 +69,6 @@ export function ProductDropdown({
               <ProductDropdownItem
                 key={`${product.id}-${index}`}
                 product={product}
-                onClick={() => onSelectProduct(product)}
                 onAddToCart={onAddToCart}
                 onProductAdded={onProductAdded}
                 isInCart={isProductInCart?.(product.id) || false}
@@ -89,13 +85,12 @@ export function ProductDropdown({
 
 interface ProductDropdownItemProps {
   product: Product;
-  onClick: () => void;
   onAddToCart?: (product: Product) => void;
   onProductAdded?: () => void;
   isInCart: boolean;
 }
 
-function ProductDropdownItem({ product, onClick, onAddToCart, onProductAdded, isInCart }: ProductDropdownItemProps) {
+function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }: ProductDropdownItemProps) {
   const cheapestDepot = product.productDepotInfoList?.reduce((min, depot) => 
     parseFloat(depot.price.toString()) < parseFloat(min.price.toString()) ? depot : min
   );
@@ -111,8 +106,7 @@ function ProductDropdownItem({ product, onClick, onAddToCart, onProductAdded, is
   return (
     <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
       <div 
-        className="flex-1 space-y-2 cursor-pointer"
-        onClick={onClick}
+        className="flex-1 space-y-2"
       >
         <div className="font-medium text-foreground line-clamp-2">
           {product.title}
@@ -136,13 +130,15 @@ function ProductDropdownItem({ product, onClick, onAddToCart, onProductAdded, is
           <div className="flex items-center gap-2">
             {logoPath ? (
               <>
-                <Image
-                  src={logoPath}
-                  alt={cheapestDepot.marketAdi || 'Market'}
-                  width={20}
-                  height={20}
-                  className="object-contain rounded"
-                />
+                <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+                  <Image
+                    src={logoPath}
+                    alt={cheapestDepot.marketAdi || 'Market'}
+                    width={20}
+                    height={20}
+                    className="max-w-5 max-h-5 object-contain rounded"
+                  />
+                </div>
                 <span className="text-xs text-green-600 font-medium">
                   En ucuz: {cheapestDepot.marketAdi}
                 </span>
@@ -178,8 +174,7 @@ function ProductDropdownItem({ product, onClick, onAddToCart, onProductAdded, is
           </Button>
         )}
         <ArrowRight 
-          className="h-4 w-4 text-muted-foreground flex-shrink-0 cursor-pointer"
-          onClick={onClick}
+          className="h-4 w-4 text-muted-foreground flex-shrink-0"
         />
       </div>
     </div>

@@ -60,23 +60,21 @@ export function MarketList({
   } = useMarketFiltering(markets);
 
   const handleMarkerClick = (market: Market) => {
-    // Haritada marker'a tıklandığında o market'i toggle et
     toggleMarket(market);
   };
 
   const handleSaveAndNavigate = () => {
     try {
-      // Sadece görünür olan marketleri al (brand filtresi geçmiş VE gizlenmemiş)
       const selectedMarkets = filteredMarkets
         .filter(market => {
           const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-          return !hiddenMarkets.has(marketKey); // Gizli marketleri hariç tut
+          return !hiddenMarkets.has(marketKey);
         })
         .map(market => ({
           id: market.id,
           name: market.name,
           address: market.address,
-          distance: market.distance,
+          distance: market.distance, // API'den gelen mesafe
           latitude: market.latitude,
           longitude: market.longitude
         }));
@@ -97,7 +95,6 @@ export function MarketList({
         totalMarkets: markets.length,
         selectedCount: selectedMarkets.length
       };
-
       localStorage.setItem('marketSearchData', JSON.stringify(marketData));
       router.push('/ai-chat');
     } catch {

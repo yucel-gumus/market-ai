@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
-import { SelectedProductDisplay } from '@/features/products/components/SelectedProductDisplay';
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
 import { RouteModal } from '@/features/products/components/RouteModal';
 import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
@@ -18,13 +17,12 @@ import { SearchTips } from '@/features/products/components/SearchTips';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
-import { useDebounce } from '@/hooks/useDebounce';
-import { Product, ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
+import { useDebounce } from 'use-debounce';
+import { ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
 
 export default function ProductSearchPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [showSingleMap, setShowSingleMap] = useState(false);
   const [showMultiMap, setShowMultiMap] = useState(false);
@@ -33,7 +31,7 @@ export default function ProductSearchPage() {
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
   
-  const debouncedQuery = useDebounce(searchQuery, 300);
+  const [debouncedQuery] = useDebounce(searchQuery, 300);
   
   // Shopping cart hook
   const {
@@ -48,9 +46,7 @@ export default function ProductSearchPage() {
     const {
     searchSettings,
     isLoading: isSettingsLoading,
-    error: settingsError,
-    getMarketDistance,
-    getMarketDistanceByName
+    error: settingsError
   } = useLocalStorageSettings();
   const {
     data: products = [],
@@ -70,13 +66,6 @@ export default function ProductSearchPage() {
 
   const handleClearSearch = () => {
     setSearchQuery('');
-    setSelectedProduct(null);
-    setIsDropdownOpen(false);
-  };
-
-  const handleProductSelect = (product: Product) => {
-    setSelectedProduct(product);
-    setSearchQuery(product.title);
     setIsDropdownOpen(false);
   };
 
@@ -208,7 +197,6 @@ export default function ProductSearchPage() {
                 query={searchQuery}
                 isOpen={isDropdownOpen}
                 onClose={() => setIsDropdownOpen(false)}
-                onSelectProduct={handleProductSelect}
                 onAddToCart={addToCart}
                 onProductAdded={handleClearSearch}
                 isProductInCart={isProductInCart}
@@ -222,19 +210,9 @@ export default function ProductSearchPage() {
           <ShoppingCartSummary
             optimization={optimization}
             onViewRoute={handleViewMultiRoute}
+            onViewSingleRoute={handleShowRoute}
             onClearCart={clearCart}
             onRemoveItem={removeFromCart}
-          />
-        )}
-
-        {/* Selected Product */}
-        {selectedProduct && searchSettings && (
-          <SelectedProductDisplay
-            product={selectedProduct}
-            onClear={() => setSelectedProduct(null)}
-            onShowRoute={handleShowRoute}
-            getMarketDistance={getMarketDistance}
-            getMarketDistanceByName={getMarketDistanceByName}
           />
         )}
 

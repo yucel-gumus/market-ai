@@ -18,7 +18,11 @@ export const metadata: Metadata = {
   description: "Modern teknoloji ile yakınınızdaki marketleri kolayca bulun. Next.js 15, TypeScript ve AI destekli market arama deneyimi.",
   keywords: ["market", "alışveriş", "yakın market", "konum", "harita", "AI"],
   authors: [{ name: "MarketAI Team" }],
-  viewport: "width=device-width, initial-scale=1",
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({

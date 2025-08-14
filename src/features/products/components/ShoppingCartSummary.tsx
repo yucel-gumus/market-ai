@@ -1,13 +1,14 @@
 import { ShoppingCart, X, Package, TrendingDown, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { OptimizedShopping, CartItem, MarketGroup } from '@/types';
+import { OptimizedShopping, CartItem, MarketGroup, ProductDepotInfo } from '@/types';
 import { getMarketLogo } from '@/lib/utils';
 import Image from 'next/image';
 
 interface ShoppingCartSummaryProps {
   optimization: OptimizedShopping;
   onViewRoute: () => void;
+  onViewSingleRoute?: (depot: ProductDepotInfo) => void; // Tek mağaza rotası için
   onClearCart: () => void;
   onRemoveItem: (productId: string) => void;
 }
@@ -15,11 +16,23 @@ interface ShoppingCartSummaryProps {
 export function ShoppingCartSummary({ 
   optimization, 
   onViewRoute, 
+  onViewSingleRoute,
   onClearCart, 
   onRemoveItem 
 }: ShoppingCartSummaryProps) {
   const { marketGroups, totalCost, marketCount } = optimization;
   const totalItems = marketGroups.reduce((sum, group) => sum + group.items.length, 0);
+
+  // Tek mağaza durumu için mağaza bilgisini al
+  const handleSingleRouteClick = () => {
+    if (marketCount === 1 && marketGroups.length > 0 && onViewSingleRoute) {
+      const singleGroup = marketGroups[0];
+      if (singleGroup.items.length > 0) {
+        const firstDepot = singleGroup.items[0].selectedDepot;
+        onViewSingleRoute(firstDepot);
+      }
+    }
+  };
 
   return (
     <Card className="mb-6 border-blue-200 bg-blue-50/50 dark:bg-blue-900/20 dark:border-blue-800">
@@ -85,7 +98,7 @@ export function ShoppingCartSummary({
           
           {marketCount === 1 && (
             <Button 
-              onClick={onViewRoute}
+              onClick={handleSingleRouteClick}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
               <TrendingDown className="h-4 w-4 mr-2" />
@@ -111,13 +124,15 @@ function MarketGroupCard({ group, onRemoveItem }: MarketGroupCardProps) {
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {marketLogo && (
-            <Image
-              src={marketLogo}
-              alt={group.marketName}
-              width={24}
-              height={24}
-              className="rounded"
-            />
+            <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
+              <Image
+                src={marketLogo}
+                alt={group.marketName}
+                width={24}
+                height={24}
+                className="max-w-6 max-h-6 object-contain rounded"
+              />
+            </div>
           )}
           <span className="font-medium text-sm">{group.depotInfo.depotName}</span>
           {group.distance && (

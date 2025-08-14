@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import { getMarketLogo } from '@/lib/utils';
 
 let mapInstanceCounter = 0;
 
@@ -25,10 +26,61 @@ function getMarkerColor(index) {
   return colors[index % colors.length];
 }
 
-function createCustomIcon(color, number) {
+function createCustomIcon(color, number, marketName = '') {
+  const marketLogo = getMarketLogo(marketName);
+  
   return L.divIcon({
-    html: `<div style="background-color: ${color}; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);">${number}</div>`,
-    iconSize: [30, 30],
+    html: marketLogo 
+      ? `<div style="
+          background-color: ${color}; 
+          color: white; 
+          border-radius: 50%; 
+          width: 35px; 
+          height: 35px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          font-weight: bold; 
+          font-size: 10px; 
+          border: 2px solid white; 
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          position: relative;
+        ">
+          <div style="
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: white;
+            color: ${color};
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            border: 1px solid ${color};
+          ">${number}</div>
+          <img src="${marketLogo}" 
+               alt="${marketName}" 
+               style="width: 20px; height: 20px; object-fit: contain; border-radius: 50%;" />
+        </div>`
+      : `<div style="
+          background-color: ${color}; 
+          color: white; 
+          border-radius: 50%; 
+          width: 35px; 
+          height: 35px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          font-weight: bold; 
+          font-size: 14px; 
+          border: 2px solid white; 
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        ">${number}</div>`,
+    iconSize: [35, 35],
     className: 'custom-div-icon'
   });
 }
@@ -45,6 +97,7 @@ const MapWrapper = ({
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const instanceId = useRef(++mapInstanceCounter);
+  const mapId = useRef(`map-${instanceId.current}`);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current || !searchSettings || 
@@ -56,6 +109,9 @@ const MapWrapper = ({
     if (!mapElement || mapElement._leaflet_id) {
       return; 
     }
+
+    // Set unique ID for the map element
+    mapElement.id = mapId.current;
 
     const map = L.map(mapElement, {
       center: center,
@@ -73,29 +129,54 @@ const MapWrapper = ({
       maxZoom: 19
     }).addTo(map);
 
-    // User marker icon
-    const userIcon = L.icon({
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
+    // User marker icon (Mavi - Kullanıcı konumu)
+    const userIcon = L.divIcon({
+      html: `<div style="
+        background-color: #3b82f6; 
+        color: white; 
+        border-radius: 50%; 
+        width: 30px; 
+        height: 30px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-weight: bold; 
+        font-size: 16px; 
+        border: 3px solid white; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      ">📍</div>`,
+      iconSize: [30, 30],
+      className: 'user-location-marker'
     });
 
-    // Store marker icon
-    const storeIcon = L.icon({
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      iconSize: [25, 41],
-      iconAnchor: [12, 41],
-      popupAnchor: [1, -34],
-      shadowSize: [41, 41]
+    // Store marker icon (Kırmızı - Market konumu)
+    const storeIcon = L.divIcon({
+      html: `<div style="
+        background-color: #ef4444; 
+        color: white; 
+        border-radius: 50%; 
+        width: 30px; 
+        height: 30px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-weight: bold; 
+        font-size: 16px; 
+        border: 3px solid white; 
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      ">🏪</div>`,
+      iconSize: [30, 30],
+      className: 'store-location-marker'
     });
 
     const userMarker = L.marker([searchSettings.latitude, searchSettings.longitude], { icon: userIcon })
       .addTo(map)
-      .bindPopup('<strong>📍 Konumunuz</strong>');
+      .bindPopup(`
+        <div style="text-align: center;">
+          <strong>📍 Konumunuz</strong><br/>
+          <span style="color: #3b82f6; font-weight: 600;">Buradan başlıyoruz</span>
+        </div>
+      `);
 
     // Initialize routing controls
     let routingControl = null;
@@ -111,7 +192,7 @@ const MapWrapper = ({
         }
         
         const markerColor = getMarkerColor(index);
-        const destinationIcon = createCustomIcon(markerColor, index + 1);
+        const destinationIcon = createCustomIcon(markerColor, index + 1, destination.market || '');
         
         const marker = L.marker([destination.latitude, destination.longitude], { 
           icon: destinationIcon 
@@ -132,26 +213,11 @@ const MapWrapper = ({
       if (showRoute && destinations && destinations.length > 0 && window.L && window.L.Routing) {
       try {
         if (map && map._leaflet_id) { // Ensure map is still valid
-          // Console'a konumları yazdır
-          console.log('🏠 Benim Konumum:', {
-            latitude: searchSettings.latitude,
-            longitude: searchSettings.longitude
-          });
           
-          console.log('🏪 Seçilen Marketler:');
-          destinations.forEach((dest, index) => {
-            console.log(`${index + 1}. ${dest.name} (${dest.market}):`, {
-              latitude: dest.latitude,
-              longitude: dest.longitude
-            });
-          });
-
           const waypoints = [
             L.latLng(searchSettings.latitude, searchSettings.longitude),
             ...destinations.map(dest => L.latLng(dest.latitude, dest.longitude))
-          ];
-          
-          routingControl = L.Routing.control({
+          ];          routingControl = L.Routing.control({
             waypoints: waypoints,
             routeWhileDragging: false,
             addWaypoints: false,
@@ -207,13 +273,56 @@ const MapWrapper = ({
 
     let storeMarker = null;
     if (selectedStore && selectedStore.latitude && selectedStore.longitude) {
-      storeMarker = L.marker([selectedStore.latitude, selectedStore.longitude], { icon: storeIcon })
+      const marketLogo = getMarketLogo(selectedStore.marketAdi || '');
+      
+      // Market logosunu marker icon'a dahil edelim
+      const storeIconWithLogo = L.divIcon({
+        html: marketLogo 
+          ? `<div style="
+              background-color: #ef4444; 
+              color: white; 
+              border-radius: 50%; 
+              width: 40px; 
+              height: 40px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              font-weight: bold; 
+              font-size: 12px; 
+              border: 3px solid white; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              position: relative;
+            ">
+              <img src="${marketLogo}" 
+                   alt="${selectedStore.marketAdi}" 
+                   style="width: 24px; height: 24px; object-fit: contain; border-radius: 50%;" />
+            </div>`
+          : `<div style="
+              background-color: #ef4444; 
+              color: white; 
+              border-radius: 50%; 
+              width: 40px; 
+              height: 40px; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              font-weight: bold; 
+              font-size: 16px; 
+              border: 3px solid white; 
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            ">🏪</div>`,
+        iconSize: [40, 40],
+        className: 'store-location-marker-with-logo'
+      });
+      
+      storeMarker = L.marker([selectedStore.latitude, selectedStore.longitude], { icon: storeIconWithLogo })
         .addTo(map)
         .bindPopup(`
-          <div>
+          <div style="text-align: center;">
             <strong>🏪 ${selectedStore.depotName}</strong><br/>
-            <span>${selectedStore.marketAdi?.toUpperCase()}</span><br/>
-            <span>💰 ${selectedStore.price} ₺</span>
+            <span style="color: #ef4444; font-weight: 600;">${selectedStore.marketAdi?.toUpperCase()}</span><br/>
+            <span style="color: #16a34a; font-weight: 600;">💰 ${selectedStore.price} ₺</span><br/>
+            <small style="color: #6b7280;">Hedef market</small>
           </div>
         `);
     }
@@ -221,19 +330,6 @@ const MapWrapper = ({
     if (selectedStore && selectedStore.latitude && selectedStore.longitude && window.L && window.L.Routing) {
       try {
         if (map && map._leaflet_id) { // Ensure map is still valid
-          // Console'a tek mağaza konumunu yazdır
-          console.log('🏠 Benim Konumum (Tek Mağaza):', {
-            latitude: searchSettings.latitude,
-            longitude: searchSettings.longitude
-          });
-          
-          console.log('🏪 Seçilen Mağaza:', {
-            name: selectedStore.depotName,
-            market: selectedStore.marketAdi,
-            latitude: selectedStore.latitude,
-            longitude: selectedStore.longitude,
-            price: selectedStore.price
-          });
 
           singleRouting = L.Routing.control({
             waypoints: [
@@ -367,7 +463,7 @@ const MapWrapper = ({
             }
           }
           
-          const mapElement = document.getElementById(mapId);
+          const mapElement = document.getElementById(mapId.current);
           if (mapElement && mapElement._leaflet_id) {
             delete mapElement._leaflet_id;
           }
