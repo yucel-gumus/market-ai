@@ -2,10 +2,11 @@
 
 import { useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { Package, Store, Ruler, Search, ArrowRight } from 'lucide-react';
+import { Package, Store, Ruler, Search, ArrowRight, Plus, Check } from 'lucide-react';
 import { Product } from '@/types';
 import { cn, getMarketLogo } from '@/lib/utils';
 import { generateKey } from '@/lib/stringUtils';
+import { Button } from '@/components/ui/button';
 
 interface ProductDropdownProps {
   products: Product[];
@@ -13,6 +14,9 @@ interface ProductDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectProduct: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
+  onProductAdded?: () => void; // Yeni prop: ürün sepete eklendikten sonra çağrılacak
+  isProductInCart?: (productId: string) => boolean;
   isLoading?: boolean;
   className?: string;
 }
@@ -23,9 +27,13 @@ export function ProductDropdown({
   isOpen,
   onClose,
   onSelectProduct,
+  onAddToCart,
+  onProductAdded,
+  isProductInCart,
   className
 }: ProductDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -38,7 +46,7 @@ export function ProductDropdown({
   }, [onClose]);
 
   if (!isOpen) return null;
-  const uniqueProducts = getUniqueProducts(products);
+  const uniqueProducts = getUniqueProducts(products, query);
 
   return (
     <div 
@@ -65,6 +73,9 @@ export function ProductDropdown({
                 key={`${product.id}-${index}`}
                 product={product}
                 onClick={() => onSelectProduct(product)}
+                onAddToCart={onAddToCart}
+                onProductAdded={onProductAdded}
+                isInCart={isProductInCart?.(product.id) || false}
               />
             ))}
           </div>
@@ -79,21 +90,30 @@ export function ProductDropdown({
 interface ProductDropdownItemProps {
   product: Product;
   onClick: () => void;
+  onAddToCart?: (product: Product) => void;
+  onProductAdded?: () => void;
+  isInCart: boolean;
 }
 
-function ProductDropdownItem({ product, onClick }: ProductDropdownItemProps) {
+function ProductDropdownItem({ product, onClick, onAddToCart, onProductAdded, isInCart }: ProductDropdownItemProps) {
   const cheapestDepot = product.productDepotInfoList?.reduce((min, depot) => 
     parseFloat(depot.price.toString()) < parseFloat(min.price.toString()) ? depot : min
   );
   
   const logoPath = cheapestDepot ? getMarketLogo(cheapestDepot.marketAdi || '') : null;
 
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddToCart?.(product);
+    onProductAdded?.(); // Ürün sepete eklendikten sonra callback'i çağır
+  };
+
   return (
-    <div 
-      className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
-      onClick={onClick}
-    >
-      <div className="flex-1 space-y-2">
+    <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+      <div 
+        className="flex-1 space-y-2 cursor-pointer"
+        onClick={onClick}
+      >
         <div className="font-medium text-foreground line-clamp-2">
           {product.title}
         </div>
@@ -107,7 +127,7 @@ function ProductDropdownItem({ product, onClick }: ProductDropdownItemProps) {
             <span>{product.productDepotInfoList?.length || 0} mağaza</span>
           </div>
           <div className="flex items-center gap-1">
-            <span>{cheapestDepot?.price || 'N/A'} ₺</span>
+            <span className="font-medium text-green-600">{cheapestDepot?.price || 'N/A'} ₺</span>
           </div>
         </div>
         
@@ -119,9 +139,9 @@ function ProductDropdownItem({ product, onClick }: ProductDropdownItemProps) {
                 <Image
                   src={logoPath}
                   alt={cheapestDepot.marketAdi || 'Market'}
-                  width={24}
-                  height={24}
-                  className="object-contain"
+                  width={20}
+                  height={20}
+                  className="object-contain rounded"
                 />
                 <span className="text-xs text-green-600 font-medium">
                   En ucuz: {cheapestDepot.marketAdi}
@@ -135,7 +155,33 @@ function ProductDropdownItem({ product, onClick }: ProductDropdownItemProps) {
           </div>
         )}
       </div>
-      <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-2" />
+      
+      <div className="flex items-center gap-2 ml-4">
+        {onAddToCart && (
+          <Button
+            onClick={handleAddToCart}
+            size="sm"
+            variant={isInCart ? "secondary" : "default"}
+            className="h-8 px-3 text-xs"
+          >
+            {isInCart ? (
+              <>
+                <Check className="h-3 w-3 mr-1" />
+                Sepette
+              </>
+            ) : (
+              <>
+                <Plus className="h-3 w-3 mr-1" />
+                Sepete Ekle
+              </>
+            )}
+          </Button>
+        )}
+        <ArrowRight 
+          className="h-4 w-4 text-muted-foreground flex-shrink-0 cursor-pointer"
+          onClick={onClick}
+        />
+      </div>
     </div>
   );
 }
@@ -159,20 +205,44 @@ function NoResultsMessage({ query }: NoResultsMessageProps) {
     </div>
   );
 }
-function getUniqueProducts(products: Product[]): Product[] {
+
+function getUniqueProducts(products: Product[], query?: string): Product[] {
   const seen = new Set<string>();
   
-  return products
+  const uniqueProducts = products
     .filter((product, index) => {
       const key = generateKey(product.title, index);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
-    })
-    .sort((a, b) => 
-      a.title.localeCompare(b.title, 'tr', { 
-        sensitivity: 'base', 
-        ignorePunctuation: true 
-      })
-    );
+    });
+
+  // Sıralama mantığı: önce tam eşleşenler, sonra alfabetik
+  return uniqueProducts.sort((a, b) => {
+    const aTitle = a.title.toLowerCase();
+    const bTitle = b.title.toLowerCase();
+    const searchQuery = query ? query.toLowerCase().trim() : '';
+
+    if (searchQuery) {
+      // Tam eşleşme kontrolü
+      const aExactMatch = aTitle === searchQuery;
+      const bExactMatch = bTitle === searchQuery;
+
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+
+      // İkisi de tam eşleşme değilse, başlangıç eşleşmesi kontrol et
+      const aStartsWith = aTitle.startsWith(searchQuery);
+      const bStartsWith = bTitle.startsWith(searchQuery);
+
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+
+      // İkisi de aynı kategorideyse (tam eşleşme/başlangıç eşleşme/normal), alfabetik sırala
+      return aTitle.localeCompare(bTitle, 'tr');
+    }
+
+    // Query yoksa sadece alfabetik sıralama
+    return aTitle.localeCompare(bTitle, 'tr');
+  });
 }

@@ -10,23 +10,41 @@ import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { SelectedProductDisplay } from '@/features/products/components/SelectedProductDisplay';
+import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
 import { RouteModal } from '@/features/products/components/RouteModal';
+import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
 import { ErrorDisplay, SearchErrorDisplay } from '@/features/products/components/ErrorDisplay';
 import { SearchTips } from '@/features/products/components/SearchTips';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
+import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Product, ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
 
 export default function ProductSearchPage() {
   const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showMap, setShowMap] = useState(false);
+  const [showSingleMap, setShowSingleMap] = useState(false);
+  const [showMultiMap, setShowMultiMap] = useState(false);
   const [selectedStore, setSelectedStore] = useState<ProductDepotInfo | null>(null);
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-    const debouncedQuery = useDebounce(searchQuery, 300);
+  const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
+  const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
+  
+  const debouncedQuery = useDebounce(searchQuery, 300);
+  
+  // Shopping cart hook
+  const {
+    optimization,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    generateRoute,
+    isProductInCart,
+    marketCount
+  } = useShoppingCart();
     const {
     searchSettings,
     isLoading: isSettingsLoading,
@@ -68,14 +86,26 @@ export default function ProductSearchPage() {
       return;
     }
     setSelectedStore(depot);
-    setShowMap(true);
+    setShowSingleMap(true);
     setRouteInfo(null);
   };
 
   const handleCloseMap = () => {
-    setShowMap(false);
+    setShowSingleMap(false);
+    setShowMultiMap(false);
     setSelectedStore(null);
     setRouteInfo(null);
+    setRealRouteDistance(undefined);
+    setRealRouteTime(undefined);
+  };
+
+  const handleMultiRouteFound = (routeData: { distance: number; time: number }) => {
+    setRealRouteDistance(routeData.distance);
+    setRealRouteTime(routeData.time);
+  };
+
+  const handleViewMultiRoute = () => {
+    setShowMultiMap(true);
   };
 
   const handleRouteFound = useCallback((info: RouteInfo) => {
@@ -179,11 +209,23 @@ export default function ProductSearchPage() {
                 isOpen={isDropdownOpen}
                 onClose={() => setIsDropdownOpen(false)}
                 onSelectProduct={handleProductSelect}
-                isLoading={isProductsLoading}
+                onAddToCart={addToCart}
+                onProductAdded={handleClearSearch}
+                isProductInCart={isProductInCart}
               />
             </div>
           </CardContent>
         </Card>
+
+        {/* Shopping Cart Summary */}
+        {optimization && (
+          <ShoppingCartSummary
+            optimization={optimization}
+            onViewRoute={handleViewMultiRoute}
+            onClearCart={clearCart}
+            onRemoveItem={removeFromCart}
+          />
+        )}
 
         {/* Selected Product */}
         {selectedProduct && searchSettings && (
@@ -199,15 +241,28 @@ export default function ProductSearchPage() {
         {/* Search Tips */}
         <SearchTips />
 
-        {/* Route Modal */}
+        {/* Single Product Route Modal */}
         {searchSettings && (
           <RouteModal
-            isOpen={showMap}
+            isOpen={showSingleMap}
             selectedStore={selectedStore}
             routeInfo={routeInfo}
             searchSettings={searchSettings}
             onClose={handleCloseMap}
             onRouteFound={handleRouteFound}
+          />
+        )}
+
+        {/* Multi Store Route Modal */}
+        {searchSettings && optimization && marketCount > 1 && (
+          <MultiStoreRouteModal
+            isOpen={showMultiMap}
+            onClose={handleCloseMap}
+            routeSteps={generateRoute(searchSettings.latitude, searchSettings.longitude)}
+            searchSettings={searchSettings}
+            realRouteDistance={realRouteDistance}
+            realRouteTime={realRouteTime}
+            onMultiRouteFound={handleMultiRouteFound}
           />
         )}
       </div>

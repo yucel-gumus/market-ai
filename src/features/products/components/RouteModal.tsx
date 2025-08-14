@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getMarketLogo } from '@/lib/utils';
 import dynamic from 'next/dynamic';
 
-const DynamicMap = dynamic(() => import('@/components/DynamicMap'), {
+const DynamicMap = dynamic(() => import('@/components/DynamicMap.jsx'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-96 bg-muted/50 rounded-lg">

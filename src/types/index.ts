@@ -96,6 +96,41 @@ export interface ProductSearchResponse {
   size: number;
 }
 
+// Shopping Cart Types
+export interface CartItem {
+  product: Product;
+  selectedDepot: ProductDepotInfo;
+  addedAt: Date;
+}
+
+export interface OptimizedShopping {
+  marketGroups: MarketGroup[];
+  totalCost: number;
+  marketCount: number;
+  route?: RouteStep[];
+}
+
+export interface MarketGroup {
+  marketName: string;
+  depotInfo: ProductDepotInfo;
+  items: CartItem[];
+  subtotal: number;
+  distance?: number;
+}
+
+export interface RouteStep {
+  marketName: string;
+  depot: ProductDepotInfo;
+  items: CartItem[];
+  stepNumber: number;
+  distanceFromPrevious?: number;
+  estimatedTime?: number;
+  coordinates: {
+    latitude: number;
+    longitude: number;
+  };
+}
+
 export interface SearchSettings {
   latitude: number;
   longitude: number;
