@@ -16,10 +16,10 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
   if (uniqueBrands.length === 0) return null;
 
   return (
-    <Card className="mb-4">
-      <CardContent className="p-4">
-        <h3 className="font-semibold text-sm text-foreground mb-4">Market Seç</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <Card className="mb-3">
+      <CardContent className="p-3">
+        <h3 className="font-semibold text-xs text-foreground mb-3">Market Seç</h3>
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
           {uniqueBrands.map((brand) => {
             const isSelected = selectedBrands.has(brand);
             const logoPath = getMarketLogo(brand);
@@ -28,33 +28,33 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
                 key={brand}
                 onClick={() => onToggleBrand(brand)}
                 className={cn(
-                  "flex flex-col items-center justify-center p-3 rounded-lg border transition-all duration-200 hover:scale-105 relative",
+                  "flex flex-col items-center justify-center p-2 rounded-md border transition-all duration-200 hover:scale-105 relative",
                   isSelected
                     ? "bg-primary/10 border-primary text-primary"
                     : "bg-background border-border hover:border-primary/50"
                 )}
               >
-                <div className="mb-2 p-2 rounded-full bg-muted">
+                <div className="mb-1 p-1.5 rounded-full bg-muted">
                   {logoPath ? (
                     <Image
                       src={logoPath}
                       alt={brand}
-                      width={24}
-                      height={24}
+                      width={20}
+                      height={20}
                       className="object-contain"
                     />
                   ) : (
-                    <Store className="h-6 w-6 text-muted-foreground" />
+                    <Store className="h-4 w-4 text-muted-foreground" />
                   )}
                 </div>
                 <span className={cn(
-                  "text-xs font-medium text-center",
+                  "text-[10px] font-medium text-center leading-tight",
                   isSelected ? "text-primary" : "text-muted-foreground"
                 )}>
                   {getMarketDisplayName(brand)}
                 </span>
                 {isSelected && (
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse absolute -top-1 -right-1" />
                 )}
               </button>
             );

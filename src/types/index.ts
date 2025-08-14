@@ -44,6 +44,8 @@ export interface Market {
   distance: number;
   latitude: number;
   longitude: number;
+  brand?: string;
+  logo?: string;
 }
 
 export interface ApiResponse<T> {

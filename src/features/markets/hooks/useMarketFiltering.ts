@@ -37,9 +37,21 @@ export function useMarketFiltering(markets: Market[]) {
   const toggleBrand = (brand: MarketBrand) => {
     const newSelectedBrands = new Set(selectedBrands);
     if (newSelectedBrands.has(brand)) {
+      // Brand'ı kapat
       newSelectedBrands.delete(brand);
     } else {
+      // Brand'ı aç ve o brand'ın tüm gizli marketlerini göster
       newSelectedBrands.add(brand);
+      
+      // Bu brand'a ait tüm gizli marketleri bul ve hiddenMarkets'ten çıkar
+      const newHiddenMarkets = new Set(hiddenMarkets);
+      markets.forEach(market => {
+        if (detectMarketBrand(market.name) === brand) {
+          const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
+          newHiddenMarkets.delete(marketKey);
+        }
+      });
+      setHiddenMarkets(newHiddenMarkets);
     }
     setSelectedBrands(newSelectedBrands);
   };
