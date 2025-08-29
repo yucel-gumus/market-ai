@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
@@ -17,14 +18,14 @@
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "leaflet": "^1.9.4",
+    "leaflet-routing-machine": "^3.2.12",
     "lucide-react": "^0.539.0",
     "next": "15.4.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^3.3.1",
     "react-leaflet": "^4.2.0",
-    "leaflet": "^1.9.4",
-    "leaflet-routing-machine": "^3.2.12",
+    "tailwind-merge": "^3.3.1",
     "use-debounce": "^10.0.5",
     "zustand": "^5.0.7"
   },

@@ -109,7 +109,7 @@ export default function ProductSearchPage() {
   }, []);
 
   const handleGoHome = () => {
-    router.push('/');
+    router.push('/ai-chat');
   };
 
   if (isSettingsLoading) {
