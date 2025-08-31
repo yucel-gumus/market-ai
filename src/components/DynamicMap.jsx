@@ -20,7 +20,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Helper functions for multi-store routing
 function getMarkerColor(index) {
   const colors = ['#ff4757', '#2ed573', '#ffa502', '#3742fa', '#f1c40f', '#e67e22'];
   return colors[index % colors.length];
@@ -91,7 +90,7 @@ const MapWrapper = ({
   destinations = [],
   showRoute = false,
   onRouteFound,
-  onMultiRouteFound, // Multi-destination routing için callback
+  onMultiRouteFound, 
   searchSettings 
 }) => {
   const mapRef = useRef(null);
@@ -110,7 +109,6 @@ const MapWrapper = ({
       return; 
     }
 
-    // Set unique ID for the map element
     mapElement.id = mapId.current;
 
     const map = L.map(mapElement, {
@@ -129,7 +127,6 @@ const MapWrapper = ({
       maxZoom: 19
     }).addTo(map);
 
-    // User marker icon (Mavi - Kullanıcı konumu)
     const userIcon = L.divIcon({
       html: `<div style="
         background-color: #3b82f6; 
@@ -149,7 +146,6 @@ const MapWrapper = ({
       className: 'user-location-marker'
     });
 
-    // Store marker icon (Kırmızı - Market konumu)
     const storeIcon = L.divIcon({
       html: `<div style="
         background-color: #ef4444; 
@@ -178,11 +174,9 @@ const MapWrapper = ({
         </div>
       `);
 
-    // Initialize routing controls
     let routingControl = null;
     let singleRouting = null;
 
-    // Add destinations markers if provided (multi-store mode)
     let destinationMarkers = [];
     if (destinations && Array.isArray(destinations) && destinations.length > 0 && showRoute) {
       destinations.forEach((destination, index) => {
@@ -209,10 +203,9 @@ const MapWrapper = ({
         destinationMarkers.push(marker);
       });
       
-      // Multi-destination routing
       if (showRoute && destinations && destinations.length > 0 && window.L && window.L.Routing) {
       try {
-        if (map && map._leaflet_id) { // Ensure map is still valid
+        if (map && map._leaflet_id) { 
           
           const waypoints = [
             L.latLng(searchSettings.latitude, searchSettings.longitude),
@@ -231,13 +224,12 @@ const MapWrapper = ({
             })
           });
 
-          // Add event listeners
           routingControl.on('routesfound', function(e) {
             const routes = e.routes;
             if (routes && routes.length > 0) {
               const route = routes[0];
-              const distance = (route.summary.totalDistance / 1000); // Convert to km
-              const time = Math.round(route.summary.totalTime / 60); // Convert to minutes
+              const distance = (route.summary.totalDistance / 1000); 
+              const time = Math.round(route.summary.totalTime / 60);
               
               if (onMultiRouteFound) {
                 onMultiRouteFound({
@@ -258,7 +250,6 @@ const MapWrapper = ({
             routingControl.addTo(map);
           }
 
-          // Fit bounds to show all markers
           const group = new L.featureGroup([userMarker, ...destinationMarkers]);
           if (group.getBounds().isValid()) {
             map.fitBounds(group.getBounds().pad(0.1));
@@ -275,7 +266,6 @@ const MapWrapper = ({
     if (selectedStore && selectedStore.latitude && selectedStore.longitude) {
       const marketLogo = getMarketLogo(selectedStore.marketAdi || '');
       
-      // Market logosunu marker icon'a dahil edelim
       const storeIconWithLogo = L.divIcon({
         html: marketLogo 
           ? `<div style="
@@ -329,7 +319,7 @@ const MapWrapper = ({
 
     if (selectedStore && selectedStore.latitude && selectedStore.longitude && window.L && window.L.Routing) {
       try {
-        if (map && map._leaflet_id) { // Ensure map is still valid
+        if (map && map._leaflet_id) { 
 
           singleRouting = L.Routing.control({
             waypoints: [
@@ -416,7 +406,6 @@ const MapWrapper = ({
         const { map, routingControl, singleRouting, userMarker, storeMarker, destinationMarkers } = mapInstanceRef.current;
         
         try {
-          // Clean up routing controls with better error handling
           if (routingControl && map && map._leaflet_id) {
             try {
               routingControl.off();
@@ -446,7 +435,6 @@ const MapWrapper = ({
             map.removeLayer(storeMarker);
           }
           
-          // Clean up destination markers
           if (destinationMarkers && Array.isArray(destinationMarkers)) {
             destinationMarkers.forEach(marker => {
               if (marker && map && map.hasLayer && map.hasLayer(marker)) {

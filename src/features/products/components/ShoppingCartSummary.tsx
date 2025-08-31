@@ -8,7 +8,7 @@ import Image from 'next/image';
 interface ShoppingCartSummaryProps {
   optimization: OptimizedShopping;
   onViewRoute: () => void;
-  onViewSingleRoute?: (depot: ProductDepotInfo) => void; // Tek mağaza rotası için
+  onViewSingleRoute?: (depot: ProductDepotInfo) => void;
   onClearCart: () => void;
   onRemoveItem: (productId: string) => void;
 }
@@ -23,7 +23,6 @@ export function ShoppingCartSummary({
   const { marketGroups, totalCost, marketCount } = optimization;
   const totalItems = marketGroups.reduce((sum, group) => sum + group.items.length, 0);
 
-  // Tek mağaza durumu için mağaza bilgisini al
   const handleSingleRouteClick = () => {
     if (marketCount === 1 && marketGroups.length > 0 && onViewSingleRoute) {
       const singleGroup = marketGroups[0];

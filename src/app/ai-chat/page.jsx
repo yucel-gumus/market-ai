@@ -17,6 +17,8 @@ import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStora
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { X } from "lucide-react";
+import { cn, getMarketLogo } from '@/lib/utils';
+import Image from "next/image";
 
 
 function FoodInput() {
@@ -40,7 +42,7 @@ function FoodInput() {
   const router = useRouter();
 
   const [foodName, setFoodName] = useState('');
-  const [currentStep, setCurrentStep] = useState('input'); // 'input', 'ingredients', 'processing', 'complete'
+  const [currentStep, setCurrentStep] = useState('input');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [recipe, setRecipe] = useState(null);
   const [ingredients, setIngredients] = useState([]);
@@ -70,7 +72,6 @@ function FoodInput() {
   const searchStats = {
     totalResults: products.length
   };
-  // Sonuçlar için tek bir state objesi
   const [results, setResults] = useState({
     missingProducts: [],
     categoryData: null,
@@ -131,7 +132,6 @@ function FoodInput() {
     setError(null);
 
     try {
-      // Malzemeleri paralel olarak API'den çek
       const productResults = await Promise.all(
         ingredients.map(async (ingredient) => {
           const foundProducts = await fetchUrunData(ingredient);
@@ -254,11 +254,10 @@ function FoodInput() {
 
   const handleAddToCart = (product) => {
     console.log(product);
-    const productName = product.title; // Get the first word as the ingredient name
+    const productName = product.title;
     if (!ingredients.includes(productName)) {
       setIngredients(prev => [...prev, productName]);
     }
-    // Optional: Show a toast or feedback that the ingredient was added
   };
 
 
@@ -527,10 +526,16 @@ function FoodInput() {
                           <div className="flex justify-between items-center">
                             <div>
                               <h4 className="font-medium text-gray-800">{product.title}</h4>
-                              <p className="text-sm text-gray-500">{product.productDepotInfoList[0].marketAdi}</p>
+                              <Image
+                                src={getMarketLogo(product.productDepotInfoList[0].marketAdi)}
+                                alt={`${product.productDepotInfoList[0].marketAdi} logo`}
+                                width={32}
+                                height={32}
+                                className="max-w-8 max-h-8 object-contain"
+                              />
                             </div>
                             <div className="text-right">
-                              <div className="text-lg font-bold text-green-600">{product.productDepotInfoList[0].price}</div>
+                              <div className="text-lg font-bold text-green-600">{product.productDepotInfoList[0].price}₺</div>
                             </div>
                           </div>
                         </div>
@@ -552,10 +557,16 @@ function FoodInput() {
                           <div className="flex justify-between items-center">
                             <div>
                               <h4 className="font-medium text-gray-800">{product.title}</h4>
-                              <p className="text-sm text-gray-500">{product.productDepotInfoList[0].marketAdi}</p>
+                              <Image
+                                src={getMarketLogo(product.productDepotInfoList[0].marketAdi)}
+                                alt={`${product.productDepotInfoList[0].marketAdi} logo`}
+                                width={32}
+                                height={32}
+                                className="max-w-8 max-h-8 object-contain"
+                              />
                             </div>
                             <div className="text-right">
-                              <div className="text-lg font-bold text-blue-600">{product.productDepotInfoList[0].price}</div>
+                              <div className="text-lg font-bold text-blue-600">{product.productDepotInfoList[0].price || 'N/A'} ₺</div>
                             </div>
                           </div>
                         </div>

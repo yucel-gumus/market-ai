@@ -74,7 +74,7 @@ export function MarketList({
           id: market.id,
           name: market.name,
           address: market.address,
-          distance: market.distance, // API'den gelen mesafe
+          distance: market.distance,
           latitude: market.latitude,
           longitude: market.longitude
         }));

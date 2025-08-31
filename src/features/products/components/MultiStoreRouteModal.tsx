@@ -16,8 +16,8 @@ interface MultiStoreRouteModalProps {
   onClose: () => void;
   routeSteps: RouteStep[];
   searchSettings: SearchSettings;
-  realRouteDistance?: number; // Gerçek rota mesafesi (km)
-  realRouteTime?: number; // Gerçek rota süresi (dakika)
+  realRouteDistance?: number; 
+  realRouteTime?: number;
   onMultiRouteFound?: (routeData: { distance: number; time: number }) => void;
 }
 
@@ -32,7 +32,6 @@ export function MultiStoreRouteModal({
 }: MultiStoreRouteModalProps) {
   if (!isOpen || !routeSteps || routeSteps.length === 0) return null;
 
-  // Gerçek rota bilgisi varsa onu kullan, yoksa kuş uçuşu hesaplama yap
   const totalDistance = realRouteDistance || routeSteps.reduce((sum, step) => sum + (step.distanceFromPrevious || 0), 0);
   const totalTime = realRouteTime || routeSteps.reduce((sum, step) => sum + (step.estimatedTime || 0), 0);
   const totalCost = routeSteps.reduce(

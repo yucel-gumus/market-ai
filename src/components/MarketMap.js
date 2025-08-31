@@ -85,7 +85,6 @@ const MapWrapper = ({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
-    // Add user location marker
     let userMarker = null;
     if (userLocation) {
       const userIcon = L.divIcon({

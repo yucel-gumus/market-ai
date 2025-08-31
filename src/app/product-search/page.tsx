@@ -33,7 +33,6 @@ export default function ProductSearchPage() {
   
   const [debouncedQuery] = useDebounce(searchQuery, 300);
   
-  // Shopping cart hook
   const {
     optimization,
     addToCart,

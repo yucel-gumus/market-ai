@@ -1,8 +1,5 @@
 import { Product, ProductDepotInfo, CartItem, OptimizedShopping, MarketGroup, RouteStep } from '@/types';
 
-/**
- * Get saved market data from localStorage
- */
 function getSavedMarketData(): { selectedMarkets?: Array<{ name: string; distance: number; latitude: number; longitude: number; }> } | null {
   try {
     const saved = localStorage.getItem('marketSearchData');
@@ -15,20 +12,16 @@ function getSavedMarketData(): { selectedMarkets?: Array<{ name: string; distanc
   return null;
 }
 
-/**
- * Find distance for a market from saved data
- */
+
 function findMarketDistance(marketName: string, latitude?: number, longitude?: number): number {
   const marketData = getSavedMarketData();
   if (!marketData?.selectedMarkets) return 0;
 
-  // Try to find market by name first
   let market = marketData.selectedMarkets.find((m) => 
     m.name?.toLowerCase().includes(marketName.toLowerCase()) ||
     marketName.toLowerCase().includes(m.name?.toLowerCase())
   );
 
-  // If not found by name, try to find by coordinates
   if (!market && latitude && longitude) {
     market = marketData.selectedMarkets.find((m) => 
       Math.abs(m.latitude - latitude) < 0.001 && 
@@ -39,23 +32,18 @@ function findMarketDistance(marketName: string, latitude?: number, longitude?: n
   return market?.distance || 0;
 }
 
-/**
- * Find optimal depot for a product considering existing cart items
- */
+
 export function findOptimalDepot(
   product: Product,
   existingCartItems: CartItem[]
 ): ProductDepotInfo {
-  // Get all depots with minimum price
   const minPrice = Math.min(...product.productDepotInfoList.map(depot => depot.price));
   const cheapestDepots = product.productDepotInfoList.filter(depot => depot.price === minPrice);
   
-  // If only one cheapest option, return it
   if (cheapestDepots.length === 1) {
     return cheapestDepots[0];
   }
   
-  // If multiple options with same price, prefer markets already in cart
   const existingMarkets = new Set(existingCartItems.map(item => item.selectedDepot.marketAdi));
   
   for (const depot of cheapestDepots) {
@@ -64,13 +52,10 @@ export function findOptimalDepot(
     }
   }
   
-  // If no match, return the first cheapest option
   return cheapestDepots[0];
 }
 
-/**
- * Group cart items by market and calculate totals
- */
+
 export function groupItemsByMarket(cartItems: CartItem[]): MarketGroup[] {
   const marketMap = new Map<string, MarketGroup>();
   
@@ -94,9 +79,7 @@ export function groupItemsByMarket(cartItems: CartItem[]): MarketGroup[] {
   return Array.from(marketMap.values());
 }
 
-/**
- * Optimize shopping route using saved market distances
- */
+
 export function optimizeRoute(
   userLat: number,
   userLon: number,
@@ -116,7 +99,7 @@ export function optimizeRoute(
       items: marketGroups[0].items,
       stepNumber: 1,
       distanceFromPrevious: distance,
-      estimatedTime: Math.round(distance * 2), // 2 min per km estimate
+      estimatedTime: Math.round(distance * 2),
       coordinates: {
         latitude: marketGroups[0].depotInfo.latitude || 0,
         longitude: marketGroups[0].depotInfo.longitude || 0
@@ -132,7 +115,6 @@ export function optimizeRoute(
     let nearestIndex = 0;
     let minDistance = Infinity;
     
-    // Find nearest unvisited market using saved distances
     unvisited.forEach((group, index) => {
       const distance = findMarketDistance(
         group.marketName,
@@ -161,7 +143,7 @@ export function optimizeRoute(
       items: nearestMarket.items,
       stepNumber,
       distanceFromPrevious: distance,
-      estimatedTime: Math.round(distance * 2), // Rough estimate: 2 min per km
+      estimatedTime: Math.round(distance * 2), 
       coordinates: {
         latitude: lat,
         longitude: lon
@@ -175,9 +157,6 @@ export function optimizeRoute(
   return route;
 }
 
-/**
- * Calculate total optimization statistics
- */
 export function calculateOptimization(cartItems: CartItem[]): OptimizedShopping {
   const marketGroups = groupItemsByMarket(cartItems);
   const totalCost = marketGroups.reduce((sum, group) => sum + group.subtotal, 0);
@@ -189,9 +168,6 @@ export function calculateOptimization(cartItems: CartItem[]): OptimizedShopping 
   };
 }
 
-/**
- * Add distance information to market groups using saved data
- */
 export function addDistanceToMarketGroups(
   marketGroups: MarketGroup[]
 ): MarketGroup[] {

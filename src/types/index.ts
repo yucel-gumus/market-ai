@@ -96,7 +96,6 @@ export interface ProductSearchResponse {
   size: number;
 }
 
-// Shopping Cart Types
 export interface CartItem {
   product: Product;
   selectedDepot: ProductDepotInfo;

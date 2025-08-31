@@ -14,7 +14,7 @@ interface ProductDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   onAddToCart?: (product: Product) => void;
-  onProductAdded?: () => void; // Yeni prop: ürün sepete eklendikten sonra çağrılacak
+  onProductAdded?: () => void; 
   isProductInCart?: (productId: string) => boolean;
   className?: string;
 }
@@ -100,7 +100,7 @@ function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }:
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
     onAddToCart?.(product);
-    onProductAdded?.(); // Ürün sepete eklendikten sonra callback'i çağır
+    onProductAdded?.();
   };
 
   return (
@@ -212,32 +212,27 @@ function getUniqueProducts(products: Product[], query?: string): Product[] {
       return true;
     });
 
-  // Sıralama mantığı: önce tam eşleşenler, sonra alfabetik
   return uniqueProducts.sort((a, b) => {
     const aTitle = a.title.toLowerCase();
     const bTitle = b.title.toLowerCase();
     const searchQuery = query ? query.toLowerCase().trim() : '';
 
     if (searchQuery) {
-      // Tam eşleşme kontrolü
       const aExactMatch = aTitle === searchQuery;
       const bExactMatch = bTitle === searchQuery;
 
       if (aExactMatch && !bExactMatch) return -1;
       if (!aExactMatch && bExactMatch) return 1;
 
-      // İkisi de tam eşleşme değilse, başlangıç eşleşmesi kontrol et
       const aStartsWith = aTitle.startsWith(searchQuery);
       const bStartsWith = bTitle.startsWith(searchQuery);
 
       if (aStartsWith && !bStartsWith) return -1;
       if (!aStartsWith && bStartsWith) return 1;
 
-      // İkisi de aynı kategorideyse (tam eşleşme/başlangıç eşleşme/normal), alfabetik sırala
       return aTitle.localeCompare(bTitle, 'tr');
     }
 
-    // Query yoksa sadece alfabetik sıralama
     return aTitle.localeCompare(bTitle, 'tr');
   });
 }

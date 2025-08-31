@@ -10,7 +10,6 @@ import promturunadlari from './productNameFindPrompt'
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY);
 const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
-//yemek için malzeme buluyor
 export async function generateRecipeList(recipeName) {
   const content = prompt.replace('${recipeName}', recipeName);
 
@@ -33,7 +32,6 @@ export async function generateRecipeList(recipeName) {
 }
 
 
-//malzeme için kategori seçiyor
 export async function generateCategory(ingredients,categorylist) {
     const content = promptKategoriSelect
     .replace('${ingredients}', ingredients)
@@ -80,7 +78,6 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
         .trim();
 
       data = JSON.parse(cleaned);
-      // JSON parse başarılı olursa döngüden çık
       break;
     } catch (error) {
       if (attempt === maxAttempts) {

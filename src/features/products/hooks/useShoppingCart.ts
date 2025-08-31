@@ -11,7 +11,6 @@ export function useShoppingCart() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [optimization, setOptimization] = useState<OptimizedShopping | null>(null);
 
-  // Load cart from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('shopping-cart');
     if (saved) {
@@ -27,12 +26,10 @@ export function useShoppingCart() {
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('shopping-cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  // Recalculate optimization when cart changes
   useEffect(() => {
     if (cartItems.length > 0) {
       const newOptimization = calculateOptimization(cartItems);
@@ -51,18 +48,15 @@ export function useShoppingCart() {
       addedAt: new Date()
     };
     
-    // Check if product already exists in cart
     const existingIndex = cartItems.findIndex(item => item.product.id === product.id);
     
     if (existingIndex >= 0) {
-      // Update existing item with new optimal depot
       setCartItems(prev => {
         const updated = [...prev];
         updated[existingIndex] = newItem;
         return updated;
       });
     } else {
-      // Add new item
       setCartItems(prev => [...prev, newItem]);
     }
   }, [cartItems]);
@@ -116,6 +110,6 @@ export function useShoppingCart() {
     getCartItemByProductId,
     marketCount: optimization?.marketCount || 0,
     totalCost: optimization?.totalCost || 0,
-    totalSavings: 0 // Bu property şimdilik yok, ileride eklenebilir
+    totalSavings: 0
   };
 }
