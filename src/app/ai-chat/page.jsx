@@ -19,6 +19,9 @@ import { ProductDropdown } from '@/features/products/components/ProductDropdown'
 import { X } from "lucide-react";
 import { cn, getMarketLogo } from '@/lib/utils';
 import Image from "next/image";
+import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
+import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
+import { RouteModal } from '@/features/products/components/RouteModal';
 
 
 function FoodInput() {
@@ -36,6 +39,51 @@ function FoodInput() {
     isLoading: isSettingsLoading,
     error: settingsError
   } = useLocalStorageSettings();
+
+  // Alışveriş rotası için ek state
+  const [showSingleMap, setShowSingleMap] = useState(false);
+  const [showMultiMap, setShowMultiMap] = useState(false);
+  const [selectedStore, setSelectedStore] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
+  const [realRouteDistance, setRealRouteDistance] = useState(undefined);
+  const [realRouteTime, setRealRouteTime] = useState(undefined);
+  // Alışveriş rotası fonksiyonları (product-search ile aynı mantık)
+  const handleShowRoute = (depot) => {
+    if (!depot.latitude || !depot.longitude) {
+      alert('Mağaza konumu bulunamadı!');
+      return;
+    }
+    setSelectedStore(depot);
+    setShowSingleMap(true);
+    setRouteInfo(null);
+  };
+
+  const handleCloseMap = () => {
+    setShowSingleMap(false);
+    setShowMultiMap(false);
+    setSelectedStore(null);
+    setRouteInfo(null);
+    setRealRouteDistance(undefined);
+    setRealRouteTime(undefined);
+  };
+
+  const handleMultiRouteFound = (routeData) => {
+    setRealRouteDistance(routeData.distance);
+    setRealRouteTime(routeData.time);
+  };
+
+  const handleViewMultiRoute = () => {
+    setShowMultiMap(true);
+  };
+
+  const handleRouteFound = (info) => {
+    setRouteInfo(prevInfo => {
+      if (!prevInfo || prevInfo.distance !== info.distance || prevInfo.time !== info.time) {
+        return info;
+      }
+      return prevInfo;
+    });
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery] = useDebounce(searchQuery, 300);
 
@@ -150,6 +198,11 @@ function FoodInput() {
         if (exactMatch.length === 0) missing.push(ingredient);
       });
 
+      // Direkt bulunan ürünleri sepete ekle
+      firstProducts.forEach((product) => {
+        addToCart(product);
+      });
+
       setResults(prev => ({
         ...prev,
         firstSelectedProduct: firstProducts,
@@ -206,6 +259,10 @@ function FoodInput() {
             return productData[0] || null;
           })
         );
+        // LLM alternatif ürünleri sepete ekle
+        selectedProductsData.filter(Boolean).forEach((product) => {
+          addToCart(product);
+        });
         setResults(prev => ({ ...prev, selectedProducts: selectedProductsData.filter(Boolean) }));
       }
 
@@ -261,8 +318,40 @@ function FoodInput() {
   };
 
 
-  return (
+  if (isSettingsLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
+  if (settingsError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
+        <div className="container mx-auto max-w-2xl pt-16">
+          <div className="flex items-center gap-4 mb-6">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={gotoProductSearch}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Ana Sayfa
+            </Button>
+          </div>
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
+            <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
+            {settingsError}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log("http://localhost:3000/ai-chat sayfasında  malzemeleri onayla butonuna tıkladıktan sonra bulunan ürünler:", results.selectedProducts, results.firstSelectedProduct);
+  return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
@@ -329,8 +418,43 @@ function FoodInput() {
           </div>
         )}
 
+        {/* Shopping Cart Summary */}
+        {optimization && (
+          <ShoppingCartSummary
+            optimization={optimization}
+            onViewRoute={handleViewMultiRoute}
+            onViewSingleRoute={handleShowRoute}
+            onClearCart={clearCart}
+            onRemoveItem={removeFromCart}
+          />
+        )}
+
         {/* Main Content Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300">
+        {/* Single Product Route Modal */}
+        {searchSettings && (
+          <RouteModal
+            isOpen={showSingleMap}
+            selectedStore={selectedStore}
+            routeInfo={routeInfo}
+            searchSettings={searchSettings}
+            onClose={handleCloseMap}
+            onRouteFound={handleRouteFound}
+          />
+        )}
+
+        {/* Multi Store Route Modal */}
+        {searchSettings && optimization && marketCount > 1 && (
+          <MultiStoreRouteModal
+            isOpen={showMultiMap}
+            onClose={handleCloseMap}
+            routeSteps={generateRoute(searchSettings.latitude, searchSettings.longitude)}
+            searchSettings={searchSettings}
+            realRouteDistance={realRouteDistance}
+            realRouteTime={realRouteTime}
+            onMultiRouteFound={handleMultiRouteFound}
+          />
+        )}
 
           {/* Input Step */}
           {currentStep === 'input' && (
