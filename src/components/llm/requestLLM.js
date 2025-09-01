@@ -32,8 +32,8 @@ export async function generateRecipeList(recipeName) {
 }
 
 
-export async function generateCategory(ingredients,categorylist) {
-    const content = promptKategoriSelect
+export async function generateCategory(ingredients, categorylist) {
+  const content = promptKategoriSelect
     .replace('${ingredients}', ingredients)
     .replace('${categorylist}', categorylist);
   const result = await model.generateContent(content);
@@ -56,10 +56,15 @@ export async function generateCategory(ingredients,categorylist) {
 
 
 export async function tamurunbul(urunadlari, ingredients, recipeName) {
+  // ingredients array'ini string'e çevir
+  const ingredientsStr = Array.isArray(ingredients) 
+    ? ingredients.join(", ") 
+    : ingredients;
+  
   const content = promturunadlari
-    .replace('${urunadlari}', urunadlari)
-    .replace('${ingredients}', ingredients)
-    .replace('${recipname}', recipeName);
+    .replace('URUNADLARI_PLACEHOLDER', JSON.stringify(urunadlari, null, 2))
+    .replace(/INGREDIENTS_PLACEHOLDER/g, ingredientsStr) // global replace - 2 yerde var
+    .replace('RECIPE_NAME_PLACEHOLDER', recipeName);
 
   let attempt = 0;
   const maxAttempts = 3;
@@ -80,11 +85,14 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
       data = JSON.parse(cleaned);
       break;
     } catch (error) {
+      console.error(`Deneme ${attempt} başarısız:`, error);
       if (attempt === maxAttempts) {
-        data = { success: false, message: "Bilinmeyen malzeme" };
+        data = { success: false, message: "Batch işlem hatası" };
       }
     }
   }
+  
+  console.log("Batch sonucu:", data);
   return data;
 }
 

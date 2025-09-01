@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState,useEffect } from 'react';
 import { ChefHat, Search, CheckCircle, Clock, ShoppingCart, Package, Trash2, RotateCcw, ArrowRight } from 'lucide-react';
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { generateRecipeList, generateCategory, tamurunbul } from '@/components/llm/requestLLM.js';
@@ -47,7 +47,6 @@ function FoodInput() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [realRouteDistance, setRealRouteDistance] = useState(undefined);
   const [realRouteTime, setRealRouteTime] = useState(undefined);
-  // Alışveriş rotası fonksiyonları (product-search ile aynı mantık)
   const handleShowRoute = (depot) => {
     if (!depot.latitude || !depot.longitude) {
       alert('Mağaza konumu bulunamadı!');
@@ -249,13 +248,20 @@ function FoodInput() {
 
   const selectBestProducts = async (products, missingItems) => {
     try {
-      const productTitles = products.map(product => product.title);
-      const selectedResult = await tamurunbul(productTitles, missingItems, foodName);
+      const productTitlesAndPrice = products.map(product => ({
+        title: product.title,
+        price: product.productDepotInfoList[0].price
+      }));
+      const selectedResult = await tamurunbul(productTitlesAndPrice, missingItems, foodName);
 
-      if (selectedResult?.ingredients) {
+      console.log("Selected result:", selectedResult);
+
+      if (selectedResult) {
         const selectedProductsData = await Promise.all(
-          selectedResult.ingredients.map(async (productName) => {
-            const productData = await fetchUrunData(productName);
+          selectedResult.map(async (product) => {
+            console.log(product);
+            const productData = await fetchUrunData(product.product.title);
+            console.log(productData);
             return productData[0] || null;
           })
         );
@@ -274,6 +280,7 @@ function FoodInput() {
 
   const resetForm = () => {
     setFoodName('');
+    clearCart();
     setCurrentStep('input');
     setRecipe(null);
     setIngredients([]);
@@ -307,16 +314,18 @@ function FoodInput() {
     if (stepIndex === currentIndex) return 'bg-blue-500 text-white';
     return 'bg-gray-200 text-gray-500';
   };
-
+   useEffect(() => {
+    if (clearCart) {
+      clearCart();
+    }
+  }, []);
 
   const handleAddToCart = (product) => {
-    console.log(product);
     const productName = product.title;
     if (!ingredients.includes(productName)) {
       setIngredients(prev => [...prev, productName]);
     }
   };
-
 
   if (isSettingsLoading) {
     return (
@@ -350,7 +359,7 @@ function FoodInput() {
     );
   }
 
-  console.log("http://localhost:3000/ai-chat sayfasında  malzemeleri onayla butonuna tıkladıktan sonra bulunan ürünler:", results.selectedProducts, results.firstSelectedProduct);
+  console.log(results.selectedProducts)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-8">
