@@ -2,10 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ChefHat, Search, CheckCircle, Clock, ShoppingCart, Package, Trash2, RotateCcw, ArrowRight } from 'lucide-react';
 import { SearchInput } from '@/features/products/components/SearchInput';
-
 import { generateRecipeList, generateCategory, tamurunbul, generateRecipeAndCalorie } from '@/components/llm/requestLLM.js';
-
-// ...existing code...
 import categoriesData from '@/data/categoriesList.json';
 import { fetchCategoriesData } from '@/app/api/ai-page/searchByCategories';
 import { fetchUrunData } from '@/app/api/ai-page/searchByProductsName';
@@ -28,11 +25,9 @@ import { RouteModal } from '@/features/products/components/RouteModal';
 
 
 function FoodInput() {
-  // Tarif ve kalori bilgisi için state
   const [calorieInfo, setCalorieInfo] = useState(null);
   const [isCalorieLoading, setIsCalorieLoading] = useState(false);
   const [calorieError, setCalorieError] = useState(null);
-  // Yemek tarifi ve kalori bilgisini LLM'den çek
   const handleGetRecipeAndCalorie = async () => {
     if (!foodName || !foodName.trim()) return;
     setIsCalorieLoading(true);
@@ -388,10 +383,6 @@ function FoodInput() {
             <RefreshCcw className="h-4 w-4" />
             <span>Konumu Sıfırla & Seç</span>
           </Button>
-
-
-
-
           <Button
             onClick={gotoProductSearch}
             size="sm"
@@ -411,8 +402,6 @@ function FoodInput() {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 group-hover:animate-pulse"></div>
           </Button>
         </div>
-
-
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <ChefHat className="w-12 h-12 text-orange-500 mr-3" />
@@ -420,7 +409,6 @@ function FoodInput() {
           </div>
           <p className="text-gray-600 text-lg">Yemek adını girin, malzemeleri bulalım!</p>
         </div>
-
         <div className="flex items-center justify-center mb-8 overflow-x-auto">
           {['input', 'ingredients', 'processing', 'complete'].map((step, index) => (
             <div key={step} className="flex items-center">
@@ -433,15 +421,12 @@ function FoodInput() {
             </div>
           ))}
         </div>
-
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
             <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
             {error}
           </div>
         )}
-
-
         <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300">
           {searchSettings && (
             <RouteModal
@@ -503,8 +488,6 @@ function FoodInput() {
                     'Malzeme Bul'
                   )}
                 </button>
-
-                {/* Yemek tarifi ve kalori bilgisi butonu */}
                 <button
                   onClick={handleGetRecipeAndCalorie}
                   disabled={isCalorieLoading || !foodName.trim()}
@@ -520,7 +503,6 @@ function FoodInput() {
                   )}
                 </button>
 
-                {/* Tarif ve kalori bilgisi sonucu */}
                 {calorieError && (
                   <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mt-4 flex items-center">
                     <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
@@ -559,7 +541,6 @@ function FoodInput() {
             </div>
           )}
 
-          {/* Ingredients Step */}
           {currentStep === 'ingredients' && (
             <div>
               <div className="text-center mb-6">
@@ -612,8 +593,6 @@ function FoodInput() {
                   Yeniden Başla
                 </button>
               </div>
-
-              {/* Main Search Card */}
               <Card className="mb-6 shadow-lg border-0 bg-white/80 backdrop-blur-sm dark:bg-gray-800/80">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-xl">
@@ -643,9 +622,6 @@ function FoodInput() {
                     {productsError && (
                       <SearchErrorDisplay error={productsError.message} />
                     )}
-
-
-
                     <ProductDropdown
                       products={products}
                       query={searchQuery}
@@ -664,8 +640,6 @@ function FoodInput() {
 
             </div>
           )}
-
-          {/* Processing Step */}
           {currentStep === 'processing' && (
             <div className="text-center">
               <div className="mb-6">
@@ -688,8 +662,6 @@ function FoodInput() {
               </div>
             </div>
           )}
-
-          {/* Complete Step */}
           {currentStep === 'complete' && (
             <div>
               <div className="text-center mb-8">
@@ -738,8 +710,6 @@ function FoodInput() {
                     </div>
                   </div>
                 )}
-
-                {/* Alternative Products */}
                 {results.selectedProducts.length > 0 && searchResults.length > 0 && (
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                     <div className="flex items-center mb-4">
@@ -788,8 +758,6 @@ function FoodInput() {
                     </div>
                   </div>
                 )}
-
-
                 <button
                   onClick={resetForm}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center"
