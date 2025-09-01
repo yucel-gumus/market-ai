@@ -63,7 +63,7 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
   
   const content = promturunadlari
     .replace('URUNADLARI_PLACEHOLDER', JSON.stringify(urunadlari, null, 2))
-    .replace(/INGREDIENTS_PLACEHOLDER/g, ingredientsStr) // global replace - 2 yerde var
+    .replace(/INGREDIENTS_PLACEHOLDER/g, ingredientsStr)
     .replace('RECIPE_NAME_PLACEHOLDER', recipeName);
 
   let attempt = 0;
@@ -91,9 +91,7 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
       }
     }
   }
-  
-  console.log("Batch sonucu:", data);
-  return data;
+    return data;
 }
 
 

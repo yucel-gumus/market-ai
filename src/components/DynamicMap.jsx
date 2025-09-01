@@ -114,6 +114,8 @@ const MapWrapper = ({
     const map = L.map(mapElement, {
       center: center,
       zoom: 13,
+      minZoom: 10,
+      maxZoom: 18,
       zoomControl: true,
       attributionControl: true,
       preferCanvas: false,

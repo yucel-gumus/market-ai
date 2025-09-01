@@ -1,5 +1,5 @@
 'use client';
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ChefHat, Search, CheckCircle, Clock, ShoppingCart, Package, Trash2, RotateCcw, ArrowRight } from 'lucide-react';
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { generateRecipeList, generateCategory, tamurunbul } from '@/components/llm/requestLLM.js';
@@ -7,7 +7,7 @@ import categoriesData from '@/data/categoriesList.json';
 import { fetchCategoriesData } from '@/app/api/ai-page/searchByCategories';
 import { fetchUrunData } from '@/app/api/ai-page/searchByProductsName';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Store } from 'lucide-react';
+import { RefreshCcw } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
@@ -31,7 +31,6 @@ function FoodInput() {
     removeFromCart,
     clearCart,
     generateRoute,
-    isProductInCart,
     marketCount
   } = useShoppingCart();
   const {
@@ -40,7 +39,6 @@ function FoodInput() {
     error: settingsError
   } = useLocalStorageSettings();
 
-  // Alışveriş rotası için ek state
   const [showSingleMap, setShowSingleMap] = useState(false);
   const [showMultiMap, setShowMultiMap] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
@@ -101,6 +99,7 @@ function FoodInput() {
     query: debouncedQuery,
     searchSettings: searchSettings
   });
+  const [searchResults, setSearchResults] = useState([]);
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
@@ -160,7 +159,7 @@ function FoodInput() {
         setIngredients(recipeData.ingredients);
         setCurrentStep('ingredients');
       } else {
-        setError('Tarif bulunamadı');
+        setError('Malzeme Bulunamadı');
       }
     } catch (err) {
       setError('Bir hata oluştu: ' + err.message);
@@ -197,7 +196,6 @@ function FoodInput() {
         if (exactMatch.length === 0) missing.push(ingredient);
       });
 
-      // Direkt bulunan ürünleri sepete ekle
       firstProducts.forEach((product) => {
         addToCart(product);
       });
@@ -253,30 +251,31 @@ function FoodInput() {
         price: product.productDepotInfoList[0].price
       }));
       const selectedResult = await tamurunbul(productTitlesAndPrice, missingItems, foodName);
-
-      console.log("Selected result:", selectedResult);
+      setSearchResults(selectedResult);
 
       if (selectedResult) {
         const selectedProductsData = await Promise.all(
           selectedResult.map(async (product) => {
-            console.log(product);
             const productData = await fetchUrunData(product.product.title);
-            console.log(productData);
             return productData[0] || null;
           })
         );
-        // LLM alternatif ürünleri sepete ekle
         selectedProductsData.filter(Boolean).forEach((product) => {
           addToCart(product);
         });
         setResults(prev => ({ ...prev, selectedProducts: selectedProductsData.filter(Boolean) }));
       }
-
       setCurrentStep('complete');
     } catch (err) {
       setError('Ürün seçimi sırasında hata: ' + err.message);
     }
   };
+
+  useEffect(() => {
+    if (searchResults) {
+      console.log("Search results:", searchResults);
+    }
+  }, [searchResults]);
 
   const resetForm = () => {
     setFoodName('');
@@ -314,7 +313,7 @@ function FoodInput() {
     if (stepIndex === currentIndex) return 'bg-blue-500 text-white';
     return 'bg-gray-200 text-gray-500';
   };
-   useEffect(() => {
+  useEffect(() => {
     if (clearCart) {
       clearCart();
     }
@@ -358,21 +357,20 @@ function FoodInput() {
       </div>
     );
   }
-
-  console.log(results.selectedProducts)
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
+
           <Button
-            variant="outline"
-            size="sm"
             onClick={handleGoBack}
-            className="flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 active:bg-green-700 transition-colors duration-200"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Geri
+            <RefreshCcw className="h-4 w-4" />
+            <span>Konumu Sıfırla & Seç</span>
           </Button>
+
+
 
 
           <Button
@@ -396,7 +394,6 @@ function FoodInput() {
         </div>
 
 
-        {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <ChefHat className="w-12 h-12 text-orange-500 mr-3" />
@@ -405,7 +402,6 @@ function FoodInput() {
           <p className="text-gray-600 text-lg">Yemek adını girin, malzemeleri bulalım!</p>
         </div>
 
-        {/* Progress Steps */}
         <div className="flex items-center justify-center mb-8 overflow-x-auto">
           {['input', 'ingredients', 'processing', 'complete'].map((step, index) => (
             <div key={step} className="flex items-center">
@@ -419,7 +415,6 @@ function FoodInput() {
           ))}
         </div>
 
-        {/* Error Message */}
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
             <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
@@ -427,45 +422,31 @@ function FoodInput() {
           </div>
         )}
 
-        {/* Shopping Cart Summary */}
-        {optimization && (
-          <ShoppingCartSummary
-            optimization={optimization}
-            onViewRoute={handleViewMultiRoute}
-            onViewSingleRoute={handleShowRoute}
-            onClearCart={clearCart}
-            onRemoveItem={removeFromCart}
-          />
-        )}
 
-        {/* Main Content Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300">
-        {/* Single Product Route Modal */}
-        {searchSettings && (
-          <RouteModal
-            isOpen={showSingleMap}
-            selectedStore={selectedStore}
-            routeInfo={routeInfo}
-            searchSettings={searchSettings}
-            onClose={handleCloseMap}
-            onRouteFound={handleRouteFound}
-          />
-        )}
+          {searchSettings && (
+            <RouteModal
+              isOpen={showSingleMap}
+              selectedStore={selectedStore}
+              routeInfo={routeInfo}
+              searchSettings={searchSettings}
+              onClose={handleCloseMap}
+              onRouteFound={handleRouteFound}
+            />
+          )}
 
-        {/* Multi Store Route Modal */}
-        {searchSettings && optimization && marketCount > 1 && (
-          <MultiStoreRouteModal
-            isOpen={showMultiMap}
-            onClose={handleCloseMap}
-            routeSteps={generateRoute(searchSettings.latitude, searchSettings.longitude)}
-            searchSettings={searchSettings}
-            realRouteDistance={realRouteDistance}
-            realRouteTime={realRouteTime}
-            onMultiRouteFound={handleMultiRouteFound}
-          />
-        )}
+          {searchSettings && optimization && marketCount > 1 && (
+            <MultiStoreRouteModal
+              isOpen={showMultiMap}
+              onClose={handleCloseMap}
+              routeSteps={generateRoute(searchSettings.latitude, searchSettings.longitude)}
+              searchSettings={searchSettings}
+              realRouteDistance={realRouteDistance}
+              realRouteTime={realRouteTime}
+              onMultiRouteFound={handleMultiRouteFound}
+            />
+          )}
 
-          {/* Input Step */}
           {currentStep === 'input' && (
             <div className="text-center">
               <div className="mb-6">
@@ -497,10 +478,10 @@ function FoodInput() {
                   {isLoading ? (
                     <div className="flex items-center justify-center">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                      Tarif aranıyor...
+                      Malzeme aranıyor...
                     </div>
                   ) : (
-                    'Tarif Bul'
+                    'Malzeme Bul'
                   )}
                 </button>
               </div>
@@ -602,7 +583,8 @@ function FoodInput() {
                       onAddToCart={handleAddToCart}
                       isProductInCart={(productId) =>
                         products.some(p => p.id === productId &&
-                          ingredients.some(ing => p.title.toLowerCase().includes(ing.toLowerCase())))
+                          ingredients.some(ing => p.title.toLowerCase() === ing.toLowerCase())
+                        )
                       }
                     />
                   </div>
@@ -646,7 +628,16 @@ function FoodInput() {
               </div>
 
               <div className="space-y-6">
-                {/* Direct Products */}
+                {optimization && (
+                  <ShoppingCartSummary
+                    optimization={optimization}
+                    onViewRoute={handleViewMultiRoute}
+                    onViewSingleRoute={handleShowRoute}
+                    onClearCart={clearCart}
+                    onRemoveItem={removeFromCart}
+                  />
+                )}
+
                 {results.firstSelectedProduct.length > 0 && (
                   <div className="bg-green-50 border border-green-200 rounded-xl p-6">
                     <div className="flex items-center mb-4">
@@ -678,42 +669,63 @@ function FoodInput() {
                 )}
 
                 {/* Alternative Products */}
-                {results.selectedProducts.length > 0 && (
+                {results.selectedProducts.length > 0 && searchResults.length > 0 && (
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                     <div className="flex items-center mb-4">
                       <ShoppingCart className="w-6 h-6 text-blue-600 mr-3" />
-                      <h3 className="text-xl font-semibold text-blue-800">LLM Alternatif Ürünler</h3>
+                      <h3 className="text-xl font-semibold text-blue-800">
+                        LLM Alternatif Ürünler
+                      </h3>
                     </div>
                     <div className="space-y-3">
-                      {results.selectedProducts.map((product, index) => (
-                        <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-blue-100">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h4 className="font-medium text-gray-800">{product.title}</h4>
-                              <Image
-                                src={getMarketLogo(product.productDepotInfoList[0].marketAdi)}
-                                alt={`${product.productDepotInfoList[0].marketAdi} logo`}
-                                width={32}
-                                height={32}
-                                className="max-w-8 max-h-8 object-contain"
-                              />
-                            </div>
-                            <div className="text-right">
-                              <div className="text-lg font-bold text-blue-600">{product.productDepotInfoList[0].price || 'N/A'} ₺</div>
+                      {results.selectedProducts.map((product, index) => {
+                        const matched = searchResults.find(
+                          (item) => item.product.title === product.title
+                        );
+
+                        return (
+                          <div
+                            key={index}
+                            className="bg-white p-4 rounded-lg shadow-sm border border-blue-100"
+                          >
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <h4 className="font-medium text-gray-800">{product.title}</h4>
+
+                                {matched && (
+                                  <span className="block text-sm text-blue-600">
+                                    {matched.reasoning}
+                                  </span>
+                                )}
+
+                                <Image
+                                  src={getMarketLogo(product.productDepotInfoList[0].marketAdi)}
+                                  alt={`${product.productDepotInfoList[0].marketAdi} logo`}
+                                  width={32}
+                                  height={32}
+                                  className="max-w-8 max-h-8 object-contain"
+                                />
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lg font-bold text-blue-600">
+                                  {product.productDepotInfoList[0].price || "N/A"} ₺
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
+
 
                 <button
                   onClick={resetForm}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center"
                 >
                   <Search className="w-5 h-5 mr-2" />
-                  Yeni Tarif Ara
+                  Yeni Malzeme Ara
                 </button>
               </div>
             </div>

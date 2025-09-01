@@ -32,18 +32,9 @@ if (typeof window !== 'undefined') {
       transform: scale(1.05) !important;
     }
     @keyframes pulse {
-      0% {
-        transform: scale(1);
-        opacity: 1;
-      }
-      50% {
-        transform: scale(1.2);
-        opacity: 0.7;
-      }
-      100% {
-        transform: scale(1);
-        opacity: 1;
-      }
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.2); opacity: 0.7; }
+      100% { transform: scale(1); opacity: 1; }
     }
   `;
   if (!document.head.querySelector('style[data-market-map]')) {
@@ -52,12 +43,7 @@ if (typeof window !== 'undefined') {
   }
 }
 
-const MapWrapper = ({ 
-  userLocation,
-  markets,
-  hiddenMarkets = new Set(),
-  onMarkerClick
-}) => {
+const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarkerClick }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const instanceId = useRef(++mapInstanceCounter);
@@ -66,13 +52,13 @@ const MapWrapper = ({
     if (!mapRef.current || mapInstanceRef.current) return;
 
     const mapElement = mapRef.current;
-    if (!mapElement || mapElement._leaflet_id) {
-      return; 
-    }
+    if (!mapElement || mapElement._leaflet_id) return;
 
     const map = L.map(mapElement, {
       center: userLocation ? [userLocation.latitude, userLocation.longitude] : [41.0082, 28.9784],
       zoom: 13,
+      minZoom: 10,
+      maxZoom: 18,
       zoomControl: true,
       attributionControl: true,
       preferCanvas: false,
@@ -82,7 +68,7 @@ const MapWrapper = ({
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      attribution: ''
     }).addTo(map);
 
     let userMarker = null;
@@ -90,31 +76,17 @@ const MapWrapper = ({
       const userIcon = L.divIcon({
         html: `
           <div style="
-            width: 50px; 
-            height: 50px; 
-            background: linear-gradient(45deg, #3B82F6, #1E40AF); 
-            border: 3px solid white; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-            position: relative;
+            width: 50px; height: 50px;
+            background: linear-gradient(45deg, #3B82F6, #1E40AF);
+            border: 3px solid white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); position: relative;
           ">
+            <div style="color: white; font-size: 20px; font-weight: bold;">📍</div>
             <div style="
-              color: white; 
-              font-size: 20px; 
-              font-weight: bold;
-            ">📍</div>
-            <div style="
-              position: absolute;
-              top: -5px;
-              right: -5px;
-              width: 16px;
-              height: 16px;
-              background: #10B981;
-              border: 2px solid white;
-              border-radius: 50%;
+              position: absolute; top: -5px; right: -5px;
+              width: 16px; height: 16px; background: #10B981;
+              border: 2px solid white; border-radius: 50%;
               animation: pulse 2s infinite;
             "></div>
           </div>
@@ -142,111 +114,63 @@ const MapWrapper = ({
       markers: new Map()
     };
 
-    map.on('error', function(e) {
-      console.warn('Map error:', e);
-    });
+    map.on('error', (e) => console.warn('Map error:', e));
 
     setTimeout(() => {
       if (map && mapInstanceRef.current) {
-        try {
-          map.invalidateSize();
-        } catch (error) {
-          console.warn('Map invalidateSize error:', error);
-        }
+        try { map.invalidateSize(); } catch (error) { console.warn('Map invalidateSize error:', error); }
       }
     }, 100);
 
     return () => {
-      if (mapInstanceRef.current) {
-        const { map, userMarker, markers } = mapInstanceRef.current;
-        
-        try {
-          if (markers) {
-            markers.forEach(marker => {
-              if (map && map.hasLayer && map.hasLayer(marker)) {
-                map.removeLayer(marker);
-              }
-            });
-          }
-          
-          if (userMarker && map && map.hasLayer && map.hasLayer(userMarker)) {
-            map.removeLayer(userMarker);
-          }
-          
-          if (map) {
-            map.off();
-            if (typeof map.remove === 'function') {
-              map.remove();
-            }
-          }
-          
-          if (mapElement && mapElement._leaflet_id) {
-            delete mapElement._leaflet_id;
-          }
-          
-        } catch (error) {
-          console.warn('Map cleanup error:', error);
-        } finally {
-          mapInstanceRef.current = null;
-        }
-      }
+      if (!mapInstanceRef.current) return;
+      const { map, userMarker, markers } = mapInstanceRef.current;
+      try {
+        if (markers) markers.forEach(m => map.removeLayer(m));
+        if (userMarker && map.hasLayer(userMarker)) map.removeLayer(userMarker);
+        map.off();
+        if (typeof map.remove === 'function') map.remove();
+        if (mapRef.current && mapRef.current._leaflet_id) delete mapRef.current._leaflet_id;
+      } catch (error) { console.warn('Map cleanup error:', error); } finally { mapInstanceRef.current = null; }
     };
   }, [userLocation]);
 
   useEffect(() => {
     if (!mapInstanceRef.current || !markets) return;
-
     const { map, markers } = mapInstanceRef.current;
 
+    // eski marker'ları sil
     if (markers) {
       markers.forEach(marker => {
-        if (map && map.hasLayer && map.hasLayer(marker)) {
-          map.removeLayer(marker);
-        }
+        if (map.hasLayer(marker)) map.removeLayer(marker);
       });
       markers.clear();
     }
 
+    // yeni marker'ları ekle
     markets.forEach((market) => {
       if (!market.latitude || !market.longitude) return;
 
       const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
       const isHidden = hiddenMarkets.has(marketKey);
-      
       const marketLogo = market.logo || getMarketLogo(market.name);
       const brandName = market.brand || detectMarketBrand(market.name);
-      
+
       const icon = L.divIcon({
         html: `
           <div style="
-            width: 45px; 
-            height: 45px; 
-            background: white; 
-            border: 3px solid ${isHidden ? '#9CA3AF' : '#DC2626'}; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
+            width: 45px; height: 45px;
+            background: white;
+            border: 3px solid ${isHidden ? '#9CA3AF' : '#DC2626'};
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 3px 10px rgba(0,0,0,0.3);
             opacity: ${isHidden ? '0.6' : '1'};
             transform: ${isHidden ? 'scale(0.85)' : 'scale(1)'};
-            transition: all 0.2s ease;
-            cursor: pointer;
+            transition: all 0.2s ease; cursor: pointer;
           ">
-            ${marketLogo ? `
-              <img src="${marketLogo}" 
-                   alt="${brandName}" 
-                   style="
-                     width: 32px; 
-                     height: 32px; 
-                     object-fit: contain; 
-                     border-radius: 4px;
-                   " 
-                   onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\"color: #DC2626; font-size: 18px; font-weight: bold;\\">🏪</div>';"
-              />
-            ` : `
-              <div style="color: #DC2626; font-size: 18px; font-weight: bold;">🏪</div>
-            `}
+            ${marketLogo ? `<img src="${marketLogo}" alt="${brandName}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 4px;"
+              onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\"color: #DC2626; font-size: 18px; font-weight: bold;\\">🏪</div>';">`
+            : `<div style="color: #DC2626; font-size: 18px; font-weight: bold;">🏪</div>`}
           </div>
         `,
         className: 'custom-market-marker',
@@ -255,73 +179,49 @@ const MapWrapper = ({
         popupAnchor: [0, -22]
       });
 
-      const marker = L.marker([market.latitude, market.longitude], { 
-        icon,
-        opacity: isHidden ? 0.7 : 1.0
-      }).addTo(map);
+      const marker = L.marker([market.latitude, market.longitude], { icon, opacity: isHidden ? 0.7 : 1.0 }).addTo(map);
 
       const brandLogo = marketLogo ? `<img src="${marketLogo}" alt="${brandName}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">` : '';
-      
+
       marker.bindPopup(`
         <div style="text-align: center; min-width: 220px; padding: 12px;">
           ${brandLogo}
-          <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px; color: #1F2937;">
-            ${brandName.toUpperCase()}
-          </div>
+          <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px; color: #1F2937;">${brandName.toUpperCase()}</div>
           <div style="margin-bottom: 6px; font-size: 14px; color: #374151; font-weight: 500;">${market.name}</div>
           <div style="margin-bottom: 10px; font-size: 12px; color: #6B7280; line-height: 1.4;">${market.address}</div>
           <div style="
-            background: linear-gradient(45deg, #10B981, #059669); 
-            color: white; 
-            padding: 6px 14px; 
-            border-radius: 20px; 
-            font-weight: bold; 
-            font-size: 12px;
-            display: inline-block;
-            margin-bottom: 8px;
-            box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
-          ">
-            📍 ${market.distance} km uzaklıkta
-          </div>
-          ${isHidden ? 
-            '<div style="margin-top: 8px; font-size: 11px; color: #EF4444; font-weight: 600; background: #FEE2E2; padding: 4px 8px; border-radius: 12px; display: inline-block;">❌ Filtrelenmiş</div>' : 
-            '<div style="margin-top: 8px; font-size: 11px; color: #10B981; font-weight: 600; background: #DCFCE7; padding: 4px 8px; border-radius: 12px; display: inline-block;">✅ Seçilmiş</div>'
-          }
+            background: linear-gradient(45deg, #10B981, #059669);
+            color: white; padding: 6px 14px; border-radius: 20px;
+            font-weight: bold; font-size: 12px; display: inline-block;
+            margin-bottom: 8px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+          ">📍 ${market.distance} km uzaklıkta</div>
+          ${isHidden ? '<div style="margin-top: 8px; font-size: 11px; color: #EF4444; font-weight: 600; background: #FEE2E2; padding: 4px 8px; border-radius: 12px; display: inline-block;">❌ Filtrelenmiş</div>'
+          : '<div style="margin-top: 8px; font-size: 11px; color: #10B981; font-weight: 600; background: #DCFCE7; padding: 4px 8px; border-radius: 12px; display: inline-block;">✅ Seçilmiş</div>'}
         </div>
       `);
 
-      if (onMarkerClick) {
-        marker.on('click', () => onMarkerClick(market));
-      }
+      if (onMarkerClick) marker.on('click', () => onMarkerClick(market));
 
-      if (markers) {
-        markers.set(marketKey, marker);
-      }
+      markers.set(marketKey, marker);
     });
 
-    const visibleMarkers = [];
-    if (userLocation) {
-      visibleMarkers.push([userLocation.latitude, userLocation.longitude]);
-    }
-    
-    markets.forEach(market => {
-      if (market.latitude && market.longitude) {
-        const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-        if (!hiddenMarkets.has(marketKey)) {
-          visibleMarkers.push([market.latitude, market.longitude]);
+    // sadece ilk yüklemede fitBounds uygula, marker click sonrası zoom değişmez
+    if (!mapInstanceRef.current.hasFitted) {
+      const visibleMarkers = [];
+      if (userLocation) visibleMarkers.push([userLocation.latitude, userLocation.longitude]);
+      markets.forEach(market => {
+        if (market.latitude && market.longitude) {
+          const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
+          if (!hiddenMarkets.has(marketKey)) visibleMarkers.push([market.latitude, market.longitude]);
         }
+      });
+      if (visibleMarkers.length > 1) {
+        try {
+          const group = new L.featureGroup(visibleMarkers.map(coord => L.marker(coord)));
+          map.fitBounds(group.getBounds().pad(0.1));
+        } catch (error) { console.warn('Error fitting bounds:', error); }
       }
-    });
-
-    if (visibleMarkers.length > 1) {
-      try {
-        const group = new L.featureGroup(
-          visibleMarkers.map(coord => L.marker(coord))
-        );
-        map.fitBounds(group.getBounds().pad(0.1));
-      } catch (error) {
-        console.warn('Error fitting bounds:', error);
-      }
+      mapInstanceRef.current.hasFitted = true;
     }
 
   }, [markets, hiddenMarkets, onMarkerClick, userLocation]);
@@ -338,16 +238,11 @@ const MapWrapper = ({
 const MarketMap = (props) => {
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
   if (!mounted) {
     return (
-      <div 
-        className="flex items-center justify-center bg-gray-100 rounded-lg" 
-        style={{ height: '400px', width: '100%' }}
-      >
+      <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height: '400px', width: '100%' }}>
         <div className="text-center">
           <div className="text-2xl mb-2">🗺️</div>
           <div className="text-sm text-gray-600">Harita yükleniyor...</div>

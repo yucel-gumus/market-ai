@@ -30,9 +30,9 @@ export default function ProductSearchPage() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
-  
+
   const [debouncedQuery] = useDebounce(searchQuery, 300);
-  
+
   const {
     optimization,
     addToCart,
@@ -42,7 +42,7 @@ export default function ProductSearchPage() {
     isProductInCart,
     marketCount
   } = useShoppingCart();
-    const {
+  const {
     searchSettings,
     isLoading: isSettingsLoading,
     error: settingsError
@@ -98,9 +98,9 @@ export default function ProductSearchPage() {
 
   const handleRouteFound = useCallback((info: RouteInfo) => {
     setRouteInfo(prevInfo => {
-      if (!prevInfo || 
-          prevInfo.distance !== info.distance || 
-          prevInfo.time !== info.time) {
+      if (!prevInfo ||
+        prevInfo.distance !== info.distance ||
+        prevInfo.time !== info.time) {
         return info;
       }
       return prevInfo;
@@ -134,7 +134,7 @@ export default function ProductSearchPage() {
               Ana Sayfa
             </Button>
           </div>
-          
+
           <ErrorDisplay
             error={settingsError}
             onGoHome={handleGoHome}
@@ -150,14 +150,16 @@ export default function ProductSearchPage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Button
-            variant="outline"
-            size="sm"
             onClick={handleGoHome}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 rounded-2xl border border-gray-300 
+             bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
+             px-4 py-2 text-white shadow-md transition-all duration-300 
+             hover:scale-105 hover:shadow-lg active:scale-95"
           >
             <ArrowLeft className="h-4 w-4" />
-            Geri
+            <span className="font-medium">Yapay Zekaya Sor</span>
           </Button>
+
         </div>
 
         {/* Main Search Card */}

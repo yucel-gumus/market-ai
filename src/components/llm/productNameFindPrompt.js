@@ -22,6 +22,7 @@ Sen bir mutfak asistanısın ve aynı zamanda akıllı bir alışveriş uzmanıs
 *   **ÖNCELİK 1: EN DÜŞÜK FİYAT!** Her bir malzeme için yaptığın seçimdeki en önemli ve nihai kriter **en düşük fiyattır**.
 *   **ÖNCELİK 2: GARANTİLİ SONUÇ!** Her bir malzeme için mutlaka bir ürün seçmelisin.
 *   **ÇIKTI FORMATI:** Cevabın, aşağıda gösterildiği gibi **bir JSON dizisi (array)** olmalıdır. Her nesne, \`searchedIngredient\` alanında hangi malzeme için arama yaptığını belirtmelidir.
+*   **RECIPE_NAME_PLACEHOLDER** tarifinde kullanılabilir olmalı.
 
 **ÖRNEK ÇIKTI (Girdi: "yumurta, tavuk göğsü"):**
 [
@@ -29,7 +30,7 @@ Sen bir mutfak asistanısın ve aynı zamanda akıllı bir alışveriş uzmanıs
     "success": true,
     "searchedIngredient": "yumurta",
     "matchType": "direct",
-    "reasoning": "'yumurta' için listedeki en ucuz seçenek buydu.",
+    "reasoning": "'yumurta' için markette ürün bulunamadı alternatif olarak '30 lu Yumurta Small' seçildi.",
     "product": {
       "title": "30 lu Yumurta Small",
       "price": 79
@@ -39,7 +40,7 @@ Sen bir mutfak asistanısın ve aynı zamanda akıllı bir alışveriş uzmanıs
     "success": true,
     "searchedIngredient": "tavuk göğsü",
     "matchType": "alternative",
-    "reasoning": "Listede 'tavuk göğsü' yoktu. Tarif için en ucuz alternatif olarak 'tavuk bonfile' seçildi.",
+    "reasoning": "'tavuk göğsü' için markette ürün bulunamadı alternatif olarak 'tavuk bonfile' seçildi.",
     "product": {
       "title": "Piliç Bonfile Kg",
       "price": 150
@@ -47,7 +48,7 @@ Sen bir mutfak asistanısın ve aynı zamanda akıllı bir alışveriş uzmanıs
   }
 ]
 
-ŞİMDİ "RECIPE_NAME_PLACEHOLDER" tarifi için, "URUNADLARI_PLACEHOLDER" listesinden, "INGREDIENTS_PLACEHOLDER" listesindeki **her bir malzeme için ayrı ayrı** en uygun veya alternatif en düşük fiyatlı ürünü bul ve sonucu bir JSON dizisi olarak döndür:
+ŞİMDİ "RECIPE_NAME_PLACEHOLDER" tarifi için, "URUNADLARI_PLACEHOLDER" listesinden, "INGREDIENTS_PLACEHOLDER" listesindeki **her bir malzeme için ayrı ayrı** en uygun veya alternatif en düşük fiyatlı ürünü bul  bulduğun ürün mutlaka "RECIPE_NAME_PLACEHOLDER" tarifinde kullanılabiliyor olmalı ve sonucu bir JSON dizisi olarak döndür:
 `;
 
 export default promturunadlari;
