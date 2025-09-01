@@ -3,7 +3,29 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import prompt from './productListPrompt';
 import promptKategoriSelect from './selectCategoriesPromt';
-import promturunadlari from './productNameFindPrompt'
+import promturunadlari from './productNameFindPrompt';
+import recipeAndCaloriePrompt from './recipeAndCaloriePrompt';
+
+// Yemek tarifi ve kalori bilgisi getiren fonksiyon
+export async function generateRecipeAndCalorie(recipeName) {
+  const content = recipeAndCaloriePrompt(recipeName);
+  const result = await model.generateContent(content);
+  const raw = result.response.text().trim();
+
+  const cleaned = raw
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```$/i, '')
+    .trim();
+
+  let data;
+  try {
+    data = JSON.parse(cleaned);
+  } catch (error) {
+    data = { success: false, message: "Bilinmeyen tarif veya format" };
+  }
+  return data;
+}
 
 
 

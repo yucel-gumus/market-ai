@@ -2,7 +2,10 @@
 import { useState, useEffect } from 'react';
 import { ChefHat, Search, CheckCircle, Clock, ShoppingCart, Package, Trash2, RotateCcw, ArrowRight } from 'lucide-react';
 import { SearchInput } from '@/features/products/components/SearchInput';
-import { generateRecipeList, generateCategory, tamurunbul } from '@/components/llm/requestLLM.js';
+
+import { generateRecipeList, generateCategory, tamurunbul, generateRecipeAndCalorie } from '@/components/llm/requestLLM.js';
+
+// ...existing code...
 import categoriesData from '@/data/categoriesList.json';
 import { fetchCategoriesData } from '@/app/api/ai-page/searchByCategories';
 import { fetchUrunData } from '@/app/api/ai-page/searchByProductsName';
@@ -25,6 +28,29 @@ import { RouteModal } from '@/features/products/components/RouteModal';
 
 
 function FoodInput() {
+  // Tarif ve kalori bilgisi için state
+  const [calorieInfo, setCalorieInfo] = useState(null);
+  const [isCalorieLoading, setIsCalorieLoading] = useState(false);
+  const [calorieError, setCalorieError] = useState(null);
+  // Yemek tarifi ve kalori bilgisini LLM'den çek
+  const handleGetRecipeAndCalorie = async () => {
+    if (!foodName || !foodName.trim()) return;
+    setIsCalorieLoading(true);
+    setCalorieError(null);
+    setCalorieInfo(null);
+    try {
+      const data = await generateRecipeAndCalorie(foodName);
+      if (data.success) {
+        setCalorieInfo(data);
+      } else {
+        setCalorieError(data.message || 'Tarif veya kalori bilgisi bulunamadı.');
+      }
+    } catch (err) {
+      setCalorieError('Bir hata oluştu: ' + err.message);
+    } finally {
+      setIsCalorieLoading(false);
+    }
+  };
   const {
     optimization,
     addToCart,
@@ -270,13 +296,6 @@ function FoodInput() {
       setError('Ürün seçimi sırasında hata: ' + err.message);
     }
   };
-
-  useEffect(() => {
-    if (results.selectedProducts.length > 0) {
-      console.log("Search results:", results.selectedProducts);
-    }
-  }, [results.selectedProducts]);
-
   const resetForm = () => {
     setFoodName('');
     clearCart();
@@ -484,6 +503,58 @@ function FoodInput() {
                     'Malzeme Bul'
                   )}
                 </button>
+
+                {/* Yemek tarifi ve kalori bilgisi butonu */}
+                <button
+                  onClick={handleGetRecipeAndCalorie}
+                  disabled={isCalorieLoading || !foodName.trim()}
+                  className="w-full mt-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isCalorieLoading ? (
+                    <div className="flex items-center justify-center">
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                      Tarif & Kalori aranıyor...
+                    </div>
+                  ) : (
+                    'Yemek Tarifi ve Kalori Bilgisi Al'
+                  )}
+                </button>
+
+                {/* Tarif ve kalori bilgisi sonucu */}
+                {calorieError && (
+                  <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mt-4 flex items-center">
+                    <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
+                    {calorieError}
+                  </div>
+                )}
+                {calorieInfo && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-4 text-left">
+                    <h3 className="text-xl font-bold text-blue-800 mb-2">{calorieInfo.name}</h3>
+                    <p className="mb-2 text-gray-700">{calorieInfo.description}</p>
+                    <div className="mb-2">
+                      <span className="font-semibold text-blue-700">Malzemeler:</span>
+                      <ul className="list-disc ml-6">
+                        {calorieInfo.ingredients?.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-semibold text-blue-700">Hazırlanışı:</span>
+                      <ol className="list-decimal ml-6">
+                        {calorieInfo.steps?.map((step, idx) => (
+                          <li key={idx}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-semibold text-blue-700">Kalori:</span> {calorieInfo.calories} kcal (porsiyon başı)
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-700">Besin Özeti:</span> {calorieInfo.nutrition}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
