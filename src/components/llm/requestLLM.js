@@ -79,10 +79,10 @@ export async function generateCategory(ingredients, categorylist) {
 
 export async function tamurunbul(urunadlari, ingredients, recipeName) {
   // ingredients array'ini string'e çevir
-  const ingredientsStr = Array.isArray(ingredients) 
-    ? ingredients.join(", ") 
+  const ingredientsStr = Array.isArray(ingredients)
+    ? ingredients.join(", ")
     : ingredients;
-  
+
   const content = promturunadlari
     .replace('URUNADLARI_PLACEHOLDER', JSON.stringify(urunadlari, null, 2))
     .replace(/INGREDIENTS_PLACEHOLDER/g, ingredientsStr)
@@ -102,7 +102,10 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
         .replace(/^```json\s*/i, '')
         .replace(/^```\s*/i, '')
         .replace(/```$/i, '')
+        .replace(/,\s*}/g, '}') 
+        .replace(/,\s*]/g, ']')
         .trim();
+
 
       data = JSON.parse(cleaned);
       break;
@@ -113,7 +116,7 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
       }
     }
   }
-    return data;
+  return data;
 }
 
 
