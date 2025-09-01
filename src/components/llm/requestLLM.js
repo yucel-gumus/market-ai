@@ -86,7 +86,7 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
   const content = promturunadlari
     .replace('URUNADLARI_PLACEHOLDER', JSON.stringify(urunadlari, null, 2))
     .replace(/INGREDIENTS_PLACEHOLDER/g, ingredientsStr)
-    .replace('RECIPE_NAME_PLACEHOLDER', recipeName);
+    .replace(/RECIPE_NAME_PLACEHOLDER/g, recipeName);
 
   let attempt = 0;
   const maxAttempts = 3;
