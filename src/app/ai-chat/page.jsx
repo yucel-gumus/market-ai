@@ -16,18 +16,19 @@ import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
-import { X } from "lucide-react";
+import { X, Utensils, Flame, Clock as ClockIcon, Users } from "lucide-react";
 import { cn, getMarketLogo } from '@/lib/utils';
 import Image from "next/image";
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
 import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
 import { RouteModal } from '@/features/products/components/RouteModal';
 
-
 function FoodInput() {
   const [calorieInfo, setCalorieInfo] = useState(null);
   const [isCalorieLoading, setIsCalorieLoading] = useState(false);
   const [calorieError, setCalorieError] = useState(null);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+
   const handleGetRecipeAndCalorie = async () => {
     if (!foodName || !foodName.trim()) return;
     setIsCalorieLoading(true);
@@ -37,6 +38,7 @@ function FoodInput() {
       const data = await generateRecipeAndCalorie(foodName);
       if (data.success) {
         setCalorieInfo(data);
+        setShowRecipeModal(true);
       } else {
         setCalorieError(data.message || 'Tarif veya kalori bilgisi bulunamadı.');
       }
@@ -46,6 +48,7 @@ function FoodInput() {
       setIsCalorieLoading(false);
     }
   };
+
   const {
     optimization,
     addToCart,
@@ -54,6 +57,7 @@ function FoodInput() {
     generateRoute,
     marketCount
   } = useShoppingCart();
+
   const {
     searchSettings,
     isLoading: isSettingsLoading,
@@ -66,6 +70,7 @@ function FoodInput() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [realRouteDistance, setRealRouteDistance] = useState(undefined);
   const [realRouteTime, setRealRouteTime] = useState(undefined);
+
   const handleShowRoute = (depot) => {
     if (!depot.latitude || !depot.longitude) {
       alert('Mağaza konumu bulunamadı!');
@@ -102,6 +107,7 @@ function FoodInput() {
       return prevInfo;
     });
   };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery] = useDebounce(searchQuery, 300);
 
@@ -112,6 +118,7 @@ function FoodInput() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [recipe, setRecipe] = useState(null);
   const [ingredients, setIngredients] = useState([]);
+
   const {
     data: products = [],
     isLoading: isProductsLoading,
@@ -120,6 +127,7 @@ function FoodInput() {
     query: debouncedQuery,
     searchSettings: searchSettings
   });
+
   const [searchResults, setSearchResults] = useState([]);
 
   const handleSearchChange = (value) => {
@@ -132,13 +140,10 @@ function FoodInput() {
     setIsDropdownOpen(false);
   };
 
-  /**
-* @type {Object} searchStats
-* @property {number} totalResults
-*/
   const searchStats = {
     totalResults: products.length
   };
+
   const [results, setResults] = useState({
     missingProducts: [],
     categoryData: null,
@@ -153,6 +158,7 @@ function FoodInput() {
   const handleGoBack = () => {
     router.push('/');
   };
+
   const gotoProductSearch = () => {
     router.push('/product-search');
   };
@@ -291,6 +297,7 @@ function FoodInput() {
       setError('Ürün seçimi sırasında hata: ' + err.message);
     }
   };
+
   const resetForm = () => {
     setFoodName('');
     clearCart();
@@ -327,6 +334,7 @@ function FoodInput() {
     if (stepIndex === currentIndex) return 'bg-blue-500 text-white';
     return 'bg-gray-200 text-gray-500';
   };
+
   useEffect(() => {
     if (clearCart) {
       clearCart();
@@ -371,11 +379,11 @@ function FoodInput() {
       </div>
     );
   }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center gap-4 mb-6">
-
           <Button
             onClick={handleGoBack}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 text-white font-medium hover:bg-green-600 active:bg-green-700 transition-colors duration-200"
@@ -402,6 +410,7 @@ function FoodInput() {
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 group-hover:animate-pulse"></div>
           </Button>
         </div>
+
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             <ChefHat className="w-12 h-12 text-orange-500 mr-3" />
@@ -409,6 +418,7 @@ function FoodInput() {
           </div>
           <p className="text-gray-600 text-lg">Yemek adını girin, malzemeleri bulalım!</p>
         </div>
+
         <div className="flex items-center justify-center mb-8 overflow-x-auto">
           {['input', 'ingredients', 'processing', 'complete'].map((step, index) => (
             <div key={step} className="flex items-center">
@@ -421,13 +431,129 @@ function FoodInput() {
             </div>
           ))}
         </div>
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center">
             <div className="w-4 h-4 bg-red-500 rounded-full mr-3"></div>
             {error}
           </div>
         )}
+
         <div className="bg-white rounded-2xl shadow-xl p-8 transition-all duration-300">
+          {/* Recipe Modal */}
+          {showRecipeModal && calorieInfo && (
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-md z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+                {/* Modal Header */}
+                <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 relative">
+                  <button
+                    onClick={() => setShowRecipeModal(false)}
+                    className="absolute top-4 right-4 bg-white/20 hover:bg-white/30 rounded-full p-2 transition-colors"
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </button>
+                  
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <ChefHat className="w-10 h-10 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-bold">{calorieInfo.name}</h2>
+                      <p className="text-orange-100 text-lg mt-1">{calorieInfo.description}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Stats */}
+                  <div className="flex items-center gap-8 bg-white/10 rounded-xl p-4">
+                    <div className="flex items-center gap-3">
+                      <Flame className="w-6 h-6 text-yellow-300" />
+                      <div>
+                        <div className="text-2xl font-bold">{calorieInfo.calories}</div>
+                        <div className="text-sm text-orange-100">kcal/porsiyon</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Users className="w-6 h-6 text-orange-200" />
+                      <div>
+                        <div className="text-xl font-semibold">4</div>
+                        <div className="text-sm text-orange-100">kişilik</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <ClockIcon className="w-6 h-6 text-orange-200" />
+                      <div>
+                        <div className="text-xl font-semibold">30</div>
+                        <div className="text-sm text-orange-100">dakika</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Modal Content */}
+                <div className="overflow-y-auto max-h-[calc(90vh-200px)]">
+                  <div className="grid lg:grid-cols-2 gap-0">
+                    {/* Malzemeler */}
+                    <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 border-r border-green-100">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="bg-green-500 p-3 rounded-full">
+                          <Package className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-green-800">Malzemeler</h3>
+                      </div>
+                      <div className="space-y-3">
+                        {calorieInfo.ingredients?.map((item, idx) => (
+                          <div 
+                            key={idx} 
+                            className="flex items-center gap-4 p-4 bg-white/70 rounded-lg hover:bg-white/90 transition-colors duration-200 hover:shadow-md"
+                          >
+                            <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                            <span className="text-gray-700 font-medium text-lg">{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Hazırlanışı */}
+                    <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="bg-blue-500 p-3 rounded-full">
+                          <Utensils className="w-6 h-6 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-blue-800">Hazırlanışı</h3>
+                      </div>
+                      <div className="space-y-4">
+                        {calorieInfo.steps?.map((step, idx) => (
+                          <div 
+                            key={idx} 
+                            className="flex gap-4 p-4 bg-white/70 rounded-lg hover:bg-white/90 transition-colors duration-200 hover:shadow-md"
+                          >
+                            <div className="flex-shrink-0 w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+                              {idx + 1}
+                            </div>
+                            <span className="text-gray-700 leading-relaxed text-lg">{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Besin Değerleri */}
+                  <div className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-t border-purple-100">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="bg-purple-500 p-3 rounded-full">
+                        <Flame className="w-6 h-6 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-bold text-purple-800">Besin Değerleri</h3>
+                    </div>
+                    <div className="bg-white/70 rounded-lg p-6">
+                      <p className="text-gray-700 leading-relaxed text-lg">{calorieInfo.nutrition}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {searchSettings && (
             <RouteModal
               isOpen={showSingleMap}
@@ -488,6 +614,7 @@ function FoodInput() {
                     'Malzeme Bul'
                   )}
                 </button>
+
                 <button
                   onClick={handleGetRecipeAndCalorie}
                   disabled={isCalorieLoading || !foodName.trim()}
@@ -509,32 +636,16 @@ function FoodInput() {
                     {calorieError}
                   </div>
                 )}
+
                 {calorieInfo && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mt-4 text-left">
-                    <h3 className="text-xl font-bold text-blue-800 mb-2">{calorieInfo.name}</h3>
-                    <p className="mb-2 text-gray-700">{calorieInfo.description}</p>
-                    <div className="mb-2">
-                      <span className="font-semibold text-blue-700">Malzemeler:</span>
-                      <ul className="list-disc ml-6">
-                        {calorieInfo.ingredients?.map((item, idx) => (
-                          <li key={idx}>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-semibold text-blue-700">Hazırlanışı:</span>
-                      <ol className="list-decimal ml-6">
-                        {calorieInfo.steps?.map((step, idx) => (
-                          <li key={idx}>{step}</li>
-                        ))}
-                      </ol>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-semibold text-blue-700">Kalori:</span> {calorieInfo.calories} kcal (porsiyon başı)
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-700">Besin Özeti:</span> {calorieInfo.nutrition}
-                    </div>
+                  <div className="mt-4 text-center">
+                    <button
+                      onClick={() => setShowRecipeModal(true)}
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center mx-auto"
+                    >
+                      <ChefHat className="w-5 h-5 mr-2" />
+                      Tarifi Görüntüle
+                    </button>
                   </div>
                 )}
               </div>
@@ -559,13 +670,12 @@ function FoodInput() {
                     <button
                       onClick={() => removeIngredient(ingredient)}
                       className="flex items-center gap-2 text-red-600 bg-red-50 px-4 py-2 rounded-xl 
-             hover:bg-red-100 hover:scale-105 hover:shadow-md 
-             transition-all duration-200 text-sm font-semibold"
+                       hover:bg-red-100 hover:scale-105 hover:shadow-md 
+                       transition-all duration-200 text-sm font-semibold"
                     >
                       <X size={16} />
                       Ürünü Çıkar
                     </button>
-
                   </div>
                 ))}
               </div>
@@ -593,6 +703,7 @@ function FoodInput() {
                   Yeniden Başla
                 </button>
               </div>
+
               <Card className="mb-6 shadow-lg border-0 bg-white/80 backdrop-blur-sm dark:bg-gray-800/80">
                 <CardHeader className="pb-4">
                   <CardTitle className="flex items-center gap-2 text-xl">
@@ -637,9 +748,9 @@ function FoodInput() {
                   </div>
                 </CardContent>
               </Card>
-
             </div>
           )}
+
           {currentStep === 'processing' && (
             <div className="text-center">
               <div className="mb-6">
@@ -662,6 +773,7 @@ function FoodInput() {
               </div>
             </div>
           )}
+
           {currentStep === 'complete' && (
             <div>
               <div className="text-center mb-8">
@@ -710,6 +822,7 @@ function FoodInput() {
                     </div>
                   </div>
                 )}
+
                 {results.selectedProducts.length > 0 && searchResults.length > 0 && (
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
                     <div className="flex items-center mb-4">
@@ -758,6 +871,7 @@ function FoodInput() {
                     </div>
                   </div>
                 )}
+
                 <button
                   onClick={resetForm}
                   className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-4 px-6 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200 flex items-center justify-center"
@@ -771,7 +885,6 @@ function FoodInput() {
         </div>
       </div>
     </div>
-
   );
 }
 

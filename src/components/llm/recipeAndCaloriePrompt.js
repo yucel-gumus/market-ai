@@ -5,6 +5,7 @@ Aşağıda kullanıcıdan gelen bir yemek adı var. Lütfen bu yemek için:
 - En uygun ve geleneksel yemek tarifini (malzeme listesi ve adım adım hazırlanışı ile)
 - Ortalama kalori bilgisini (kcal cinsinden, porsiyon başı)
 - Kısa bir besin değeri özeti
+-Besin yoğunluğu veya sağlık özeti (ör: yüksek proteinli, düşük karbonhidratlı)
 Türkçe ve sade bir şekilde, JSON formatında döndür. Örnek çıktı:
 {
   "success": true,
