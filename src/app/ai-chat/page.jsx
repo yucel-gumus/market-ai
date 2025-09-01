@@ -272,10 +272,10 @@ function FoodInput() {
   };
 
   useEffect(() => {
-    if (searchResults) {
-      console.log("Search results:", searchResults);
+    if (results.selectedProducts.length > 0) {
+      console.log("Search results:", results.selectedProducts);
     }
-  }, [searchResults]);
+  }, [results.selectedProducts]);
 
   const resetForm = () => {
     setFoodName('');
@@ -697,7 +697,6 @@ function FoodInput() {
                                     {matched.reasoning}
                                   </span>
                                 )}
-
                                 <Image
                                   src={getMarketLogo(product.productDepotInfoList[0].marketAdi)}
                                   alt={`${product.productDepotInfoList[0].marketAdi} logo`}
