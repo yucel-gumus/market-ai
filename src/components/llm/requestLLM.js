@@ -30,7 +30,7 @@ export async function generateRecipeAndCalorie(recipeName) {
 
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
 
 export async function generateRecipeList(recipeName) {
   const content = prompt.replace('${recipeName}', recipeName);
