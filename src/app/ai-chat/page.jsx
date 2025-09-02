@@ -17,7 +17,7 @@ import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStora
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { X, Utensils, Flame, Clock as ClockIcon, Users } from "lucide-react";
-import { cn, getMarketLogo } from '@/lib/utils';
+import { cn, getMarketLogo, withConcurrency } from '@/lib/utils';
 import Image from "next/image";
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
 import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
@@ -259,7 +259,7 @@ function FoodInput() {
 
         const categoryNames = Object.keys(categoryGroups);
         const categoryProducts = await Promise.all(
-          categoryNames.map(name => fetchCategoriesData(name))
+          categoryNames.map((name) => fetchCategoriesData(name))
         );
         const allProducts = categoryProducts.flatMap(x => x);
         setResults(prev => ({ ...prev, availableProducts: allProducts }));

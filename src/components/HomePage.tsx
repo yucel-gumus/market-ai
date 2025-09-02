@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { MapPin, Store } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddressSearch } from '@/features/address/components/AddressSearch';
@@ -11,6 +12,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { MarketSearchRequest, ParsedAddress } from '@/types';
 
 export default function HomePage() {
+  const queryClient = useQueryClient();
   const [selectedAddress, setSelectedAddress] = useState<ParsedAddress | null>(null);
   const [selectedDistance, setSelectedDistance] = useState<number>(5);
   const [isLoadingMarkets, setIsLoadingMarkets] = useState<boolean>(false);
@@ -42,11 +44,26 @@ export default function HomePage() {
   const handleAddressSelect = (address: ParsedAddress | null) => {
     setSelectedAddress(address);
     setStoreAddress(address);
+    // Prefetch markets for a likely default distance
+    if (address) {
+      const req = {
+        distance: selectedDistance,
+        latitude: address.latitude,
+        longitude: address.longitude,
+      } as const;
+    }
   };
 
   const handleDistanceSelect = (distance: number) => {
     setSelectedDistance(distance);
     setStoreDistance(distance);
+    if (selectedAddress) {
+      const req = {
+        distance,
+        latitude: selectedAddress.latitude,
+        longitude: selectedAddress.longitude,
+      } as const;
+    }
   };
 
   const shouldShowMarkets = selectedAddress && selectedDistance > 0;

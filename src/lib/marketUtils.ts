@@ -1,9 +1,9 @@
 
 export type MarketBrand = 'bim' | 'a101' | 'migros' | 'carrefour' | 'sok' | 'tarim_kredi' | 'other';
 
-export function detectMarketBrand(marketName: string): MarketBrand {
+export function detectMarketBrand(marketName?: string | null): MarketBrand {
+  if (!marketName || typeof marketName !== 'string') return 'other';
   const normalizedName = marketName.toLowerCase().trim();
-  
   if (normalizedName.includes('bim')) return 'bim';
   if (normalizedName.includes('a101') || normalizedName.includes('a 101')) return 'a101';
   if (normalizedName.includes('migros')) return 'migros';
@@ -13,7 +13,6 @@ export function detectMarketBrand(marketName: string): MarketBrand {
       normalizedName.includes('tarim kredi') || 
       normalizedName.includes('tarim_kredi') || 
       normalizedName.includes('tarımkredi')) return 'tarim_kredi';
-  
   return 'other';
 }
 
