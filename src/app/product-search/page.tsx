@@ -31,7 +31,7 @@ export default function ProductSearchPage() {
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
 
-  const [debouncedQuery] = useDebounce(searchQuery, 300);
+  const [debouncedQuery] = useDebounce(searchQuery, 450);
 
   const {
     optimization,

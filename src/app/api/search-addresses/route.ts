@@ -59,10 +59,12 @@ export async function GET(request: NextRequest) {
 
     const data: AddressSearchResult[] = await response.json();
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       data: data,
     });
+    res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    return res;
 
   } catch (error: unknown) {
     let errorMessage = 'Sunucu hatası';

@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
 
     const data: Market[] = await response.json();
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       data: data,
       metadata: {
@@ -109,6 +109,9 @@ export async function POST(request: NextRequest) {
         count: data.length,
       },
     });
+    // Short-lived cache to reduce backend pressure
+    res.headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
+    return res;
 
   } catch (error: unknown) {
     let errorMessage = 'Sunucu hatası';

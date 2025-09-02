@@ -38,8 +38,8 @@ export const useProductSearch = ({
       query.length >= 2
     ),
     
-    staleTime: 30 * 1000, 
-    gcTime: 2 * 60 * 1000,
+  staleTime: 60 * 1000, 
+  gcTime: 2 * 60 * 1000,
     
     retry: (failureCount, error) => {
       if (error.message.includes('400') || error.message.includes('404')) {
@@ -49,7 +49,7 @@ export const useProductSearch = ({
     },
     
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
-    refetchOnWindowFocus: false,
+  refetchOnWindowFocus: false,
   });
 };
 

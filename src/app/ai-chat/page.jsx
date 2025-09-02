@@ -109,7 +109,7 @@ function FoodInput() {
   };
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery] = useDebounce(searchQuery, 300);
+  const [debouncedQuery] = useDebounce(searchQuery, 450);
 
   const router = useRouter();
 
@@ -739,6 +739,10 @@ function FoodInput() {
                       isOpen={isDropdownOpen}
                       onClose={() => setIsDropdownOpen(false)}
                       onAddToCart={handleAddToCart}
+                      onProductAdded={() => {
+                        setSearchQuery('');
+                        setIsDropdownOpen(false);
+                      }}
                       isProductInCart={(productId) =>
                         products.some(p => p.id === productId &&
                           ingredients.some(ing => p.title.toLowerCase() === ing.toLowerCase())
