@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 export { getMarketLogo, detectMarketBrand } from './marketUtils';
 
-// Simple concurrency limiter (p-limit style)
 export function withConcurrency<T>(limit: number, tasks: Array<() => Promise<T>>): Promise<T[]> {
   if (limit <= 0) return Promise.all(tasks.map((t) => t()));
   const results: T[] = [] as unknown as T[];

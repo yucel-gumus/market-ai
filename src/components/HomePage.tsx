@@ -44,7 +44,6 @@ export default function HomePage() {
   const handleAddressSelect = (address: ParsedAddress | null) => {
     setSelectedAddress(address);
     setStoreAddress(address);
-    // Prefetch markets for a likely default distance
     if (address) {
       const req = {
         distance: selectedDistance,

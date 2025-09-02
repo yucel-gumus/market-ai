@@ -1,4 +1,3 @@
-// LLM için yemek tarifi ve kalori bilgisi prompt'unu fonksiyon olarak export et
 export default function recipeAndCaloriePrompt(recipeName) {
   return `
 Aşağıda kullanıcıdan gelen bir yemek adı var. Lütfen bu yemek için:

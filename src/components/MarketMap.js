@@ -139,7 +139,6 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
     if (!mapInstanceRef.current || !markets) return;
     const { map, markers } = mapInstanceRef.current;
 
-    // eski marker'ları sil
     if (markers) {
       markers.forEach(marker => {
         if (map.hasLayer(marker)) map.removeLayer(marker);
@@ -147,7 +146,6 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       markers.clear();
     }
 
-    // yeni marker'ları ekle
     markets.forEach((market) => {
       if (!market.latitude || !market.longitude) return;
 
@@ -205,7 +203,6 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       markers.set(marketKey, marker);
     });
 
-    // sadece ilk yüklemede fitBounds uygula, marker click sonrası zoom değişmez
     if (!mapInstanceRef.current.hasFitted) {
       const visibleMarkers = [];
       if (userLocation) visibleMarkers.push([userLocation.latitude, userLocation.longitude]);

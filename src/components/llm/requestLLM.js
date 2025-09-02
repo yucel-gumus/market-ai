@@ -6,7 +6,6 @@ import promptKategoriSelect from './selectCategoriesPromt';
 import promturunadlari from './productNameFindPrompt';
 import recipeAndCaloriePrompt from './recipeAndCaloriePrompt';
 
-// Yemek tarifi ve kalori bilgisi getiren fonksiyon
 export async function generateRecipeAndCalorie(recipeName) {
   const content = recipeAndCaloriePrompt(recipeName);
   const result = await model.generateContent(content);
@@ -78,7 +77,6 @@ export async function generateCategory(ingredients, categorylist) {
 
 
 export async function tamurunbul(urunadlari, ingredients, recipeName) {
-  // ingredients array'ini string'e çevir
   const ingredientsStr = Array.isArray(ingredients)
     ? ingredients.join(", ")
     : ingredients;

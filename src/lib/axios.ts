@@ -1,13 +1,8 @@
 import axios from 'axios';
-// For Node.js server-side keep-alive to reduce TCP/TLS overhead
-// These will be tree-shaken on the client
 let httpAgent: any = undefined;
 let httpsAgent: any = undefined;
 try {
-  // Optional: only available in Node runtime
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const http = require('http');
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
   const https = require('https');
   httpAgent = new http.Agent({ keepAlive: true, maxSockets: 50 });
   httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
@@ -19,7 +14,6 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  // Attach keep-alive agents only in Node.js
   httpAgent,
   httpsAgent,
 });
