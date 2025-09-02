@@ -279,7 +279,6 @@ function FoodInput() {
       }));
       const selectedResult = await tamurunbul(productTitlesAndPrice, missingItems, foodName);
       setSearchResults(selectedResult);
-
       if (selectedResult) {
         const selectedProductsData = await Promise.all(
           selectedResult.map(async (product) => {
