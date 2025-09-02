@@ -13,12 +13,12 @@ interface ShoppingCartSummaryProps {
   onRemoveItem: (productId: string) => void;
 }
 
-export function ShoppingCartSummary({ 
-  optimization, 
-  onViewRoute, 
+export function ShoppingCartSummary({
+  optimization,
+  onViewRoute,
   onViewSingleRoute,
-  onClearCart, 
-  onRemoveItem 
+  onClearCart,
+  onRemoveItem
 }: ShoppingCartSummaryProps) {
   const { marketGroups, totalCost, marketCount } = optimization;
   const totalItems = marketGroups.reduce((sum, group) => sum + group.items.length, 0);
@@ -43,7 +43,7 @@ export function ShoppingCartSummary({
               Alışveriş Sepeti ({totalItems} ürün)
             </span>
           </div>
-          <Button 
+          <Button
             onClick={onClearCart}
             variant="ghost"
             size="sm"
@@ -75,7 +75,7 @@ export function ShoppingCartSummary({
         {/* Market Groups */}
         <div className="space-y-3">
           {marketGroups.map((group) => (
-            <MarketGroupCard 
+            <MarketGroupCard
               key={group.marketName}
               group={group}
               onRemoveItem={onRemoveItem}
@@ -86,7 +86,7 @@ export function ShoppingCartSummary({
         {/* Action Buttons */}
         <div className="flex gap-2 pt-4">
           {marketCount > 1 && (
-            <Button 
+            <Button
               onClick={onViewRoute}
               className="flex-1 bg-blue-600 hover:bg-blue-700"
             >
@@ -94,9 +94,9 @@ export function ShoppingCartSummary({
               Alışveriş Rotası
             </Button>
           )}
-          
+
           {marketCount === 1 && (
-            <Button 
+            <Button
               onClick={handleSingleRouteClick}
               className="flex-1 bg-green-600 hover:bg-green-700"
             >
@@ -144,28 +144,38 @@ function MarketGroupCard({ group, onRemoveItem }: MarketGroupCardProps) {
           ₺{group.subtotal.toFixed(2)}
         </div>
       </div>
-      
-      <div className="space-y-1">
+
+      <div className="space-y-2">
         {group.items.map((item: CartItem) => (
-          <div key={item.product.id} className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2 flex-1">
-              <Package className="h-3 w-3 text-muted-foreground" />
-              <span className="line-clamp-1">{item.product.title}</span>
+          <div
+            key={item.product.id}
+            className="flex items-center justify-between rounded-xl border p-2 shadow-sm bg-white"
+          >
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <Package className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="line-clamp-1 text-sm font-medium">
+                {item.product.title}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-medium">₺{item.selectedDepot.price}</span>
+
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-gray-800">
+                ₺{item.selectedDepot.price}
+              </span>
               <Button
                 onClick={() => onRemoveItem(item.product.id)}
                 variant="ghost"
                 size="sm"
-                className="h-5 w-5 p-0 hover:bg-red-100 hover:text-red-600"
+                className="h-7 px-2 text-xs font-medium hover:bg-red-100 hover:text-red-600"
               >
-                <X className="h-3 w-3" />
+                Ürünü Çıkar
               </Button>
             </div>
           </div>
         ))}
       </div>
+
+
     </div>
   );
 }

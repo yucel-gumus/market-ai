@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -111,6 +111,12 @@ export default function ProductSearchPage() {
     router.push('/ai-chat');
   };
 
+  useEffect(() => {
+    if (clearCart) {
+      clearCart();
+    }
+  }, []);
+  
   if (isSettingsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
