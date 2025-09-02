@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-// ...existing code...
 import { MapPin, Store } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AddressSearch } from '@/features/address/components/AddressSearch';
@@ -12,7 +11,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { MarketSearchRequest, ParsedAddress } from '@/types';
 
 export default function HomePage() {
-  // ...existing code...
   const [selectedAddress, setSelectedAddress] = useState<ParsedAddress | null>(null);
   const [selectedDistance, setSelectedDistance] = useState<number>(5);
   const [isLoadingMarkets, setIsLoadingMarkets] = useState<boolean>(false);
@@ -44,13 +42,11 @@ export default function HomePage() {
   const handleAddressSelect = (address: ParsedAddress | null) => {
     setSelectedAddress(address);
     setStoreAddress(address);
-  // ...existing code...
   };
 
   const handleDistanceSelect = (distance: number) => {
     setSelectedDistance(distance);
     setStoreDistance(distance);
-  // ...existing code...
   };
 
   const shouldShowMarkets = selectedAddress && selectedDistance > 0;
