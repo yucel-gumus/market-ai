@@ -1,12 +1,12 @@
+
 import axios from 'axios';
-let httpAgent: any = undefined;
-let httpsAgent: any = undefined;
-try {
-  const http = require('http');
-  const https = require('https');
-  httpAgent = new http.Agent({ keepAlive: true, maxSockets: 50 });
-  httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 50 });
-} catch {}
+import type { AxiosRequestConfig } from 'axios';
+import http from 'http';
+import https from 'https';
+
+const httpAgent: http.Agent = new http.Agent({ keepAlive: true, maxSockets: 50 });
+const httpsAgent: https.Agent = new https.Agent({ keepAlive: true, maxSockets: 50 });
+
 
 export const apiClient = axios.create({
   baseURL: '/api',
@@ -16,7 +16,7 @@ export const apiClient = axios.create({
   },
   httpAgent,
   httpsAgent,
-});
+} as AxiosRequestConfig);
 
 apiClient.interceptors.request.use(
   (config) => {

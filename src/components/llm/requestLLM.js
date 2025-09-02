@@ -20,7 +20,7 @@ export async function generateRecipeAndCalorie(recipeName) {
   let data;
   try {
     data = JSON.parse(cleaned);
-  } catch (error) {
+  } catch {
     data = { success: false, message: "Bilinmeyen tarif veya format" };
   }
   return data;
@@ -29,7 +29,7 @@ export async function generateRecipeAndCalorie(recipeName) {
 
 
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GOOGLE_AI_API_KEY);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' });
 
 export async function generateRecipeList(recipeName) {
   const content = prompt.replace('${recipeName}', recipeName);
@@ -46,7 +46,7 @@ export async function generateRecipeList(recipeName) {
   let data;
   try {
     data = JSON.parse(cleaned);
-  } catch (error) {
+  } catch {
     data = { success: false, message: "Bilinmeyen tarif" };
   }
   return data;
@@ -69,7 +69,7 @@ export async function generateCategory(ingredients, categorylist) {
   let data;
   try {
     data = JSON.parse(cleaned);
-  } catch (error) {
+  } catch {
     data = { success: false, message: "Bilinmeyen tarif" };
   }
   return data;
@@ -104,13 +104,11 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
         .replace(/,\s*]/g, ']')
         .trim();
 
-
       data = JSON.parse(cleaned);
       break;
-    } catch (error) {
-      console.error(`Deneme ${attempt} başarısız:`, error);
+    } catch {
       if (attempt === maxAttempts) {
-        data = { success: false, message: "Batch işlem hatası" };
+        data = { success: false, message: "Batch ilem hatas" };
       }
     }
   }
@@ -118,4 +116,5 @@ export async function tamurunbul(urunadlari, ingredients, recipeName) {
 }
 
 
-export default { generateRecipeList, generateCategory, tamurunbul };
+const llmExports = { generateRecipeList, generateCategory, tamurunbul };
+export default llmExports;

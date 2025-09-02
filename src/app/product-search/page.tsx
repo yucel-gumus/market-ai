@@ -115,7 +115,7 @@ export default function ProductSearchPage() {
     if (clearCart) {
       clearCart();
     }
-  }, []);
+  }, [clearCart]);
   
   if (isSettingsLoading) {
     return (

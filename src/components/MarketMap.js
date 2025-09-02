@@ -123,14 +123,16 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
     }, 100);
 
     return () => {
-      if (!mapInstanceRef.current) return;
-      const { map, userMarker, markers } = mapInstanceRef.current;
+      const mapInstance = mapInstanceRef.current;
+      const mapRefCurrent = mapRef.current;
+      if (!mapInstance) return;
+      const { map, userMarker, markers } = mapInstance;
       try {
         if (markers) markers.forEach(m => map.removeLayer(m));
         if (userMarker && map.hasLayer(userMarker)) map.removeLayer(userMarker);
         map.off();
         if (typeof map.remove === 'function') map.remove();
-        if (mapRef.current && mapRef.current._leaflet_id) delete mapRef.current._leaflet_id;
+        if (mapRefCurrent && mapRefCurrent._leaflet_id) delete mapRefCurrent._leaflet_id;
       } catch (error) { console.warn('Map cleanup error:', error); } finally { mapInstanceRef.current = null; }
     };
   }, [userLocation]);
