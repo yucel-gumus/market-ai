@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ChefHat, Search, CheckCircle, Clock, ShoppingCart, Package, Trash2, RotateCcw, ArrowRight } from 'lucide-react';
 import { SearchInput } from '@/features/products/components/SearchInput';
-import { generateRecipeList, generateCategory, tamurunbul, generateRecipeAndCalorie } from '@/components/llm/requestLLM.js';
+import { LlmService } from '@/services/llmService';
 import categoriesData from '@/data/categoriesList.json';
 import { fetchCategoriesData } from '@/app/api/ai-page/searchByCategories';
 import { fetchUrunData } from '@/app/api/ai-page/searchByProductsName';
@@ -35,7 +35,7 @@ function FoodInput() {
     setCalorieError(null);
     setCalorieInfo(null);
     try {
-      const data = await generateRecipeAndCalorie(foodName);
+      const data = await LlmService.generateRecipeAndCalorie(foodName);
       if (data.success) {
         setCalorieInfo(data);
         setShowRecipeModal(true);
@@ -180,7 +180,7 @@ function FoodInput() {
     });
 
     try {
-      const recipeData = await generateRecipeList(foodName);
+      const recipeData = await LlmService.generateRecipeList(foodName);
       if (recipeData.success) {
         setRecipe(recipeData);
         setIngredients(recipeData.ingredients);
@@ -247,7 +247,7 @@ function FoodInput() {
 
   const findAlternativeProducts = async (missingItems) => {
     try {
-      const categoryResult = await generateCategory(missingItems, categoryList);
+      const categoryResult = await LlmService.generateCategory(missingItems, categoryList);
       setResults(prev => ({ ...prev, categoryData: categoryResult }));
 
       if (categoryResult.categories?.length > 0) {
@@ -277,7 +277,8 @@ function FoodInput() {
         title: product.title,
         price: product.productDepotInfoList[0].price
       }));
-      const selectedResult = await tamurunbul(productTitlesAndPrice, missingItems, foodName);
+      const selectedResponse = await LlmService.selectProducts(productTitlesAndPrice, missingItems, foodName);
+      const selectedResult = selectedResponse.selections || [];
       setSearchResults(selectedResult);
       if (selectedResult) {
         const selectedProductsData = await Promise.all(

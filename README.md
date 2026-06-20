@@ -100,9 +100,13 @@ pnpm install
 `.env.local` dosyası oluşturun:
 
 ```env
-# API URLs
+# Market Fiyatı (sunucu tarafı proxy — tarayıcı doğrudan çağırmaz)
 NEXT_PUBLIC_ADDRESS_API_URL=https://harita.marketfiyati.org.tr/Service/api/v1
 NEXT_PUBLIC_MARKET_API_URL=https://api.marketfiyati.org.tr/api/v2
+
+# Python LLM backend (Vercel server-only key + public base URL for Route Handlers)
+NEXT_PUBLIC_PYTHON_API_URL=https://your-python-backend.example.com
+PYTHON_API_KEY=your_client_api_key_from_CLIENT_API_KEYS
 ```
 
 ### Geliştirme

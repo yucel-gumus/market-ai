@@ -1,32 +1,32 @@
-const BASE_URL = 'https://api.marketfiyati.org.tr/api/v2/searchByCategories';
-
 function getMarketData() {
-    if (typeof window === 'undefined') {
-      return { selectedAddress: null, selectedMarkets: [], distance: 5 };
-    }
-    
-    const rawData = localStorage.getItem("marketSearchData");
-    if (!rawData) return { selectedAddress: null, selectedMarkets: [], distance: 5 };
-    
-    try {
-      return JSON.parse(rawData);
-    } catch (e) {
-      console.error("Veri JSON formatında değil:", e);
-      return { selectedAddress: null, selectedMarkets: [], distance: 5 };
-    }
+  if (typeof window === 'undefined') {
+    return { selectedAddress: null, selectedMarkets: [], distance: 5 };
   }
-  
+
+  const rawData = localStorage.getItem('marketSearchData');
+  if (!rawData) return { selectedAddress: null, selectedMarkets: [], distance: 5 };
+
+  try {
+    return JSON.parse(rawData);
+  } catch (e) {
+    console.error('Veri JSON formatında değil:', e);
+    return { selectedAddress: null, selectedMarkets: [], distance: 5 };
+  }
+}
+
+function buildRequestConfig(malzeme, page) {
   const parsedData = getMarketData();
-  
-  const REQUEST_CONFIG = {
+  return {
     latitude: parsedData?.selectedAddress?.latitude ?? 0,
     longitude: parsedData?.selectedAddress?.longitude ?? 0,
     distance: parsedData?.distance ?? 5,
     size: 50,
-    pages: 0,
+    pages: page,
     menuCategory: false,
-    depots: parsedData?.selectedMarkets?.map(m => m.id) ?? []
+    depots: parsedData?.selectedMarkets?.map((m) => m.id) ?? [],
+    keywords: malzeme,
   };
+}
 
 async function fetchCategoriesData(malzeme) {
   const allProducts = [];
@@ -34,14 +34,10 @@ async function fetchCategoriesData(malzeme) {
 
   try {
     while (true) {
-      const response = await fetch(BASE_URL, {
+      const response = await fetch('/api/search-by-categories', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...REQUEST_CONFIG,
-          keywords: malzeme,
-          pages: currentPage
-        })
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(buildRequestConfig(malzeme, currentPage)),
       });
 
       if (!response.ok) {
@@ -49,6 +45,10 @@ async function fetchCategoriesData(malzeme) {
       }
 
       const result = await response.json();
+      if (result?.success === false) {
+        throw new Error(result.error || 'Kategori arama başarısız');
+      }
+
       const content = result.content || [];
 
       if (content.length === 0) {
