@@ -1,298 +1,113 @@
-# 🛒 Market AI - Akıllı Market Bulucu
+# 🛒 Market AI (Akıllı Market Bulucu ve AI Destekli Alışveriş Asistanı)
 
-<div align="center">
+Market AI, kullanıcının koordinatlarına göre en yakın marketleri listelemeyi, TÜBİTAK BİLGEM’in güncel fiyat verilerini sorgulamayı ve yapay zeka (Gemini AI) desteğiyle yemek tariflerini otomatik alışveriş listelerine dönüştürmeyi sağlayan modern ve ölçeklenebilir bir **Next.js 15 (React 19)** web uygulamasıdır.
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
-![React Query](https://img.shields.io/badge/React_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)
-![Zustand](https://img.shields.io/badge/Zustand-2D3748?style=for-the-badge&logoColor=white)
+---
 
-**Modern, hızlı ve kullanıcı dostu market bulma uygulaması**
+## 🌟 Öne Çıkan Özellikler
 
-[🚀 Canlı Demo](#) • [📖 Dökümanlar](./pr.md) • [🐛 Hata Bildir](#) • [💡 Özellik İste](#)
+* 📍 **Konum ve Yarıçap Bazlı Arama:** Kullanıcının girdiği adrese göre 1-10 km yarıçapındaki marketleri harita üzerinde listeler.
+* 🏷️ **TÜBİTAK BİLGEM Entegrasyonu:** Yakındaki marketler, TÜBİTAK BİLGEM’in `marketfiyati.org.tr` API'si üzerinden güncel ve güvenilir fiyat verileriyle çekilir.
+* 🤖 **AI Destekli Reçete & Alışveriş Listesi:** Kullanıcı yapmak istediği yemeğin adını yazar, Gemini AI bu yemeğin tarifini ve gereken malzemeleri çıkarır.
+* 🔍 **Semantik Ürün Eşleme & Alternatif Önerileri:**
+  * Ajan, yemek malzemelerini marketteki ürünlerle eşleştirir.
+  * Eğer bir malzeme o markette bulunmuyorsa, sistem alternatif bir ürün önerir (Örn: *"Çarliston biber bulunamadı, yerine Sivri Biber eklendi"*).
+* 🗺️ **Rotasyon ve Harita Görselleştirme:** Seçilen marketlere ait konumlar haritada gösterilir ve `leaflet-routing-machine` ile en uygun rotalar çıkarılır.
+* 📊 **Besin ve Kalori Analizi:** Yapay zeka, hazırlanan yemek listesinin kalori bilgilerini ve besin değerlerini detaylandırır.
 
-</div>
-
-## ✨ Özellikler
-
-🔍 **Akıllı Adres Arama** - Debounced search ile hızlı ve verimli adres bulma  
-📍 **Konum Bazlı Market Listesi** - 1-10 km yarıçapında market arama  
-� **Gelişmiş Market Filtreleme** - Brand bazlı filtreleme ve tekli market gizleme/gösterme  
-�🎨 **Modern UI/UX** - shadcn/ui ile elegant ve responsive tasarım  
-⚡ **Yüksek Performans** - Next.js 15 ve optimizasyonlarla hızlı yükleme  
-🔄 **Akıllı Cache** - TanStack Query ile otomatik veri yönetimi  
-🧹 **Clean Code Architecture** - Centralized utilities ve DRY principles  
-🌐 **Responsive** - Tüm cihazlarda mükemmel deneyim  
-🌍 **Türkçe Destek** - Tam lokalizasyon desteği  
-🤖 **AI-Ready** - Gelecekte AI agent entegrasyonu için hazır mimari  
+---
 
 ## 🛠️ Teknoloji Stack
 
-<table>
-<tr>
-<td align="center"><strong>Frontend</strong></td>
-<td align="center"><strong>Backend</strong></td>
-<td align="center"><strong>Styling</strong></td>
-<td align="center"><strong>State</strong></td>
-</tr>
-<tr>
-<td align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nextjs/nextjs-original.svg" width="40" height="40"/><br/>
-  Next.js 15
-</td>
-<td align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" width="40" height="40"/><br/>
-  API Routes
-</td>
-<td align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-plain.svg" width="40" height="40"/><br/>
-  Tailwind CSS
-</td>
-<td align="center">
-  <img src="https://avatars.githubusercontent.com/u/958486?v=4" width="40" height="40"/><br/>
-  Zustand
-</td>
-</tr>
-<tr>
-<td align="center">
-  <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="40" height="40"/><br/>
-  TypeScript
-</td>
-<td align="center">
-  <img src="https://axios-http.com/assets/logo.svg" width="40" height="40"/><br/>
-  Axios
-</td>
-<td align="center">
-  <img src="https://ui.shadcn.com/favicon.ico" width="40" height="40"/><br/>
-  shadcn/ui
-</td>
-<td align="center">
-  <img src="https://react-query-v3.tanstack.com/_next/static/images/emblem-light-628080660fddb35787ff6c77e97ca43e.svg" width="40" height="40"/><br/>
-  TanStack Query
-</td>
-</tr>
-</table>
+* **Frontend:** Next.js 15 (App Router - Turbopack), React 19, TypeScript.
+* **Tasarım:** TailwindCSS v4, shadcn/ui, Radix UI Primitives, Lucide Icons, Framer Motion (tw-animate-css).
+* **Durum Yönetimi & Veri Çekme:** Zustand (global state), TanStack Query v5 (React Query) ile veri önbellekleme (intelligent caching).
+* **Harita ve Lokasyon:** Leaflet, React Leaflet, Leaflet Routing Machine.
+* **Yapay Zeka:** `@google/generative-ai` (Gemini API Integration), Python LLM Backend proxy entegrasyonu.
+* **İletişim:** Axios tabanlı yapılandırılmış API istemcisi (`apiClient`).
 
-## 🚀 Hızlı Başlangıç
+---
 
-### Gereksinimler
-- Node.js 18+ 
-- npm, yarn, pnpm veya bun
-
-### Kurulum
-
-```bash
-# Projeyi klonla
-git clone https://github.com/yourusername/market-ai.git
-cd market-ai
-
-# Bağımlılıkları yükle
-npm install
-# veya
-yarn install
-# veya
-pnpm install
-```
-
-### Ortam Değişkenleri
-
-`.env.local` dosyası oluşturun:
-
-```env
-# Market Fiyatı (sunucu tarafı proxy — tarayıcı doğrudan çağırmaz)
-NEXT_PUBLIC_ADDRESS_API_URL=https://harita.marketfiyati.org.tr/Service/api/v1
-NEXT_PUBLIC_MARKET_API_URL=https://api.marketfiyati.org.tr/api/v2
-
-# Python LLM backend (Vercel server-only key + public base URL for Route Handlers)
-NEXT_PUBLIC_PYTHON_API_URL=https://your-python-backend.example.com
-PYTHON_API_KEY=your_client_api_key_from_CLIENT_API_KEYS
-```
-
-### Geliştirme
-
-```bash
-# Geliştirme sunucusunu başlat
-npm run dev
-
-# Proje http://localhost:3000 adresinde çalışacak
-```
-
-### Production Build
-
-```bash
-# Production build
-npm run build
-
-# Production sunucusunu başlat
-npm run start
-```
-
-## 📁 Proje Yapısı
+## 📂 Proje Yapısı
 
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── api/               # API Routes (Proxy endpoints)
+│   ├── api/               # API Routes (GCP ve TÜBİTAK API proxy geçitleri)
+│   │   ├── ai-page/       # Yapay zeka ve reçete proxy uç noktaları
 │   │   ├── search-addresses/
 │   │   └── search-markets/
-│   ├── ai-chat/           # AI Chat sayfası (gelecek özellik)
-│   ├── product-search/    # Ürün arama sayfası
-│   ├── globals.css
+│   ├── ai-chat/           # Gemini destekli akıllı sohbet ve alternatif ürün ekranı
+│   ├── product-search/    # Ürün arama ve karşılaştırma arayüzü
 │   ├── layout.tsx
-│   └── page.tsx
-├── components/            # Paylaşılan UI bileşenleri
+│   └── page.tsx           # Ana Sayfa (Adres seçimi ve harita)
+├── components/            # Yeniden kullanılabilir UI bileşenleri
 │   ├── ui/               # shadcn/ui bileşenleri
-│   ├── HomePage.tsx
-│   └── DynamicMap.js
-├── features/             # Domain-specific özellikler
-│   ├── address/          # Adres arama özelliği
-│   │   ├── components/
-│   │   └── hooks/
-│   └── markets/          # Market arama özelliği
-│       ├── components/   # MarketCard, MarketFilter, MarketList
-│       └── hooks/        # useMarketFiltering, useMarketSearch
-├── lib/                  # Centralized Utilities
-│   ├── axios.ts         # API konfigürasyonu
-│   ├── utils.ts         # Yardımcı fonksiyonlar
-│   ├── marketUtils.ts   # Market brand detection & logos
-│   ├── errorUtils.ts    # Centralized error handling
-│   └── stringUtils.ts   # String manipulation utilities
-├── providers/            # React Context providers
-├── services/             # API servis katmanı
-├── store/                # Global state (Zustand)
+│   └── DynamicMap.js     # Leaflet harita entegrasyonu
+├── features/             # Modüler iş özellikleri (Address, Markets)
+├── lib/                  # Axios konfigürasyonu, hata yönetimi ve string araçları
+├── services/             # LlmService (AI istekleri) ve Market API servisleri
+├── store/                # Zustand global state (konum, sepet ve filtreler)
 └── types/                # TypeScript tip tanımları
 ```
 
-## 🎯 Kullanım
+---
 
-### 1. Adres Arama
-- Ana sayfada arama kutusuna adres yazmaya başlayın
-- Debounced arama ile otomatik öneriler görünür
-- İstediğiniz adresi seçin
+## 🔌 API Entegrasyonları ve Proxy Katmanları
 
-### 2. Market Arama
-- Adres seçtikten sonra mesafe seçimi yapın (1-10 km)
-- Yakındaki marketler otomatik olarak listelenir
-- Market kartlarında detaylı bilgiler görüntülenir
+Uygulama, CORS engellerini aşmak ve anahtarları güvenli tutmak için Next.js API Routes üzerinden istekleri proxy'ler:
 
-### 3. Market Filtreleme ve Seçimi
-- **Brand Filtreleme**: A101, Migros, BIM gibi market brandlarını filtreleyin
-- **Tekli Market Kontrolü**: Her marketi ayrı ayrı gizleyebilir/gösterebilirsiniz
-- Gizlenen marketler blur efekti ile görünür ve tekrar aktif edilebilir
-- Seçili marketler AI Chat sayfasında kullanılabilir (gelecek özellik)
-
-## 🧹 Kod Kalitesi ve Temizliği
-
-### **2024 Refactoring**
-✅ **Centralized Utilities**: Kod tekrarını %90 azalttık  
-✅ **Clean Architecture**: Feature-based modular yapı  
-✅ **Zero Unused Code**: Kullanılmayan tüm kod ve dosyalar temizlendi  
-✅ **Type Safety**: %100 TypeScript coverage  
-✅ **Performance**: Optimized bundle size ve build time  
-✅ **DRY Principles**: Single responsibility ve reusability  
-
-### **Centralized Utilities**
-- **marketUtils.ts**: Market brand detection ve logo utilities
-- **errorUtils.ts**: Unified error handling
-- **stringUtils.ts**: String manipulation utilities
-
-## 🔧 API Entegrasyonu
-
-### Adres Arama API
+### 1. Reçete Malzeme Listesi Oluşturma
 ```
-GET /api/search-addresses?words={query}
+POST /api/ai-page/recipe-list
+Body: { "recipe_name": string }
 ```
+Gemini AI üzerinden yemeğe ait malzemeleri çıkarır.
 
-### Market Arama API
+### 2. Kalori ve Besin Değeri Hesaplama
 ```
-POST /api/search-markets
+POST /api/ai-page/recipe-with-calories
+Body: { "recipe_name": string }
+```
+Yemeğe ait kalori bilgilerini ve yapılış adımlarını getirir.
+
+### 3. Akıllı Ürün Seçimi & Eşleme
+```
+POST /api/ai-page/select-products
 Body: {
-  "distance": number,
-  "latitude": number,
-  "longitude": number
+  "recipe_name": string,
+  "ingredients": string[],
+  "products": ProductList[]
 }
 ```
-
-## 🏗️ Mimari Kararları
-
-### **Clean Architecture**
-- Domain-driven design ile feature-based klasör yapısı
-- Separation of concerns prensibi
-- SOLID principles uygulaması
-- Centralized utilities ile DRY principles
-
-### **Code Quality**
-- Zero code duplication
-- Unused code elimination 
-- Consistent naming conventions
-- Full TypeScript coverage
-
-### **Performance**
-- Next.js 15 ile otomatik optimizasyonlar
-- TanStack Query ile intelligent caching
-- Debounced search (300ms)
-- Code splitting ve lazy loading
-- Optimized bundle size
-
-### **Developer Experience**
-- Full TypeScript desteği
-- ESLint + Prettier konfigürasyonu
-- Hot reload ve fast refresh
-- Component-driven development
-
-### **Scalability**
-- Modüler mimari
-- Reusable components
-- Custom hooks pattern
-- Service layer abstraction
-
-## 📊 Performance Metrikleri
-
-| Metrik | Değer |
-|--------|-------|
-| **First Load JS** | ~179 kB |
-| **Bundle Size** | Optimized ✅ |
-| **Build Time** | <2s |
-| **Code Duplication** | 0% ✅ |
-| **Unused Code** | 0% ✅ |
-| **TypeScript Coverage** | %100 ✅ |
-| **Performance Score** | 🟢 Excellent |
-| **Code Quality** | 🟢 A+ |
-
-## 🤝 Katkıda Bulunma
-
-1. Bu projeyi fork'layın
-2. Feature branch oluşturun (`git checkout -b amazing-feature`)
-3. Değişikliklerinizi commit'leyin (`git commit -m 'Add amazing feature'`)
-4. Branch'inizi push'layın (`git push origin amazing-feature`)
-5. Pull Request açın
-
-## 📝 Lisans
-
-Bu proje [MIT License](./LICENSE) altında lisanslanmıştır.
-
-## 🙏 Teşekkürler
-
-- [Next.js](https://nextjs.org/) - Awesome React framework
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
-- [shadcn/ui](https://ui.shadcn.com/) - Beautiful component library
-- [TanStack Query](https://tanstack.com/query) - Powerful data fetching
-- [Zustand](https://github.com/pmndrs/zustand) - Small, fast state management
-
-## 📞 İletişim
-
-Proje Sahibi: **[Yucel Gmus]**
-- 📧 Email: [your.email@example.com]
-- 🐛 Issues: [GitHub Issues](../../issues)
-- 💬 Discussions: [GitHub Discussions](../../discussions)
+Malzemeler ile marketteki ürünleri semantik olarak eşleştirir, eksik ürünlere akıllı alternatifler bulur.
 
 ---
 
-<div align="center">
+## 🚀 Hızlı Başlangıç
 
-**⭐ Bu projeyi beğendiyseniz yıldız vermeyi unutmayın!**
+### 1. Kurulum
+```bash
+git clone https://github.com/yucel-gumus/market-ai.git
+cd market-ai
+npm install
+```
 
-Made with ❤️ in Turkey 🇹🇷
+### 2. Çevresel Değişkenler
+Proje kök dizininde `.env.local` oluşturun:
 
-</div>
+```env
+# TÜBİTAK BİLGEM Market Fiyatı API Uç Noktaları
+NEXT_PUBLIC_ADDRESS_API_URL=https://harita.marketfiyati.org.tr/Service/api/v1
+NEXT_PUBLIC_MARKET_API_URL=https://api.marketfiyati.org.tr/api/v2
+
+# Python LLM Backend Yapılandırması
+NEXT_PUBLIC_PYTHON_API_URL=https://your-python-backend-url.com
+PYTHON_API_KEY=your_secure_api_key
+```
+
+### 3. Geliştirme Sunucusunu Başlatma
+```bash
+npm run dev
+```
+Uygulama `http://localhost:3000` adresinde ayağa kalkacaktır.
