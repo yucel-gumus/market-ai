@@ -1,6 +1,5 @@
+import { TIMEOUTS_MS } from '@/constants';
 import apiClient from '@/lib/axios';
-
-const LLM_TIMEOUT_MS = 60_000;
 
 export interface RecipeListResponse {
   success: boolean;
@@ -57,7 +56,7 @@ export class LlmService {
     const { data } = await apiClient.post<RecipeListResponse>(
       '/ai-page/recipe-list',
       { recipe_name: recipeName },
-      { timeout: LLM_TIMEOUT_MS }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND }
     );
     return data;
   }
@@ -72,7 +71,7 @@ export class LlmService {
         ingredients: ingredients.join(', '),
         category_list: categoryList,
       },
-      { timeout: LLM_TIMEOUT_MS }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND }
     );
     return data;
   }
@@ -89,7 +88,7 @@ export class LlmService {
         ingredients: ingredients.join(', '),
         products,
       },
-      { timeout: LLM_TIMEOUT_MS }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND }
     );
     return data;
   }
@@ -100,7 +99,7 @@ export class LlmService {
     const { data } = await apiClient.post<RecipeWithCaloriesResponse>(
       '/ai-page/recipe-with-calories',
       { recipe_name: recipeName },
-      { timeout: LLM_TIMEOUT_MS }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND }
     );
     return data;
   }

@@ -1,51 +1,66 @@
 import { create } from 'zustand';
-import { ParsedAddress } from '@/types';
+import { persist } from 'zustand/middleware';
+import { DEFAULTS, STORAGE_KEYS } from '@/constants';
+import { Market, MarketSearchSession, ParsedAddress } from '@/types';
 
 interface AppState {
   selectedAddress: ParsedAddress | null;
   selectedDistance: number;
-  isLoadingAddresses: boolean;
-  isLoadingMarkets: boolean;
-  
+  marketSession: MarketSearchSession | null;
+
   setSelectedAddress: (address: ParsedAddress | null) => void;
   setSelectedDistance: (distance: number) => void;
-  setLoadingAddresses: (loading: boolean) => void;
-  setLoadingMarkets: (loading: boolean) => void;
-  reset: () => void;
+  setMarketSession: (session: MarketSearchSession | null) => void;
+  saveMarketSelection: (payload: {
+    distance: number;
+    selectedAddress: ParsedAddress | null;
+    selectedMarkets: Market[];
+    totalMarkets: number;
+  }) => void;
 }
 
-const initialState = {
-  selectedAddress: null,
-  selectedDistance: 5,
-  isLoadingAddresses: false,
-  isLoadingMarkets: false,
-};
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      selectedAddress: null,
+      selectedDistance: DEFAULTS.DISTANCE_KM,
+      marketSession: null,
 
-export const useAppStore = create<AppState>((set) => ({
-  ...initialState,
+      setSelectedAddress: (address) => set({ selectedAddress: address }),
+      setSelectedDistance: (distance) => set({ selectedDistance: distance }),
+      setMarketSession: (session) => set({ marketSession: session }),
 
-  setSelectedAddress: (address: ParsedAddress | null) => {
-    set({ selectedAddress: address });
-  },
-
-  setSelectedDistance: (distance: number) => {
-    set({ selectedDistance: distance });
-  },
-
-  setLoadingAddresses: (loading: boolean) => {
-    set({ isLoadingAddresses: loading });
-  },
-
-  setLoadingMarkets: (loading: boolean) => {
-    set({ isLoadingMarkets: loading });
-  },
-
-  reset: () => {
-    set(initialState);
-  },
-}));
-
-
-export const useSelectedAddress = () => useAppStore((state) => state.selectedAddress);
-
-export const useSelectedDistance = () => useAppStore((state) => state.selectedDistance);
+      saveMarketSelection: ({ distance, selectedAddress, selectedMarkets, totalMarkets }) => {
+        const session: MarketSearchSession = {
+          distance,
+          selectedAddress,
+          selectedMarkets,
+          timestamp: new Date().toISOString(),
+          totalMarkets,
+          selectedCount: selectedMarkets.length,
+        };
+        set({
+          marketSession: session,
+          selectedAddress,
+          selectedDistance: distance,
+        });
+        // Geriye dönük: clientMarketSearch aynı key'i okur
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(STORAGE_KEYS.MARKET_SEARCH, JSON.stringify(session));
+          } catch {
+            /* ignore quota */
+          }
+        }
+      },
+    }),
+    {
+      name: 'market-ai-app',
+      partialize: (state) => ({
+        selectedAddress: state.selectedAddress,
+        selectedDistance: state.selectedDistance,
+        marketSession: state.marketSession,
+      }),
+    }
+  )
+);

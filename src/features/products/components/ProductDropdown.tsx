@@ -91,9 +91,14 @@ interface ProductDropdownItemProps {
 }
 
 function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }: ProductDropdownItemProps) {
-  const cheapestDepot = product.productDepotInfoList?.reduce((min, depot) => 
-    parseFloat(depot.price.toString()) < parseFloat(min.price.toString()) ? depot : min
-  );
+  const depots = product.productDepotInfoList ?? [];
+  const cheapestDepot = depots.length
+    ? depots.reduce((min, depot) =>
+        parseFloat(depot.price.toString()) < parseFloat(min.price.toString())
+          ? depot
+          : min
+      )
+    : undefined;
   
   const logoPath = cheapestDepot ? getMarketLogo(cheapestDepot.marketAdi || '') : null;
 

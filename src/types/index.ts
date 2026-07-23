@@ -106,7 +106,19 @@ export interface OptimizedShopping {
   marketGroups: MarketGroup[];
   totalCost: number;
   marketCount: number;
+  /** En pahalı depo alternatifine göre tahmini tasarruf */
+  totalSavings?: number;
   route?: RouteStep[];
+}
+
+/** localStorage / store'a yazılan market arama oturumu */
+export interface MarketSearchSession {
+  distance: number;
+  selectedAddress: ParsedAddress | null;
+  selectedMarkets: Market[];
+  timestamp?: string;
+  totalMarkets?: number;
+  selectedCount?: number;
 }
 
 export interface MarketGroup {

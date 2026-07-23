@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { MapPin, Store } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { DEFAULTS } from '@/constants';
 import { AddressSearch } from '@/features/address/components/AddressSearch';
 import { DistanceSelect } from '@/features/markets/components/DistanceSelect';
 import { MarketList } from '@/features/markets/components/MarketList';
@@ -12,12 +13,11 @@ import { MarketSearchRequest, ParsedAddress } from '@/types';
 
 export default function HomePage() {
   const [selectedAddress, setSelectedAddress] = useState<ParsedAddress | null>(null);
-  const [selectedDistance, setSelectedDistance] = useState<number>(5);
-  const [isLoadingMarkets, setIsLoadingMarkets] = useState<boolean>(false);
+  const [selectedDistance, setSelectedDistance] = useState<number>(DEFAULTS.DISTANCE_KM);
 
-  const { 
-    setSelectedAddress: setStoreAddress, 
-    setSelectedDistance: setStoreDistance
+  const {
+    setSelectedAddress: setStoreAddress,
+    setSelectedDistance: setStoreDistance,
   } = useAppStore();
 
   const marketSearchRequest: MarketSearchRequest | null = selectedAddress
@@ -28,16 +28,12 @@ export default function HomePage() {
       }
     : null;
 
-  const { 
-    data: markets = [], 
-    isLoading: isMarketsLoading, 
+  const {
+    data: markets = [],
+    isLoading: isMarketsLoading,
     error: marketsError,
-    refetch: refetchMarkets 
+    refetch: refetchMarkets,
   } = useMarketSearch(marketSearchRequest);
-
-  useEffect(() => {
-    setIsLoadingMarkets(isMarketsLoading);
-  }, [isMarketsLoading]);
 
   const handleAddressSelect = (address: ParsedAddress | null) => {
     setSelectedAddress(address);
@@ -105,7 +101,7 @@ export default function HomePage() {
                 <DistanceSelect
                   value={selectedDistance}
                   onValueChange={handleDistanceSelect}
-                  disabled={isLoadingMarkets}
+                  disabled={isMarketsLoading}
                 />
               </CardContent>
             </Card>
@@ -128,7 +124,7 @@ export default function HomePage() {
                   markets={markets}
                   distance={selectedDistance}
                   selectedAddress={selectedAddress}
-                  isLoading={isLoadingMarkets}
+                  isLoading={isMarketsLoading}
                   error={marketsError}
                   onRetry={() => refetchMarkets()}
                 />

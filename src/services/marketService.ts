@@ -1,8 +1,10 @@
+import { DISTANCE } from '@/constants';
 import apiClient from '@/lib/axios';
+import { haversineKm } from '@/lib/geo';
+import { logger } from '@/lib/logger';
 import { MarketSearchRequest, Market, ApiResponse } from '@/types';
 
 export class MarketService {
-
   static async searchNearbyMarkets(request: MarketSearchRequest): Promise<Market[]> {
     if (!this.validateSearchRequest(request)) {
       throw new Error('Geçersiz market arama parametreleri');
@@ -21,7 +23,7 @@ export class MarketService {
       return this.transformMarkets(response.data.data, request);
       
     } catch (error: unknown) {
-      console.error('❌ Market arama başarısız:', error);
+      logger.error('marketService', 'Market arama başarısız', error);
       
       if (error && typeof error === 'object' && 'isNetworkError' in error) {
         throw new Error('Market arama sırasında ağ hatası oluştu');
@@ -37,18 +39,22 @@ export class MarketService {
   private static validateSearchRequest(request: MarketSearchRequest): boolean {
     const { distance, latitude, longitude } = request;
 
-    if (typeof distance !== 'number' || distance < 1 || distance > 10) {
-      console.error('❌ Geçersiz mesafe:', distance);
+    if (
+      typeof distance !== 'number' ||
+      distance < DISTANCE.MIN_KM ||
+      distance > DISTANCE.MAX_KM
+    ) {
+      logger.warn('marketService', 'Geçersiz mesafe', distance);
       return false;
     }
 
     if (typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
-      console.error('❌ Geçersiz enlem:', latitude);
+      logger.warn('marketService', 'Geçersiz enlem', latitude);
       return false;
     }
 
     if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
-      console.error('❌ Geçersiz boylam:', longitude);
+      logger.warn('marketService', 'Geçersiz boylam', longitude);
       return false;
     }
 
@@ -89,7 +95,7 @@ export class MarketService {
 
           return market;
         } catch (parseError) {
-          console.error(`❌ ${index} numaralı market parse edilemedi:`, parseError);
+          logger.error('marketService', `${index} market parse edilemedi`, parseError);
           return null;
         }
       })
@@ -117,42 +123,18 @@ export class MarketService {
     lat2: number,
     lon2: number
   ): number {
-    const R = 6371;
-    const dLat = this.toRadians(lat2 - lat1);
-    const dLon = this.toRadians(lon2 - lon1);
-    
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.toRadians(lat1)) * Math.cos(this.toRadians(lat2)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-      
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    
-    return Math.round(distance * 100) / 100;
+    const d = haversineKm(lat1, lon1, lat2, lon2);
+    return Number.isFinite(d) ? d : 0;
   }
-  private static toRadians(degrees: number): number {
-    return degrees * (Math.PI / 180);
-  }
+
   static formatDistance(distance: number): string {
-    if (distance < 0.01) {
-      return '< 10m';
-    } else if (distance < 0.1) {
-      return `${Math.round(distance * 1000)}m`;
-    } else if (distance < 1) {
-      return `${Math.round(distance * 100) / 100}km`;
-    } else {
-      return `${Math.round(distance * 10) / 10}km`;
-    }
+    if (distance < 0.01) return '< 10m';
+    if (distance < 0.1) return `${Math.round(distance * 1000)}m`;
+    if (distance < 1) return `${Math.round(distance * 100) / 100}km`;
+    return `${Math.round(distance * 10) / 10}km`;
   }
+
   static getDistanceOptions() {
-    return [
-      { value: 1, label: '1 km' },
-      { value: 2, label: '2 km' },
-      { value: 3, label: '3 km' },
-      { value: 5, label: '5 km' },
-      { value: 7, label: '7 km' },
-      { value: 10, label: '10 km' },
-    ];
+    return [...DISTANCE.OPTIONS];
   }
 }

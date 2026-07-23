@@ -6,10 +6,11 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@radix-ui/react-checkbox": "^1.3.2",
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
@@ -24,7 +25,6 @@
     "next": "15.4.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-leaflet": "^4.2.0",
     "tailwind-merge": "^3.3.1",
     "use-debounce": "^10.0.5",
     "zustand": "^5.0.7"
@@ -39,6 +39,7 @@
     "eslint-config-next": "15.4.6",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

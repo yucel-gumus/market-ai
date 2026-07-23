@@ -3,21 +3,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import { DEFAULTS, LEAFLET } from '@/constants';
+import { addOsmTileLayer, ensureLeafletDefaultIcons } from '@/lib/leafletSetup';
 import { getMarketLogo } from '@/lib/utils';
 
 let mapInstanceCounter = 0;
 
 if (typeof window !== 'undefined') {
   import('leaflet-routing-machine');
-}
-
-if (typeof window !== 'undefined') {
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  });
+  ensureLeafletDefaultIcons();
 }
 
 function getMarkerColor(index) {
@@ -113,21 +107,18 @@ const MapWrapper = ({
 
     const map = L.map(mapElement, {
       center: center,
-      zoom: 13,
-      minZoom: 10,
-      maxZoom: 18,
+      zoom: DEFAULTS.MAP_ZOOM,
+      minZoom: DEFAULTS.MAP_MIN_ZOOM,
+      maxZoom: DEFAULTS.MAP_MAX_ZOOM,
       zoomControl: true,
       attributionControl: true,
       preferCanvas: false,
       fadeAnimation: false,
       zoomAnimation: false,
-      markerZoomAnimation: false
+      markerZoomAnimation: false,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '',
-      maxZoom: 19
-    }).addTo(map);
+    addOsmTileLayer(map);
 
     const userIcon = L.divIcon({
       html: `<div style="
@@ -222,7 +213,7 @@ const MapWrapper = ({
             },
             show: false,
             router: L.Routing.osrmv1({
-              serviceUrl: 'https://router.project-osrm.org/route/v1'
+              serviceUrl: LEAFLET.OSRM_SERVICE
             })
           });
 
@@ -336,7 +327,7 @@ const MapWrapper = ({
             },
             show: false,
             router: L.Routing.osrmv1({
-              serviceUrl: 'https://router.project-osrm.org/route/v1'
+              serviceUrl: LEAFLET.OSRM_SERVICE
             })
           });
 

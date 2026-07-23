@@ -20,7 +20,7 @@ export function ShoppingCartSummary({
   onClearCart,
   onRemoveItem
 }: ShoppingCartSummaryProps) {
-  const { marketGroups, totalCost, marketCount } = optimization;
+  const { marketGroups, totalCost, marketCount, totalSavings = 0 } = optimization;
   const totalItems = marketGroups.reduce((sum, group) => sum + group.items.length, 0);
 
   const handleSingleRouteClick = () => {
@@ -57,7 +57,7 @@ export function ShoppingCartSummary({
 
       <CardContent className="space-y-4">
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4 p-3 bg-white/60 rounded-lg">
+        <div className="grid grid-cols-2 gap-3 rounded-lg bg-white/60 p-3 sm:grid-cols-4">
           <div className="text-center">
             <div className="text-lg font-bold text-blue-600">{totalItems}</div>
             <div className="text-xs text-muted-foreground">Ürün</div>
@@ -69,6 +69,12 @@ export function ShoppingCartSummary({
           <div className="text-center">
             <div className="text-lg font-bold text-purple-600">₺{totalCost.toFixed(2)}</div>
             <div className="text-xs text-muted-foreground">Toplam</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-emerald-600">
+              ₺{totalSavings.toFixed(2)}
+            </div>
+            <div className="text-xs text-muted-foreground">Tahmini tasarruf</div>
           </div>
         </div>
 

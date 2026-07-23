@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { SEARCH } from '@/constants';
+import { isApiError } from '@/lib/errorUtils';
 import { ProductService } from '@/services/productService';
 import { SearchSettings, Product } from '@/types';
 
@@ -6,52 +8,56 @@ interface UseProductSearchProps {
   query: string;
   searchSettings: SearchSettings | null;
   enabled?: boolean;
+  /** true: tüm sayfalar (AI). false/default: tek sayfa (canlı arama) */
+  fetchAllPages?: boolean;
 }
-export const useProductSearch = ({ 
-  query, 
-  searchSettings, 
-  enabled = true 
+
+export const useProductSearch = ({
+  query,
+  searchSettings,
+  enabled = true,
+  fetchAllPages = false,
 }: UseProductSearchProps) => {
   return useQuery<Product[], Error>({
-    queryKey: ['products', query, searchSettings?.depots],
-    
+    queryKey: [
+      'products',
+      query,
+      searchSettings?.depots,
+      fetchAllPages ? 'all' : 'live',
+    ],
     queryFn: async () => {
-      if (!searchSettings || query.length < 2) {
+      if (!searchSettings || query.length < SEARCH.MIN_QUERY_LENGTH) {
         return [];
       }
 
-      const response = await ProductService.searchAllProducts({
+      const base = {
         keywords: query,
-        size: searchSettings.size,
         latitude: searchSettings.latitude,
         longitude: searchSettings.longitude,
         distance: searchSettings.distance,
-        depots: searchSettings.depots
-      });
+        depots: searchSettings.depots,
+      };
 
-      return response.content || [];
-    },
-    
-    enabled: Boolean(
-      enabled && 
-      searchSettings && 
-      query.length >= 2
-    ),
-    
-  staleTime: 60 * 1000, 
-  gcTime: 2 * 60 * 1000,
-    
-    retry: (failureCount, error) => {
-      if (error.message.includes('400') || error.message.includes('404')) {
-        return false;
+      if (fetchAllPages) {
+        const response = await ProductService.searchAllProducts({
+          ...base,
+          size: searchSettings.size,
+        });
+        return response.content || [];
       }
+
+      return ProductService.searchLivePage(base);
+    },
+    enabled: Boolean(
+      enabled && searchSettings && query.length >= SEARCH.MIN_QUERY_LENGTH
+    ),
+    staleTime: 60 * 1000,
+    gcTime: 2 * 60 * 1000,
+    retry: (failureCount, error) => {
+      if (isApiError(error)) return false;
       return failureCount < 2;
     },
-    
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
-  refetchOnWindowFocus: false,
+    refetchOnWindowFocus: false,
   });
 };
-
-export const getProductSearchQueryKey = (query: string, depots?: string[]) => 
-  ['products', query, depots];

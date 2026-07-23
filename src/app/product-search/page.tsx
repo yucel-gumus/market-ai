@@ -1,11 +1,11 @@
-
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { InlineAlert } from '@/components/ui/inline-alert';
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
@@ -18,6 +18,7 @@ import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStora
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
 import { useDebounce } from 'use-debounce';
+import { SEARCH } from '@/constants';
 import { ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
 
 export default function ProductSearchPage() {
@@ -30,6 +31,7 @@ export default function ProductSearchPage() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
+  const [uiError, setUiError] = useState<string | null>(null);
 
   const [debouncedQuery] = useDebounce(searchQuery, 450);
 
@@ -40,27 +42,32 @@ export default function ProductSearchPage() {
     clearCart,
     generateRoute,
     isProductInCart,
-    marketCount
+    marketCount,
   } = useShoppingCart();
+
   const {
     searchSettings,
     isLoading: isSettingsLoading,
-    error: settingsError
+    error: settingsError,
   } = useLocalStorageSettings();
+
   const {
     data: products = [],
     isLoading: isProductsLoading,
-    error: productsError
+    error: productsError,
   } = useProductSearch({
     query: debouncedQuery,
-    searchSettings: searchSettings
+    searchSettings,
+    fetchAllPages: false,
   });
+
   const searchStats: SearchStats = {
-    totalResults: products.length
+    totalResults: products.length,
   };
+
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setIsDropdownOpen(value.length >= 2);
+    setIsDropdownOpen(value.length >= SEARCH.MIN_QUERY_LENGTH);
   };
 
   const handleClearSearch = () => {
@@ -70,7 +77,7 @@ export default function ProductSearchPage() {
 
   const handleShowRoute = (depot: ProductDepotInfo) => {
     if (!depot.latitude || !depot.longitude) {
-      alert('Mağaza konumu bulunamadı!');
+      setUiError('Mağaza konumu bulunamadı.');
       return;
     }
     setSelectedStore(depot);
@@ -92,35 +99,29 @@ export default function ProductSearchPage() {
     setRealRouteTime(routeData.time);
   };
 
-  const handleViewMultiRoute = () => {
-    setShowMultiMap(true);
-  };
+  const handleViewMultiRoute = () => setShowMultiMap(true);
 
   const handleRouteFound = useCallback((info: RouteInfo) => {
-    setRouteInfo(prevInfo => {
-      if (!prevInfo ||
+    setRouteInfo((prevInfo) => {
+      if (
+        !prevInfo ||
         prevInfo.distance !== info.distance ||
-        prevInfo.time !== info.time) {
+        prevInfo.time !== info.time
+      ) {
         return info;
       }
       return prevInfo;
     });
   }, []);
 
-  const handleGoHome = () => {
-    router.push('/ai-chat');
-  };
-
-  useEffect(() => {
-    if (clearCart) {
-      clearCart();
-    }
-  }, [clearCart]);
-  
   if (isSettingsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
+        <div
+          className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"
+          role="status"
+          aria-label="Yükleniyor"
+        />
       </div>
     );
   }
@@ -129,22 +130,18 @@ export default function ProductSearchPage() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
         <div className="container mx-auto max-w-2xl pt-16">
-          <div className="flex items-center gap-4 mb-6">
+          <div className="mb-6 flex items-center gap-4">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleGoHome}
+              onClick={() => router.push('/')}
               className="flex items-center gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <Home className="h-4 w-4" />
               Ana Sayfa
             </Button>
           </div>
-
-          <ErrorDisplay
-            error={settingsError}
-            onGoHome={handleGoHome}
-          />
+          <ErrorDisplay error={settingsError} onGoHome={() => router.push('/')} />
         </div>
       </div>
     );
@@ -152,31 +149,41 @@ export default function ProductSearchPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
+      <div className="container mx-auto max-w-4xl px-4 py-8">
+        <div className="mb-6 flex flex-wrap items-center gap-3">
           <Button
-            onClick={handleGoHome}
-            className="flex items-center gap-2 rounded-2xl border border-gray-300 
-             bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 
-             px-4 py-2 text-white shadow-md transition-all duration-300 
-             hover:scale-105 hover:shadow-lg active:scale-95"
+            variant="outline"
+            size="sm"
+            onClick={() => router.push('/')}
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Ana Sayfa
+          </Button>
+          <Button
+            onClick={() => router.push('/ai-chat')}
+            className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-2 text-white shadow-md"
           >
             <ArrowLeft className="h-4 w-4" />
             <span className="font-medium">Yapay Zekaya Sor</span>
           </Button>
-
         </div>
 
-        {/* Main Search Card */}
-        <Card className="mb-6 shadow-lg border-0 bg-white/80 backdrop-blur-sm dark:bg-gray-800/80">
+        {uiError && (
+          <InlineAlert
+            message={uiError}
+            className="mb-4"
+            onDismiss={() => setUiError(null)}
+          />
+        )}
+
+        <Card className="mb-6 border-0 bg-white/80 shadow-lg backdrop-blur-sm dark:bg-gray-800/80">
           <CardHeader className="pb-4">
             <CardTitle className="flex items-center gap-2 text-xl">
-              <span className="text-blue-600">🔍</span>
               Canlı Ürün Arama
             </CardTitle>
-            <p className="text-muted-foreground text-sm">
-              Ürün adı yazın, anında sonuçları görün
+            <p className="text-sm text-muted-foreground">
+              Ürün adı yazın; ilk sonuç sayfası anında gelir
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -212,7 +219,6 @@ export default function ProductSearchPage() {
           </CardContent>
         </Card>
 
-        {/* Shopping Cart Summary */}
         {optimization && (
           <ShoppingCartSummary
             optimization={optimization}
@@ -223,10 +229,8 @@ export default function ProductSearchPage() {
           />
         )}
 
-        {/* Search Tips */}
         <SearchTips />
 
-        {/* Single Product Route Modal */}
         {searchSettings && (
           <RouteModal
             isOpen={showSingleMap}
@@ -238,12 +242,14 @@ export default function ProductSearchPage() {
           />
         )}
 
-        {/* Multi Store Route Modal */}
         {searchSettings && optimization && marketCount > 1 && (
           <MultiStoreRouteModal
             isOpen={showMultiMap}
             onClose={handleCloseMap}
-            routeSteps={generateRoute(searchSettings.latitude, searchSettings.longitude)}
+            routeSteps={generateRoute(
+              searchSettings.latitude,
+              searchSettings.longitude
+            )}
             searchSettings={searchSettings}
             realRouteDistance={realRouteDistance}
             realRouteTime={realRouteTime}

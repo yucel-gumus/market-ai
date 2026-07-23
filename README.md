@@ -1,6 +1,6 @@
 # 🛒 Market AI (Akıllı Market Bulucu ve AI Destekli Alışveriş Asistanı)
 
-Market AI, kullanıcının koordinatlarına göre en yakın marketleri listelemeyi, TÜBİTAK BİLGEM’in güncel fiyat verilerini sorgulamayı ve yapay zeka (Gemini AI) desteğiyle yemek tariflerini otomatik alışveriş listelerine dönüştürmeyi sağlayan modern ve ölçeklenebilir bir **Next.js 15 (React 19)** web uygulamasıdır.
+Market AI, kullanıcının koordinatlarına göre en yakın marketleri listelemeyi, TÜBİTAK BİLGEM’in güncel fiyat verilerini sorgulamayı ve yapay zeka (Python LLM backend) desteğiyle yemek tariflerini otomatik alışveriş listelerine dönüştürmeyi sağlayan modern ve ölçeklenebilir bir **Next.js 15 (React 19)** web uygulamasıdır.
 
 ---
 
@@ -8,7 +8,7 @@ Market AI, kullanıcının koordinatlarına göre en yakın marketleri listeleme
 
 * 📍 **Konum ve Yarıçap Bazlı Arama:** Kullanıcının girdiği adrese göre 1-10 km yarıçapındaki marketleri harita üzerinde listeler.
 * 🏷️ **TÜBİTAK BİLGEM Entegrasyonu:** Yakındaki marketler, TÜBİTAK BİLGEM’in `marketfiyati.org.tr` API'si üzerinden güncel ve güvenilir fiyat verileriyle çekilir.
-* 🤖 **AI Destekli Reçete & Alışveriş Listesi:** Kullanıcı yapmak istediği yemeğin adını yazar, Gemini AI bu yemeğin tarifini ve gereken malzemeleri çıkarır.
+* 🤖 **AI Destekli Reçete & Alışveriş Listesi:** Kullanıcı yapmak istediği yemeğin adını yazar; Python LLM backend bu yemeğin tarifini ve gereken malzemeleri çıkarır.
 * 🔍 **Semantik Ürün Eşleme & Alternatif Önerileri:**
   * Ajan, yemek malzemelerini marketteki ürünlerle eşleştirir.
   * Eğer bir malzeme o markette bulunmuyorsa, sistem alternatif bir ürün önerir (Örn: *"Çarliston biber bulunamadı, yerine Sivri Biber eklendi"*).
@@ -23,7 +23,7 @@ Market AI, kullanıcının koordinatlarına göre en yakın marketleri listeleme
 * **Tasarım:** TailwindCSS v4, shadcn/ui, Radix UI Primitives, Lucide Icons, Framer Motion (tw-animate-css).
 * **Durum Yönetimi & Veri Çekme:** Zustand (global state), TanStack Query v5 (React Query) ile veri önbellekleme (intelligent caching).
 * **Harita ve Lokasyon:** Leaflet, React Leaflet, Leaflet Routing Machine.
-* **Yapay Zeka:** `@google/generative-ai` (Gemini API Integration), Python LLM Backend proxy entegrasyonu.
+* **Yapay Zeka:** Python LLM backend; Next.js `/api/ai-page/*` route'ları üzerinden güvenli proxy (`X-API-Key`).
 * **İletişim:** Axios tabanlı yapılandırılmış API istemcisi (`apiClient`).
 
 ---
@@ -37,7 +37,7 @@ src/
 │   │   ├── ai-page/       # Yapay zeka ve reçete proxy uç noktaları
 │   │   ├── search-addresses/
 │   │   └── search-markets/
-│   ├── ai-chat/           # Gemini destekli akıllı sohbet ve alternatif ürün ekranı
+│   ├── ai-chat/           # AI destekli reçete, malzeme eşleme ve alternatif ürün ekranı
 │   ├── product-search/    # Ürün arama ve karşılaştırma arayüzü
 │   ├── layout.tsx
 │   └── page.tsx           # Ana Sayfa (Adres seçimi ve harita)
@@ -62,7 +62,7 @@ Uygulama, CORS engellerini aşmak ve anahtarları güvenli tutmak için Next.js 
 POST /api/ai-page/recipe-list
 Body: { "recipe_name": string }
 ```
-Gemini AI üzerinden yemeğe ait malzemeleri çıkarır.
+Python LLM backend üzerinden yemeğe ait malzemeleri çıkarır.
 
 ### 2. Kalori ve Besin Değeri Hesaplama
 ```

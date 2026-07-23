@@ -2,45 +2,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { DEFAULTS } from '@/constants';
+import { addOsmTileLayer, ensureLeafletDefaultIcons } from '@/lib/leafletSetup';
+import { createUserLocationIcon, injectMapMarkerStyles } from '@/lib/mapMarkers';
 import { getMarketLogo, detectMarketBrand } from '@/lib/marketUtils';
 
 let mapInstanceCounter = 0;
 
 if (typeof window !== 'undefined') {
-  delete L.Icon.Default.prototype._getIconUrl;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-  });
-
-  const style = document.createElement('style');
-  style.textContent = `
-    .custom-market-marker {
-      background: transparent !important;
-      border: none !important;
-    }
-    .custom-market-marker:hover div {
-      transform: scale(1.15) !important;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
-    }
-    .custom-user-marker {
-      background: transparent !important;
-      border: none !important;
-    }
-    .custom-user-marker:hover div {
-      transform: scale(1.05) !important;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.2); opacity: 0.7; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-  `;
-  if (!document.head.querySelector('style[data-market-map]')) {
-    style.setAttribute('data-market-map', 'true');
-    document.head.appendChild(style);
-  }
+  ensureLeafletDefaultIcons();
+  injectMapMarkerStyles();
 }
 
 const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarkerClick }) => {
@@ -49,53 +20,29 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
   const instanceId = useRef(++mapInstanceCounter);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-
     const mapElement = mapRef.current;
-    if (!mapElement || mapElement._leaflet_id) return;
+    if (!mapElement || mapInstanceRef.current || mapElement._leaflet_id) return;
 
     const map = L.map(mapElement, {
-      center: userLocation ? [userLocation.latitude, userLocation.longitude] : [41.0082, 28.9784],
-      zoom: 13,
-      minZoom: 10,
-      maxZoom: 18,
+      center: userLocation
+        ? [userLocation.latitude, userLocation.longitude]
+        : [DEFAULTS.MAP_CENTER.lat, DEFAULTS.MAP_CENTER.lng],
+      zoom: DEFAULTS.MAP_ZOOM,
+      minZoom: DEFAULTS.MAP_MIN_ZOOM,
+      maxZoom: DEFAULTS.MAP_MAX_ZOOM,
       zoomControl: true,
       attributionControl: true,
       preferCanvas: false,
       fadeAnimation: false,
       zoomAnimation: false,
-      markerZoomAnimation: false
+      markerZoomAnimation: false,
     });
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: ''
-    }).addTo(map);
+    addOsmTileLayer(map);
 
     let userMarker = null;
     if (userLocation) {
-      const userIcon = L.divIcon({
-        html: `
-          <div style="
-            width: 50px; height: 50px;
-            background: linear-gradient(45deg, #3B82F6, #1E40AF);
-            border: 3px solid white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4); position: relative;
-          ">
-            <div style="color: white; font-size: 20px; font-weight: bold;">📍</div>
-            <div style="
-              position: absolute; top: -5px; right: -5px;
-              width: 16px; height: 16px; background: #10B981;
-              border: 2px solid white; border-radius: 50%;
-              animation: pulse 2s infinite;
-            "></div>
-          </div>
-        `,
-        className: 'custom-user-marker',
-        iconSize: [50, 50],
-        iconAnchor: [25, 25],
-        popupAnchor: [0, -25]
-      });
+      const userIcon = createUserLocationIcon();
 
       userMarker = L.marker([userLocation.latitude, userLocation.longitude], { icon: userIcon })
         .addTo(map)
@@ -124,16 +71,19 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
 
     return () => {
       const mapInstance = mapInstanceRef.current;
-      const mapRefCurrent = mapRef.current;
       if (!mapInstance) return;
       const { map, userMarker, markers } = mapInstance;
       try {
-        if (markers) markers.forEach(m => map.removeLayer(m));
+        if (markers) markers.forEach((m) => map.removeLayer(m));
         if (userMarker && map.hasLayer(userMarker)) map.removeLayer(userMarker);
         map.off();
         if (typeof map.remove === 'function') map.remove();
-        if (mapRefCurrent && mapRefCurrent._leaflet_id) delete mapRefCurrent._leaflet_id;
-      } catch (error) { console.warn('Map cleanup error:', error); } finally { mapInstanceRef.current = null; }
+        if (mapElement._leaflet_id) delete mapElement._leaflet_id;
+      } catch (error) {
+        console.warn('Map cleanup error:', error);
+      } finally {
+        mapInstanceRef.current = null;
+      }
     };
   }, [userLocation]);
 

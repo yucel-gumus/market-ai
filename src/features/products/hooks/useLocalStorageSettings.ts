@@ -1,8 +1,30 @@
-import { useState, useEffect } from 'react';
-import { SearchSettings } from '@/types';
-import { safeIncludes } from '@/lib/stringUtils';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { DEFAULTS, STORAGE_KEYS } from '@/constants';
+import { useAppStore } from '@/store/useAppStore';
+import { Market, SearchSettings } from '@/types';
+
+function sessionToSettings(data: {
+  selectedAddress?: { latitude: number; longitude: number } | null;
+  selectedMarkets?: Market[];
+  distance?: number;
+}): SearchSettings | null {
+  if (!data.selectedAddress || !data.selectedMarkets?.length) return null;
+
+  return {
+    latitude: data.selectedAddress.latitude,
+    longitude: data.selectedAddress.longitude,
+    distance: data.distance || DEFAULTS.DISTANCE_KM,
+    pages: DEFAULTS.PAGE,
+    size: DEFAULTS.PAGE_SIZE,
+    depots: data.selectedMarkets.map((m) => m.id),
+    selectedMarkets: data.selectedMarkets,
+  };
+}
 
 export const useLocalStorageSettings = () => {
+  const marketSession = useAppStore((s) => s.marketSession);
   const [searchSettings, setSearchSettings] = useState<SearchSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,61 +33,48 @@ export const useLocalStorageSettings = () => {
     if (typeof window === 'undefined') return;
 
     try {
-      const marketSearchData = localStorage.getItem('marketSearchData');
-      
-      if (!marketSearchData) {
-        setError('Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.');
+      // 1) Zustand session
+      if (marketSession) {
+        const settings = sessionToSettings(marketSession);
+        if (settings) {
+          setSearchSettings(settings);
+          setError(null);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // 2) Legacy localStorage
+      const raw = localStorage.getItem(STORAGE_KEYS.MARKET_SEARCH);
+      if (!raw) {
+        setError(
+          'Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.'
+        );
+        setSearchSettings(null);
+        setIsLoading(false);
         return;
       }
 
-      const data = JSON.parse(marketSearchData);
-      
-      if (!data.selectedAddress || !data.selectedMarkets) {
+      const data = JSON.parse(raw);
+      const settings = sessionToSettings(data);
+      if (!settings) {
         setError('Eksik veri. Önce ana sayfadan adres ve market seçimi yapınız.');
-        return;
+        setSearchSettings(null);
+      } else {
+        setSearchSettings(settings);
+        setError(null);
       }
-
-      const settings: SearchSettings = {
-        latitude: data.selectedAddress.latitude,
-        longitude: data.selectedAddress.longitude,
-        distance: data.distance || 5,
-        pages: 0,
-        size: 50,
-        depots: data.selectedMarkets.map((market: { id: string }) => market.id),
-        selectedMarkets: data.selectedMarkets
-      };
-
-      setSearchSettings(settings);
-    } catch (err) {
-      console.error('LocalStorage okuma hatası:', err);
+    } catch {
       setError('Veri okuma hatası oluştu.');
+      setSearchSettings(null);
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  const getMarketDistance = (marketId: string): number | null => {
-    if (!searchSettings) return null;
-    
-    const market = searchSettings.selectedMarkets.find(m => m.id === marketId);
-    return market ? market.distance : null;
-  };
-
-  const getMarketDistanceByName = (depotName: string): number | null => {
-    if (!searchSettings || !depotName) return null;
-    
-    const market = searchSettings.selectedMarkets.find(m => 
-      safeIncludes(depotName, m.address)
-    );
-    
-    return market ? market.distance : null;
-  };
+  }, [marketSession]);
 
   return {
     searchSettings,
     isLoading,
     error,
-    getMarketDistance,
-    getMarketDistanceByName
   };
 };

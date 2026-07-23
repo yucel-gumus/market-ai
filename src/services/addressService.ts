@@ -1,9 +1,12 @@
+import { SEARCH } from '@/constants';
+import { parseAddressResult } from '@/lib/addressParse';
 import apiClient from '@/lib/axios';
+import { logger } from '@/lib/logger';
 import { AddressSearchResult, ParsedAddress, ApiResponse } from '@/types';
 
 export class AddressService {
   static async searchAddresses(query: string): Promise<ParsedAddress[]> {
-    if (!query || query.length < 2) {
+    if (!query || query.length < SEARCH.MIN_QUERY_LENGTH) {
       return [];
     }
 
@@ -20,18 +23,17 @@ export class AddressService {
       }
 
       return this.transformAddresses(response.data.data);
-      
     } catch (error: unknown) {
-      console.error('❌ Adres arama başarısız:', error);
-      
+      logger.error('addressService', 'Adres arama başarısız', error);
+
       if (error && typeof error === 'object' && 'isNetworkError' in error) {
         throw new Error('Adres arama sırasında ağ hatası oluştu');
       }
-      
+
       if (error instanceof Error) {
         throw new Error(error.message || 'Adres arama başarısız');
       }
-      
+
       throw new Error('Adres arama başarısız');
     }
   }
@@ -40,31 +42,14 @@ export class AddressService {
     return rawAddresses
       .map((raw, index) => {
         try {
-          const parsedAddress: ParsedAddress = {
-            fullAddress: raw[0] || '',
-            street: raw[3] || '',
-            neighborhood: raw[4] || '',
-            district: raw[5] || '',
-            city: raw[6] || '',
-            longitude: Number(raw[7]) || 0,
-            latitude: Number(raw[8]) || 0,
-            additionalInfo: raw[15] || '',
-          };
-
-          if (!parsedAddress.fullAddress || 
-              !parsedAddress.latitude || 
-              !parsedAddress.longitude) {
-            return null;
-          }
-
-          return parsedAddress;
+          return parseAddressResult(raw);
         } catch (parseError) {
-          console.error(`❌ ${index} numaralı adres parse edilemedi:`, parseError);
+          logger.error('addressService', `${index} numaralı adres parse edilemedi`, parseError);
           return null;
         }
       })
       .filter((address): address is ParsedAddress => address !== null)
-      .slice(0, 10);
+      .slice(0, SEARCH.ADDRESS_RESULT_LIMIT);
   }
   static formatAddressForDisplay(address: ParsedAddress): string {
     const parts = [
