@@ -21,6 +21,10 @@ export interface IngredientCategoriesResponse {
 export interface SelectProductsProduct {
   title: string;
   price: number;
+  ingredient?: string;
+  main_category?: string;
+  menu_category?: string;
+  categories?: string[];
 }
 
 export interface SelectProductsSelection {

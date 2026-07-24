@@ -39,7 +39,7 @@ interface UseRecipePipelineOptions {
 type TaggedProduct = Product & { targetIngredient?: string };
 
 /** Malzeme başına AI'ya gönderilecek maksimum aday ürün sayısı */
-const CANDIDATES_PER_INGREDIENT = 10;
+const CANDIDATES_PER_INGREDIENT = 25;
 
 export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelineOptions) {
   const [foodName, setFoodName] = useState('');
@@ -100,7 +100,7 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
     async (candidateProducts: TaggedProduct[], targetIngredients: string[], recipeName: string) => {
       try {
         const uniqueTitles = new Set<string>();
-        const productTitlesAndPrice: { title: string; price: number; ingredient?: string }[] = [];
+        const productTitlesAndPrice: import('@/services/llmService').SelectProductsProduct[] = [];
 
         for (const product of candidateProducts) {
           const price = getCheapestDepotPrice(product);
@@ -110,6 +110,9 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
             title: product.title,
             price,
             ingredient: product.targetIngredient,
+            main_category: product.main_category,
+            menu_category: product.menu_category,
+            categories: product.categories,
           });
         }
 
@@ -229,34 +232,58 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
     [categoryList, selectBestProducts]
   );
 
+function getRefinedSearchQuery(ingredient: string): string[] {
+  const queries = [ingredient];
+  const lower = ingredient.toLowerCase().trim();
+
+  if (lower.endsWith(' eti') && lower.length > 5) {
+    queries.push(lower.replace(/\s+eti$/, ''));
+  }
+  return queries;
+}
+
   const confirmIngredients = useCallback(async () => {
     setIsLoading(true);
     setCurrentStep('processing');
     setError(null);
 
     try {
-      // 1. Market API'den her malzeme için TÜM ürünleri çek — keyword filtre YOK
-      //    Yapay zeka tüm ham adayları görerek en akıllı seçimi yapacak
+      // 1. Market API'den her malzeme için arama yap (akıllı sorgu türetme ile)
       const productResults = await withConcurrency(
         SEARCH.AI_CONCURRENCY,
         ingredients.map(
-          (ingredient) => () =>
-            fetchUrunData(ingredient).then((found) => {
-              const rawProducts = (found as Product[]).filter(
+          (ingredient) => async () => {
+            const queries = getRefinedSearchQuery(ingredient);
+            const allFound: Product[] = [];
+
+            for (const q of queries) {
+              const found = await fetchUrunData(q);
+              const valid = (found as Product[]).filter(
                 (p) => p?.title && p.productDepotInfoList?.length
               );
+              allFound.push(...valid);
+            }
 
-              console.log('🔍 [MarketAI API Raw Results]:', {
-                ingredient,
-                totalRawFound: rawProducts.length,
-                rawTitles: rawProducts.map((p) => p.title),
-              });
+            const seen = new Set<string>();
+            const rawProducts = allFound.filter((p) => {
+              const key = p.id || p.title;
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
 
-              return {
-                ingredient,
-                products: rawProducts,
-              };
-            })
+            console.log('🔍 [MarketAI API Raw Results]:', {
+              ingredient,
+              queries,
+              totalRawFound: rawProducts.length,
+              rawTitles: rawProducts.map((p) => p.title),
+            });
+
+            return {
+              ingredient,
+              products: rawProducts,
+            };
+          }
         )
       );
 
@@ -265,7 +292,7 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
 
       productResults.forEach(({ ingredient, products }) => {
         if (products.length > 0) {
-          // Fiyata göre sırala (en ucuz önce) ve malzeme başına CANDIDATES_PER_INGREDIENT kadar al
+          // Fiyata göre sırala (en ucuz önce) ve ham adayları doğrudan Multi-Agent sistemine gönder
           const sorted = [...products].sort((a, b) => {
             const pa = getCheapestDepotPrice(a) ?? Infinity;
             const pb = getCheapestDepotPrice(b) ?? Infinity;
@@ -282,6 +309,7 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
             candidateCount: tagged.length,
             candidates: tagged.map((p) => ({
               title: p.title,
+              mainCategory: p.main_category,
               price: getCheapestDepotPrice(p),
             })),
           });

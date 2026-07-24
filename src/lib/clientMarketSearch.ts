@@ -64,14 +64,13 @@ function buildRequestConfig(
 async function fetchAllProductPages(
   keywords: string,
   endpoint: '/api/search-products' | '/api/search-by-categories',
-  options: { menuCategory?: boolean } = {},
-  maxPages: number = SEARCH.MAX_PAGES
+  options: { menuCategory?: boolean } = {}
 ): Promise<Product[]> {
   const allProducts: Product[] = [];
   let currentPage = 0;
 
   try {
-    while (currentPage < maxPages) {
+    while (true) {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -91,8 +90,6 @@ async function fetchAllProductPages(
       if (content.length === 0) break;
 
       allProducts.push(...content);
-
-      if (content.length < DEFAULTS.PAGE_SIZE) break;
       currentPage++;
     }
 

@@ -35,17 +35,15 @@ export class ProductService {
     return pageData.content || [];
   }
 
-  /** Tüm sayfalar (üst sınırlı) — AI pipeline için */
+  /** Tüm sayfalar — API'den veri gelmeyene kadar (content = []) */
   static async searchAllProducts(
-    request: Omit<ProductSearchRequest, 'pages'>,
-    maxPages: number = SEARCH.MAX_PAGES
+    request: Omit<ProductSearchRequest, 'pages'>
   ): Promise<ProductSearchResponse> {
     const allProducts: Product[] = [];
     let currentPage = 0;
-    let hasMorePages = true;
     const size = request.size ?? DEFAULTS.PAGE_SIZE;
 
-    while (hasMorePages && currentPage < maxPages) {
+    while (true) {
       const pageData = await this.searchProducts({
         ...request,
         pages: currentPage,
@@ -53,21 +51,16 @@ export class ProductService {
       });
 
       if (!pageData.content || pageData.content.length === 0) {
-        hasMorePages = false;
-      } else {
-        allProducts.push(...pageData.content);
-        if (pageData.content.length < size) {
-          hasMorePages = false;
-        } else {
-          currentPage++;
-        }
+        break;
       }
+      allProducts.push(...pageData.content);
+      currentPage++;
     }
 
     return {
       content: allProducts,
       totalElements: allProducts.length,
-      totalPages: currentPage + (allProducts.length > 0 ? 1 : 0),
+      totalPages: currentPage,
       number: 0,
       size: allProducts.length,
     };
