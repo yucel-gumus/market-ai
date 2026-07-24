@@ -115,15 +115,6 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
             categories: product.categories,
           });
         }
-
-        console.log('🤖 [MarketAI Payload Sent to Python LLM]:', {
-          recipeName,
-          targetIngredientsCount: targetIngredients.length,
-          targetIngredients,
-          totalProductsSent: productTitlesAndPrice.length,
-          productsList: productTitlesAndPrice,
-        });
-
         if (productTitlesAndPrice.length === 0) {
           setCurrentStep('complete');
           return;
@@ -136,12 +127,6 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
           recipeName
         );
         const selectedResult = selectedResponse.selections || [];
-
-        console.log('✅ [MarketAI Python LLM Selections Received]:', {
-          requestedIngredientsCount: targetIngredients.length,
-          receivedSelectionsCount: selectedResult.length,
-          selections: selectedResult,
-        });
 
         setSearchResults((prev) => [...(Array.isArray(prev) ? prev : []), ...selectedResult]);
 
@@ -158,16 +143,6 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
             })
             .filter((p): p is Product => Boolean(p && p.productDepotInfoList?.length));
         }
-
-        console.log('🛒 [MarketAI Final Selected Products for Cart]:', {
-          count: selectedProductsData.length,
-          products: selectedProductsData.map((p) => ({ title: p.title })),
-          aiReasons: selectedResult.map((s) => ({
-            ingredient: s.searchedIngredient,
-            title: s.product?.title,
-            reasoning: s.reasoning,
-          })),
-        });
 
         // Güvenli Alternatif: Eğer AI boş dönerse aday ürünleri doğrudan kullan
         if (selectedProductsData.length === 0 && candidateProducts.length > 0) {
@@ -232,15 +207,15 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
     [categoryList, selectBestProducts]
   );
 
-function getRefinedSearchQuery(ingredient: string): string[] {
-  const queries = [ingredient];
-  const lower = ingredient.toLowerCase().trim();
+  function getRefinedSearchQuery(ingredient: string): string[] {
+    const queries = [ingredient];
+    const lower = ingredient.toLowerCase().trim();
 
-  if (lower.endsWith(' eti') && lower.length > 5) {
-    queries.push(lower.replace(/\s+eti$/, ''));
+    if (lower.endsWith(' eti') && lower.length > 5) {
+      queries.push(lower.replace(/\s+eti$/, ''));
+    }
+    return queries;
   }
-  return queries;
-}
 
   const confirmIngredients = useCallback(async () => {
     setIsLoading(true);
@@ -271,14 +246,6 @@ function getRefinedSearchQuery(ingredient: string): string[] {
               seen.add(key);
               return true;
             });
-
-            console.log('🔍 [MarketAI API Raw Results]:', {
-              ingredient,
-              queries,
-              totalRawFound: rawProducts.length,
-              rawTitles: rawProducts.map((p) => p.title),
-            });
-
             return {
               ingredient,
               products: rawProducts,
@@ -304,15 +271,6 @@ function getRefinedSearchQuery(ingredient: string): string[] {
           }));
           candidateProducts.push(...tagged);
 
-          console.log('📦 [MarketAI Candidates for AI]:', {
-            ingredient,
-            candidateCount: tagged.length,
-            candidates: tagged.map((p) => ({
-              title: p.title,
-              mainCategory: p.main_category,
-              price: getCheapestDepotPrice(p),
-            })),
-          });
         } else {
           missing.push(ingredient);
         }
