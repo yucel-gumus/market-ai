@@ -84,7 +84,12 @@ export interface ProductDepotInfo {
 export interface Product {
   id: string;
   title: string;
+  brand?: string;
+  imageUrl?: string;
   refinedVolumeOrWeight?: string;
+  main_category?: string;
+  menu_category?: string;
+  categories?: string[];
   productDepotInfoList: ProductDepotInfo[];
 }
 

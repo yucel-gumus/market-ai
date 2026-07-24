@@ -20,10 +20,10 @@ export function SearchStatsDisplay({
     return null;
   }
   return (
-    <div className="flex flex-wrap gap-4 mt-3 p-3 bg-muted/50 rounded-lg">
-      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <BarChart3 className="h-4 w-4" />
-        <span className="font-medium">{stats.totalResults}</span> sonuç
+    <div className="flex flex-wrap gap-4 mt-3 p-2.5 bg-[#FFECE8] border border-[#F7A898]/50 rounded-xl">
+      <div className="flex items-center gap-2 text-xs font-bold text-[#70372D]">
+        <BarChart3 className="h-4 w-4 text-[#0E2C24]" />
+        <span>Toplanmış <span className="text-[#0E2C24] bg-[#9BCEC1] px-1.5 py-0.5 rounded-md">{stats.totalResults}</span> ürün eşleşti</span>
       </div>
     </div>
   );

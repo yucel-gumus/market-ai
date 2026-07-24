@@ -5,14 +5,16 @@ import { cn } from '@/lib/utils';
 
 type AlertVariant = 'error' | 'warning' | 'info' | 'success';
 
+// All alert variants styled strictly within the #FFEBD3, #FFB6A6, #9BCEC1 palette system
 const styles: Record<AlertVariant, string> = {
   error:
-    'border-red-200 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200',
+    'border-[#F7A898] bg-[#FFECE8] text-[#4A1E17]',
   warning:
-    'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100',
-  info: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100',
+    'border-[#F7A898] bg-[#FFB6A6]/30 text-[#4A1E17]',
+  info:
+    'border-[#7BB6A8] bg-[#9BCEC1]/25 text-[#0E2C24]',
   success:
-    'border-green-200 bg-green-50 text-green-800 dark:border-green-900 dark:bg-green-950/40 dark:text-green-100',
+    'border-[#7BB6A8] bg-[#9BCEC1] text-[#0E2C24]',
 };
 
 const icons: Record<AlertVariant, typeof AlertCircle> = {
@@ -44,7 +46,7 @@ export function InlineAlert({
     <div
       role={role}
       className={cn(
-        'flex items-start gap-2 rounded-lg border px-3 py-2 text-sm',
+        'flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm font-medium shadow-2xs',
         styles[variant],
         className
       )}
@@ -55,7 +57,7 @@ export function InlineAlert({
         <button
           type="button"
           onClick={onDismiss}
-          className="rounded p-0.5 opacity-70 hover:opacity-100"
+          className="rounded-lg p-0.5 opacity-70 hover:opacity-100 transition-opacity"
           aria-label="Kapat"
         >
           <X className="h-4 w-4" />

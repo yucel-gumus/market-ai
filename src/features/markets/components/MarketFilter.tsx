@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { getMarketLogo, getMarketDisplayName, type MarketBrand } from '@/lib/marketUtils';
+import { getMarketLogo, type MarketBrand } from '@/lib/marketUtils';
 
 interface MarketFilterProps {
   uniqueBrands: MarketBrand[];
@@ -16,45 +16,43 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
   if (uniqueBrands.length === 0) return null;
 
   return (
-    <Card className="mb-3">
-      <CardContent className="p-3">
-        <h3 className="font-semibold text-xs text-foreground mb-3">Market Seç</h3>
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+    <Card className="mb-4 bg-[#FFECE8] border-[#F7A898]/70 shadow-2xs">
+      <CardContent className="p-4">
+        <h3 className="font-bold text-xs font-heading text-[#2D1E12] uppercase tracking-wider mb-3">
+          Market Filtrele
+        </h3>
+        <div className="flex flex-wrap gap-2.5 items-center">
           {uniqueBrands.map((brand) => {
             const isSelected = selectedBrands.has(brand);
             const logoPath = getMarketLogo(brand);
             return (
               <button
                 key={brand}
+                type="button"
                 onClick={() => onToggleBrand(brand)}
+                aria-label={brand}
                 className={cn(
-                  "flex flex-col items-center justify-center p-2 rounded-md border transition-all duration-200 hover:scale-105 relative",
+                  "flex items-center justify-center h-12 px-4 py-2 rounded-xl border transition-all duration-200 hover:scale-105 relative cursor-pointer min-w-[72px]",
                   isSelected
-                    ? "bg-primary/10 border-primary text-primary"
-                    : "bg-background border-border hover:border-primary/50"
+                    ? "bg-[#f5d3b3] border-[#2D1E12] border-2 shadow-sm"
+                    : "bg-[#f5d3b3]/40 border-[#F7A898]/40 opacity-50 hover:opacity-90 hover:bg-[#f5d3b3]/70"
                 )}
               >
-                <div className="mb-1 p-1.5 rounded-full bg-muted">
-                  {logoPath ? (
+                {logoPath ? (
+                  <div className="relative h-7 w-14 flex items-center justify-center">
                     <Image
                       src={logoPath}
                       alt={brand}
-                      width={20}
-                      height={20}
+                      fill
+                      unoptimized
                       className="object-contain"
                     />
-                  ) : (
-                    <Store className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-                <span className={cn(
-                  "text-[10px] font-medium text-center leading-tight",
-                  isSelected ? "text-primary" : "text-muted-foreground"
-                )}>
-                  {getMarketDisplayName(brand)}
-                </span>
+                  </div>
+                ) : (
+                  <Store className="h-5 w-5 text-[#70372D]" />
+                )}
                 {isSelected && (
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse absolute -top-1 -right-1" />
+                  <div className="w-2.5 h-2.5 bg-[#0E2C24] rounded-full animate-pulse absolute -top-1 -right-1 ring-2 ring-[#9BCEC1]" />
                 )}
               </button>
             );

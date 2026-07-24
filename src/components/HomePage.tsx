@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Store } from 'lucide-react';
+import { MapPin, Store, Navigation, Search, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DEFAULTS } from '@/constants';
 import { AddressSearch } from '@/features/address/components/AddressSearch';
@@ -48,35 +48,34 @@ export default function HomePage() {
   const shouldShowMarkets = selectedAddress && selectedDistance > 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Store className="h-8 w-8 text-primary" />
-            </div>
-            <h1 className="text-4xl font-bold text-foreground">
-              MarketAI
-            </h1>
-          </div>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Yakınınızdaki marketleri kolayca bulun. Adresinizi girin, mesafeyi seçin ve 
-            size en yakın marketlerin listesini görün.
+    <div className="min-h-screen bg-[#FFEBD3] text-[#2D1E12] py-10 px-4">
+      <div className="container mx-auto max-w-4xl space-y-8">
+        {/* Minimal Hero Banner Section */}
+        <section className="text-center space-y-2 py-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#2D1E12] tracking-tight">
+            Yakınınızdaki En Uygun Marketleri <span className="bg-[#9BCEC1] text-[#0E2C24] px-2.5 py-0.5 rounded-xl inline-block">Keşfedin</span>
+          </h1>
+          <p className="text-xs sm:text-sm font-semibold text-[#70372D] max-w-xl mx-auto">
+            Konumunuzu seçin, istediğiniz mesafedeki zincir ve yerel marketleri anında listeleyin ve yapay zeka ile en uygun fiyatlı alışveriş rotanızı oluşturun.
           </p>
-        </div>
+        </section>
 
-        <div className="max-w-4xl mx-auto space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Konum Seçimi
+        {/* Search & Configuration Stack */}
+        <div className="space-y-6">
+          {/* Location Selection Card */}
+          <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl overflow-visible relative z-30">
+            <CardHeader className="pb-4 border-b border-[#F7A898]/40">
+              <CardTitle className="flex items-center gap-3 text-lg font-bold font-heading text-[#2D1E12]">
+                <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] shadow-2xs">
+                  <MapPin className="h-5 w-5 stroke-[2.5]" />
+                </div>
+                1. Konum Belirleme
               </CardTitle>
-              <CardDescription>
-                Marketleri aramak istediğiniz adresi girin
+              <CardDescription className="text-xs font-semibold text-[#70372D]">
+                Market araması yapacağınız adresi girin veya listeden seçin
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6">
               <AddressSearch
                 onAddressSelect={handleAddressSelect}
                 selectedAddress={selectedAddress}
@@ -86,18 +85,21 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
+          {/* Distance Selection Card */}
           {selectedAddress && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Store className="h-5 w-5" />
-                  Mesafe Seçimi
+            <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <CardHeader className="pb-4 border-b border-[#F7A898]/40">
+                <CardTitle className="flex items-center gap-3 text-lg font-bold font-heading text-[#2D1E12]">
+                  <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] shadow-2xs">
+                    <Navigation className="h-5 w-5 stroke-[2.5]" />
+                  </div>
+                  2. Arama Yarıçapı (Mesafe)
                 </CardTitle>
-                <CardDescription>
-                  Seçilen konum: {selectedAddress.neighborhood}, {selectedAddress.district}
+                <CardDescription className="text-xs font-semibold text-[#70372D]">
+                  Seçili Konum: <span className="font-bold text-[#2D1E12]">{selectedAddress.neighborhood}, {selectedAddress.district}</span>
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <DistanceSelect
                   value={selectedDistance}
                   onValueChange={handleDistanceSelect}
@@ -107,19 +109,21 @@ export default function HomePage() {
             </Card>
           )}
 
+          {/* Markets List Section */}
           {shouldShowMarkets && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Store className="h-5 w-5" />
-                  Yakındaki Marketler
+            <Card className="bg-[#FFECE8] border-[#F7A898] shadow-lg rounded-3xl overflow-hidden animate-in fade-in slide-in-from-bottom-3 duration-400">
+              <CardHeader className="pb-4 border-b border-[#F7A898]/40">
+                <CardTitle className="flex items-center gap-3 text-lg font-bold font-heading text-[#2D1E12]">
+                  <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] shadow-2xs">
+                    <Store className="h-5 w-5 stroke-[2.5]" />
+                  </div>
+                  Bulunan Marketler
                 </CardTitle>
-                <CardDescription>
-                  {selectedAddress.neighborhood}, {selectedAddress.district} konumunun { }
-                  {selectedDistance} km yakınındaki marketler
+                <CardDescription className="text-xs font-semibold text-[#70372D]">
+                  {selectedAddress.neighborhood}, {selectedAddress.district} konumunun <span className="font-bold text-[#0E2C24] bg-[#9BCEC1] px-1.5 py-0.5 rounded-md">{selectedDistance} km</span> yakınındaki marketler
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 <MarketList
                   markets={markets}
                   distance={selectedDistance}
@@ -132,37 +136,35 @@ export default function HomePage() {
             </Card>
           )}
 
+          {/* Empty State Prompt */}
           {!selectedAddress && (
-            <Card className="text-center">
-              <CardContent className="p-8">
-                <div className="flex flex-col items-center gap-4 text-muted-foreground">
-                  <div className="p-4 rounded-full bg-muted/20">
-                    <MapPin className="h-8 w-8" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-2">
-                      Başlamak için konum seçin
-                    </h3>
-                    <p className="text-sm">
-                      Yukarıdaki arama alanını kullanarak bir adres arayın ve 
-                      yakınınızdaki marketleri keşfedin.
-                    </p>
-                  </div>
+            <Card className="text-center bg-[#FFECE8] border-[#F7A898] rounded-3xl p-6 shadow-xs">
+              <CardContent className="p-8 space-y-4">
+                <div className="p-5 rounded-full bg-[#FFEBD3] border border-[#F7A898] w-16 h-16 mx-auto flex items-center justify-center text-[#4A1E17] shadow-2xs">
+                  <Search className="h-8 w-8 text-[#0E2C24]" />
+                </div>
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h3 className="font-bold font-heading text-lg text-[#2D1E12]">
+                    Aramaya Başlamak İçin Konum Girin
+                  </h3>
+                  <p className="text-xs font-medium text-[#70372D] leading-relaxed">
+                    Yukarıdaki adres arama kutusuna mahalle, ilçe veya adres bilgilerinizi yazarak etrafınızdaki zincir ve yerel marketleri listeleyebilirsiniz.
+                  </p>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
 
-        <footer className="text-center mt-16 pb-8">
-          <div className="text-sm text-muted-foreground">
-            <p>
-              MarketAI - Modern teknoloji ile market bulma deneyimi
-            </p>
-            <p className="mt-1">
-              Next.js 15 • TypeScript • Tailwind CSS • shadcn/ui
-            </p>
+        {/* Modern Footer */}
+        <footer className="text-center pt-8 pb-12 border-t border-[#F7A898]/40 space-y-2">
+          <div className="flex items-center justify-center gap-2 text-xs font-bold text-[#4A1E17]">
+            <ShieldCheck className="h-4 w-4 text-[#0E2C24]" />
+            <span>MarketAI • Akıllı Alışveriş ve Market Deneyimi</span>
           </div>
+          <p className="text-[11px] font-semibold text-[#70372D]">
+            60-30-10 Tasarım Sistemi • Next.js 15 • TypeScript • Tailwind CSS
+          </p>
         </footer>
       </div>
     </div>

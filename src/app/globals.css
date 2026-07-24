@@ -1,83 +1,161 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-}
-
 @layer base {
+  :root {
+    /* 60% Dominant Color Palette: #FFEBD3 (Warm Cream Canvas) */
+    --background: #FFEBD3;
+    --background-subtle: #FFF4E5;
+    --foreground: #2D1E12;
+    --foreground-muted: #6E5341;
+    --border-dominant: #F5D3B3;
+
+    /* 30% Secondary Color Palette: #FFB6A6 (Soft Coral Surfaces) */
+    --card: #FFECE8;
+    --card-foreground: #4A1E17;
+    --card-border: #F7A898;
+    --secondary: #FFB6A6;
+    --secondary-hover: #FA9E8B;
+    --secondary-foreground: #4A1E17;
+    --muted: #F8D5CE;
+    --muted-foreground: #70372D;
+
+    /* 10% Accent Color Palette: #9BCEC1 (Sage Mint Teal Focal Points) */
+    --primary: #9BCEC1;
+    --primary-hover: #83BEB0;
+    --primary-foreground: #0E2C24;
+    --accent: #9BCEC1;
+    --accent-foreground: #0E2C24;
+    --ring: #9BCEC1;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    /* Dark variant using contrast tones of the exact 3 palette colors */
+    --background: #23170D;
+    --background-subtle: #2E1F13;
+    --foreground: #FFEBD3;
+    --foreground-muted: #E2C7AD;
+    --border-dominant: #442F1E;
+
+    --card: #3B1B15;
+    --card-foreground: #FFEBD3;
+    --card-border: #5E2C23;
+    --secondary: #52251D;
+    --secondary-hover: #693026;
+    --secondary-foreground: #FFECE8;
+    --muted: #421F18;
+    --muted-foreground: #FFB6A6;
+
+    --primary: #9BCEC1;
+    --primary-hover: #B4DFD5;
+    --primary-foreground: #0E2C24;
+    --accent: #9BCEC1;
+    --accent-foreground: #0E2C24;
+    --ring: #9BCEC1;
+  }
+
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border-dominant);
   }
+
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading), var(--font-sans), sans-serif;
+    color: var(--foreground);
+    letter-spacing: -0.02em;
+  }
+}
+
+/* Custom Utilities for 60-30-10 Palette Styling */
+@utility bg-dominant {
+  background-color: var(--background);
+}
+
+@utility bg-dominant-subtle {
+  background-color: var(--background-subtle);
+}
+
+@utility text-dominant {
+  color: var(--foreground);
+}
+
+@utility text-dominant-muted {
+  color: var(--foreground-muted);
+}
+
+@utility bg-surface-coral {
+  background-color: var(--card);
+}
+
+@utility text-surface-coral {
+  color: var(--card-foreground);
+}
+
+@utility border-coral {
+  border-color: var(--card-border);
+}
+
+@utility bg-accent-teal {
+  background-color: var(--primary);
+}
+
+@utility bg-accent-teal-hover {
+  background-color: var(--primary-hover);
+}
+
+@utility text-accent-teal {
+  color: var(--primary-foreground);
+}
+
+/* Glassmorphism & Micro-animations */
+.glass-coral {
+  background: rgba(255, 182, 166, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 182, 166, 0.4);
+}
+
+.glass-cream {
+  background: rgba(255, 235, 211, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(245, 211, 179, 0.6);
+}
+
+.glass-teal {
+  background: rgba(155, 206, 193, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(155, 206, 193, 0.4);
+}
+
+/* Smooth Scrolling & Custom Scrollbar */
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FFEBD3;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #FFB6A6;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9BCEC1;
 }

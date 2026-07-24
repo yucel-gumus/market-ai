@@ -1,47 +1,18 @@
+export type MarketBrand = string;
 
-export type MarketBrand = 'bim' | 'a101' | 'migros' | 'carrefour' | 'sok' | 'tarim_kredi' | 'other';
+/**
+ * API'den gelen market adını (bim, a101, sok, migros, carrefour, hakmar, tarim_kredi, file vb.)
+ * doğrudan Upstream CDN SVG logosuna dönüştürür.
+ * https://marketfiyati.org.tr/assets/images/marketim/logos/{marketName}.svg
+ */
+export function getMarketLogo(marketName?: string | null): string | null {
+  if (!marketName || typeof marketName !== 'string') return null;
+  const cleanName = marketName.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
+  if (!cleanName) return null;
+  return `https://marketfiyati.org.tr/assets/images/marketim/logos/${cleanName}.svg`;
+}
 
-export function detectMarketBrand(marketName?: string | null): MarketBrand {
+export function detectMarketBrand(marketName?: string | null): string {
   if (!marketName || typeof marketName !== 'string') return 'other';
-  const normalizedName = marketName.toLowerCase().trim();
-  if (normalizedName.includes('bim')) return 'bim';
-  if (normalizedName.includes('a101') || normalizedName.includes('a 101')) return 'a101';
-  if (normalizedName.includes('migros')) return 'migros';
-  if (normalizedName.includes('carrefour')) return 'carrefour';
-  if (normalizedName.includes('sok') || normalizedName.includes('şok')) return 'sok';
-  if (normalizedName.includes('tarım kredi') || 
-      normalizedName.includes('tarim kredi') || 
-      normalizedName.includes('tarim_kredi') || 
-      normalizedName.includes('tarımkredi')) return 'tarim_kredi';
-  return 'other';
-}
-
-export function getMarketLogo(marketName: string): string | null {
-  const brand = detectMarketBrand(marketName);
-  
-  const logoMap: Record<MarketBrand, string | null> = {
-    'bim': '/bim.svg',
-    'a101': '/a101.svg', 
-    'migros': '/migros.svg',
-    'carrefour': '/carrefour.svg',
-    'sok': '/sok.svg',
-    'tarim_kredi': '/tarim_kredi.svg',
-    'other': null
-  };
-
-  return logoMap[brand];
-}
-
-export function getMarketDisplayName(brand: MarketBrand): string {
-  const displayNames: Record<MarketBrand, string> = {
-    'bim': 'BİM',
-    'a101': 'A101',
-    'migros': 'Migros',
-    'carrefour': 'Carrefour',
-    'sok': 'ŞOK',
-    'tarim_kredi': 'Tarım Kredi',
-    'other': 'Diğer'
-  };
-
-  return displayNames[brand];
+  return marketName.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
 }

@@ -6,7 +6,6 @@ import { SEARCH } from '@/constants';
 import {
   fetchCategoriesData,
   fetchUrunData,
-  filterProductsByIngredient,
   getCheapestDepotPrice,
 } from '@/lib/clientMarketSearch';
 import { toErrorMessage } from '@/lib/errorUtils';
@@ -36,6 +35,11 @@ interface UseRecipePipelineOptions {
   addManyToCart: (products: Product[]) => void;
   clearCart: () => void;
 }
+
+type TaggedProduct = Product & { targetIngredient?: string };
+
+/** Malzeme başına AI'ya gönderilecek maksimum aday ürün sayısı */
+const CANDIDATES_PER_INGREDIENT = 10;
 
 export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelineOptions) {
   const [foodName, setFoodName] = useState('');
@@ -93,49 +97,98 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
   );
 
   const selectBestProducts = useCallback(
-    async (products: Product[], missingItems: string[], name: string) => {
+    async (candidateProducts: TaggedProduct[], targetIngredients: string[], recipeName: string) => {
       try {
-        const productTitlesAndPrice = products
-          .map((product) => {
-            const price = getCheapestDepotPrice(product);
-            if (price == null) return null;
-            return { title: product.title, price };
-          })
-          .filter((x): x is { title: string; price: number } => x != null);
+        const uniqueTitles = new Set<string>();
+        const productTitlesAndPrice: { title: string; price: number; ingredient?: string }[] = [];
+
+        for (const product of candidateProducts) {
+          const price = getCheapestDepotPrice(product);
+          if (price == null || uniqueTitles.has(product.title)) continue;
+          uniqueTitles.add(product.title);
+          productTitlesAndPrice.push({
+            title: product.title,
+            price,
+            ingredient: product.targetIngredient,
+          });
+        }
+
+        console.log('🤖 [MarketAI Payload Sent to Python LLM]:', {
+          recipeName,
+          targetIngredientsCount: targetIngredients.length,
+          targetIngredients,
+          totalProductsSent: productTitlesAndPrice.length,
+          productsList: productTitlesAndPrice,
+        });
 
         if (productTitlesAndPrice.length === 0) {
           setCurrentStep('complete');
           return;
         }
 
+        // Python Backend AI: Tüm ham ürünler arasından en uygun ürünleri AI seçsin
         const selectedResponse = await LlmService.selectProducts(
           productTitlesAndPrice,
-          missingItems,
-          name
+          targetIngredients,
+          recipeName
         );
         const selectedResult = selectedResponse.selections || [];
-        setSearchResults(selectedResult);
 
-        const selectedProductsData = (
-          await withConcurrency(
-            SEARCH.AI_CONCURRENCY,
-            selectedResult.map(
-              (sel) => () =>
-                fetchUrunData(sel.product?.title || '').then((list) => list[0] || null)
-            )
-          )
-        ).filter((p): p is Product => Boolean(p && p.productDepotInfoList?.length));
+        console.log('✅ [MarketAI Python LLM Selections Received]:', {
+          requestedIngredientsCount: targetIngredients.length,
+          receivedSelectionsCount: selectedResult.length,
+          selections: selectedResult,
+        });
+
+        setSearchResults((prev) => [...(Array.isArray(prev) ? prev : []), ...selectedResult]);
+
+        // AI'nın seçtiği ürünleri bellekteki candidateProducts'tan anında eşleştir
+        let selectedProductsData: Product[] = [];
+        if (selectedResult.length > 0) {
+          selectedProductsData = selectedResult
+            .map((sel) => {
+              const matchedTitle = sel.product?.title;
+              const foundProduct =
+                candidateProducts.find((p) => p.title === matchedTitle) ||
+                candidateProducts.find((p) => p.targetIngredient === sel.searchedIngredient);
+              return foundProduct || null;
+            })
+            .filter((p): p is Product => Boolean(p && p.productDepotInfoList?.length));
+        }
+
+        console.log('🛒 [MarketAI Final Selected Products for Cart]:', {
+          count: selectedProductsData.length,
+          products: selectedProductsData.map((p) => ({ title: p.title })),
+          aiReasons: selectedResult.map((s) => ({
+            ingredient: s.searchedIngredient,
+            title: s.product?.title,
+            reasoning: s.reasoning,
+          })),
+        });
+
+        // Güvenli Alternatif: Eğer AI boş dönerse aday ürünleri doğrudan kullan
+        if (selectedProductsData.length === 0 && candidateProducts.length > 0) {
+          selectedProductsData = candidateProducts.slice(0, targetIngredients.length);
+        }
 
         if (selectedProductsData.length) {
           addManyToCart(selectedProductsData);
         }
         setResults((prev) => ({
           ...prev,
-          selectedProducts: selectedProductsData,
+          selectedProducts: [...prev.selectedProducts, ...selectedProductsData],
         }));
         setCurrentStep('complete');
       } catch (err) {
-        setError(toErrorMessage(err, 'Ürün seçimi sırasında hata'));
+        console.error('❌ [MarketAI LLM Error]:', err);
+        if (candidateProducts.length > 0) {
+          const fallbackList = candidateProducts.slice(0, targetIngredients.length);
+          addManyToCart(fallbackList);
+          setResults((prev) => ({
+            ...prev,
+            selectedProducts: [...prev.selectedProducts, ...fallbackList],
+          }));
+        }
         setCurrentStep('complete');
       }
     },
@@ -182,44 +235,70 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
     setError(null);
 
     try {
+      // 1. Market API'den her malzeme için TÜM ürünleri çek — keyword filtre YOK
+      //    Yapay zeka tüm ham adayları görerek en akıllı seçimi yapacak
       const productResults = await withConcurrency(
         SEARCH.AI_CONCURRENCY,
         ingredients.map(
           (ingredient) => () =>
-            fetchUrunData(ingredient).then((found) => ({
-              ingredient,
-              matches: filterProductsByIngredient(found as Product[], ingredient),
-            }))
+            fetchUrunData(ingredient).then((found) => {
+              const rawProducts = (found as Product[]).filter(
+                (p) => p?.title && p.productDepotInfoList?.length
+              );
+
+              console.log('🔍 [MarketAI API Raw Results]:', {
+                ingredient,
+                totalRawFound: rawProducts.length,
+                rawTitles: rawProducts.map((p) => p.title),
+              });
+
+              return {
+                ingredient,
+                products: rawProducts,
+              };
+            })
         )
       );
 
+      const candidateProducts: TaggedProduct[] = [];
       const missing: string[] = [];
-      const firstProducts: Product[] = [];
 
-      productResults.forEach(({ ingredient, matches }) => {
-        const valid = (matches as Product[]).filter(
-          (p) => p.productDepotInfoList?.length
-        );
-        if (valid.length > 0) {
-          firstProducts.push(valid[0]);
+      productResults.forEach(({ ingredient, products }) => {
+        if (products.length > 0) {
+          // Fiyata göre sırala (en ucuz önce) ve malzeme başına CANDIDATES_PER_INGREDIENT kadar al
+          const sorted = [...products].sort((a, b) => {
+            const pa = getCheapestDepotPrice(a) ?? Infinity;
+            const pb = getCheapestDepotPrice(b) ?? Infinity;
+            return pa - pb;
+          });
+          const tagged = sorted.slice(0, CANDIDATES_PER_INGREDIENT).map((p) => ({
+            ...p,
+            targetIngredient: ingredient,
+          }));
+          candidateProducts.push(...tagged);
+
+          console.log('📦 [MarketAI Candidates for AI]:', {
+            ingredient,
+            candidateCount: tagged.length,
+            candidates: tagged.map((p) => ({
+              title: p.title,
+              price: getCheapestDepotPrice(p),
+            })),
+          });
         } else {
           missing.push(ingredient);
         }
       });
 
-      if (firstProducts.length) {
-        addManyToCart(firstProducts);
+      // 2. Tüm etiketli ham market ürünlerini doğrudan Python AI backend'e gönder
+      if (candidateProducts.length > 0) {
+        await selectBestProducts(candidateProducts, ingredients, foodName);
       }
 
-      setResults((prev) => ({
-        ...prev,
-        firstSelectedProduct: firstProducts,
-        missingProducts: missing,
-      }));
-
+      // 3. Eğer eksik kalan malzeme varsa kategoriye göre AI alternatif arasın
       if (missing.length > 0) {
         await findAlternativeProducts(missing, foodName);
-      } else {
+      } else if (candidateProducts.length === 0) {
         setCurrentStep('complete');
       }
     } catch (err) {
@@ -228,7 +307,7 @@ export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelin
     } finally {
       setIsLoading(false);
     }
-  }, [ingredients, foodName, addManyToCart, findAlternativeProducts]);
+  }, [ingredients, foodName, findAlternativeProducts, selectBestProducts]);
 
   return {
     foodName,

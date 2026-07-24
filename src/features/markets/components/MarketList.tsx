@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { Store, Map, List } from 'lucide-react';
+import { Store, Map, List, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { DEFAULTS } from '@/constants';
@@ -19,12 +19,12 @@ const MarketMap = dynamic(() => import('@/components/MarketMap'), {
   ssr: false,
   loading: () => (
     <div
-      className="flex items-center justify-center bg-gray-100 rounded-lg"
+      className="flex items-center justify-center bg-[#FFECE8] border border-[#F7A898] rounded-2xl"
       style={{ height: '400px', width: '100%' }}
       role="status"
       aria-label="Harita yükleniyor"
     >
-      <div className="text-center text-sm text-gray-600">Harita yükleniyor...</div>
+      <div className="text-center text-sm font-semibold text-[#70372D]">Harita yükleniyor...</div>
     </div>
   ),
 });
@@ -110,22 +110,24 @@ export function MarketList({
   }
 
   return (
-    <div className={cn('w-full', className)}>
+    <div className={cn('w-full space-y-4', className)}>
       <MarketFilter
         uniqueBrands={uniqueBrands}
         selectedBrands={selectedBrands}
         onToggleBrand={toggleBrand}
       />
 
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Store className="h-4 w-4" aria-hidden />
-          <span>{markets.length} market bulundu</span>
-          <span className="text-xs">({visibleCount} seçili)</span>
+      <div className="flex items-center justify-between bg-[#FFECE8] p-3 rounded-2xl border border-[#F7A898]/70 shadow-2xs">
+        <div className="flex items-center gap-2 text-sm text-[#2D1E12]">
+          <Store className="h-5 w-5 text-[#9BCEC1] stroke-[2.5]" aria-hidden />
+          <span className="font-bold">{markets.length} Market Bulundu</span>
+          <span className="text-xs bg-[#9BCEC1] text-[#0E2C24] font-bold px-2 py-0.5 rounded-lg ml-1">
+            {visibleCount} seçili
+          </span>
         </div>
 
         <div
-          className="flex rounded-lg bg-gray-100 p-1"
+          className="flex rounded-xl bg-[#FFEBD3] p-1 border border-[#F7A898]/50"
           role="group"
           aria-label="Görünüm modu"
         >
@@ -134,10 +136,10 @@ export function MarketList({
             onClick={() => setViewMode('list')}
             aria-pressed={viewMode === 'list'}
             className={cn(
-              'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
               viewMode === 'list'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-[#9BCEC1] text-[#0E2C24] shadow-xs'
+                : 'text-[#70372D] hover:bg-[#FFB6A6]/30'
             )}
           >
             <List className="h-4 w-4" />
@@ -148,10 +150,10 @@ export function MarketList({
             onClick={() => setViewMode('map')}
             aria-pressed={viewMode === 'map'}
             className={cn(
-              'flex items-center gap-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+              'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
               viewMode === 'map'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-[#9BCEC1] text-[#0E2C24] shadow-xs'
+                : 'text-[#70372D] hover:bg-[#FFB6A6]/30'
             )}
           >
             <Map className="h-4 w-4" />
@@ -169,41 +171,43 @@ export function MarketList({
       )}
 
       {visibleCount > 0 ? (
-        <div className="mb-4 grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Button
             type="button"
             onClick={() => handleSaveAndNavigate('/ai-chat')}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 font-semibold text-white hover:from-blue-700 hover:to-purple-700"
+            className="bg-[#9BCEC1] text-[#0E2C24] hover:bg-[#83BEB0] font-bold h-12 rounded-2xl shadow-sm text-sm"
           >
-            Kaydet → AI Asistan ({visibleCount})
+            <span>AI Asistana Git ({visibleCount} Market)</span>
+            <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
           <Button
             type="button"
-            variant="outline"
+            variant="secondary"
             onClick={() => handleSaveAndNavigate('/product-search')}
+            className="bg-[#FFB6A6] text-[#4A1E17] hover:bg-[#FA9E8B] font-bold h-12 rounded-2xl shadow-2xs text-sm"
           >
-            Kaydet → Ürün Arama ({visibleCount})
+            <span>Ürün Aramaya Git ({visibleCount} Market)</span>
+            <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       ) : (
         <InlineAlert
           variant="warning"
-          message="Devam etmek için listeden en az bir market seçin."
-          className="mb-4"
+          message="Devam etmek için en az bir market seçmelisiniz."
           role="status"
         />
       )}
 
       {viewMode === 'map' ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <MarketMap
             userLocation={selectedAddress}
             markets={filteredMarkets}
             hiddenMarkets={hiddenMarkets}
             onMarkerClick={handleMarkerClick}
           />
-          <p className="text-center text-xs text-gray-500">
-            Haritada işaretçilere tıklayarak marketleri seçebilir veya kaldırabilirsiniz
+          <p className="text-center text-xs font-semibold text-[#70372D]">
+            Haritada marker ikonlarına tıklayarak marketleri seçebilir veya filtreleyebilirsiniz
           </p>
         </div>
       ) : (

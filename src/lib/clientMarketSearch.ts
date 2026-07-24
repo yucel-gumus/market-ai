@@ -1,5 +1,4 @@
 import { DEFAULTS, SEARCH, STORAGE_KEYS } from '@/constants';
-import { isGoodTitleMatch } from '@/lib/stringUtils';
 import { logger } from '@/lib/logger';
 import type { Product } from '@/types';
 
@@ -116,24 +115,10 @@ export function fetchCategoriesData(keywords: string) {
   });
 }
 
-/** Malzeme adına en iyi eşleşen ürünleri filtreler */
-export function filterProductsByIngredient(
-  products: Product[],
-  ingredient: string
-): Product[] {
-  return products
-    .filter((p) => p?.title && isGoodTitleMatch(p.title, ingredient))
-    .sort((a, b) => {
-      // En ucuz depo öncelikli
-      const pa = a.productDepotInfoList?.[0]?.price ?? Infinity;
-      const pb = b.productDepotInfoList?.[0]?.price ?? Infinity;
-      return Number(pa) - Number(pb);
-    });
-}
-
 export function getCheapestDepotPrice(product: Product): number | null {
   const list = product.productDepotInfoList;
   if (!list?.length) return null;
   const prices = list.map((d) => Number(d.price)).filter(Number.isFinite);
   return prices.length ? Math.min(...prices) : null;
 }
+

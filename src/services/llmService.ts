@@ -47,7 +47,7 @@ export interface RecipeWithCaloriesResponse {
   ingredients: string[];
   steps: string[];
   calories?: number;
-  nutrition?: string;
+  nutrition?: string | Record<string, unknown>;
   message?: string;
 }
 

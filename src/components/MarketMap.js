@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { DEFAULTS } from '@/constants';
 import { addOsmTileLayer, ensureLeafletDefaultIcons } from '@/lib/leafletSetup';
-import { createUserLocationIcon, injectMapMarkerStyles } from '@/lib/mapMarkers';
+import { injectMapMarkerStyles } from '@/lib/mapMarkers';
 import { getMarketLogo, detectMarketBrand } from '@/lib/marketUtils';
 
 let mapInstanceCounter = 0;
@@ -32,7 +32,6 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       maxZoom: DEFAULTS.MAP_MAX_ZOOM,
       zoomControl: true,
       attributionControl: true,
-      preferCanvas: false,
       fadeAnimation: false,
       zoomAnimation: false,
       markerZoomAnimation: false,
@@ -42,15 +41,34 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
 
     let userMarker = null;
     if (userLocation) {
-      const userIcon = createUserLocationIcon();
+      const userIcon = L.divIcon({
+        html: `
+          <div style="
+            background: #9BCEC1;
+            color: #0E2C24;
+            border: 3px solid #0E2C24;
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(14, 44, 36, 0.3);
+          ">📍</div>
+        `,
+        className: 'custom-user-marker',
+        iconSize: [38, 38],
+        iconAnchor: [19, 19]
+      });
 
       userMarker = L.marker([userLocation.latitude, userLocation.longitude], { icon: userIcon })
         .addTo(map)
         .bindPopup(`
-          <div style="text-align: center; padding: 8px;">
-            <div style="font-size: 18px; margin-bottom: 8px;">📍</div>
-            <div style="font-weight: bold; color: #1F2937; margin-bottom: 4px;">Konumunuz</div>
-            <div style="font-size: 12px; color: #6B7280;">${userLocation.fullAddress || 'Seçilen konum'}</div>
+          <div style="text-align: center; padding: 8px; background: #FFECE8; border-radius: 12px; font-family: sans-serif;">
+            <div style="font-size: 18px; margin-bottom: 4px;">📍</div>
+            <div style="font-weight: bold; color: #2D1E12; margin-bottom: 2px;">Konumunuz</div>
+            <div style="font-size: 12px; color: #70372D; font-weight: 500;">${userLocation.fullAddress || 'Seçilen konum'}</div>
           </div>
         `);
     }
@@ -109,44 +127,44 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       const icon = L.divIcon({
         html: `
           <div style="
-            width: 45px; height: 45px;
-            background: white;
-            border: 3px solid ${isHidden ? '#9CA3AF' : '#DC2626'};
+            width: 44px; height: 44px;
+            background: #FFECE8;
+            border: 3px solid ${isHidden ? '#F7A898' : '#9BCEC1'};
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-            opacity: ${isHidden ? '0.6' : '1'};
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            opacity: ${isHidden ? '0.5' : '1'};
             transform: ${isHidden ? 'scale(0.85)' : 'scale(1)'};
             transition: all 0.2s ease; cursor: pointer;
           ">
-            ${marketLogo ? `<img src="${marketLogo}" alt="${brandName}" style="width: 32px; height: 32px; object-fit: contain; border-radius: 4px;"
-              onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\"color: #DC2626; font-size: 18px; font-weight: bold;\\">🏪</div>';">`
-            : `<div style="color: #DC2626; font-size: 18px; font-weight: bold;">🏪</div>`}
+            ${marketLogo ? `<img src="${marketLogo}" alt="${brandName}" style="width: 28px; height: 28px; object-fit: contain; border-radius: 4px;"
+              onerror="this.style.display='none'; this.parentElement.innerHTML='<div style=\\"color: #4A1E17; font-size: 18px; font-weight: bold;\\">🏪</div>';">`
+            : `<div style="color: #4A1E17; font-size: 18px; font-weight: bold;">🏪</div>`}
           </div>
         `,
         className: 'custom-market-marker',
-        iconSize: [45, 45],
+        iconSize: [44, 44],
         iconAnchor: [22, 22],
         popupAnchor: [0, -22]
       });
 
-      const marker = L.marker([market.latitude, market.longitude], { icon, opacity: isHidden ? 0.7 : 1.0 }).addTo(map);
+      const marker = L.marker([market.latitude, market.longitude], { icon, opacity: isHidden ? 0.6 : 1.0 }).addTo(map);
 
-      const brandLogo = marketLogo ? `<img src="${marketLogo}" alt="${brandName}" style="width: 40px; height: 40px; object-fit: contain; margin-bottom: 8px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">` : '';
+      const brandLogo = marketLogo ? `<img src="${marketLogo}" alt="${brandName}" style="width: 36px; height: 36px; object-fit: contain; margin-bottom: 6px; border-radius: 6px;">` : '';
 
       marker.bindPopup(`
-        <div style="text-align: center; min-width: 220px; padding: 12px;">
+        <div style="text-align: center; min-width: 200px; padding: 10px; background: #FFEBD3; border-radius: 14px; font-family: sans-serif;">
           ${brandLogo}
-          <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px; color: #1F2937;">${brandName.toUpperCase()}</div>
-          <div style="margin-bottom: 6px; font-size: 14px; color: #374151; font-weight: 500;">${market.name}</div>
-          <div style="margin-bottom: 10px; font-size: 12px; color: #6B7280; line-height: 1.4;">${market.address}</div>
+          <div style="font-weight: 800; font-size: 15px; margin-bottom: 2px; color: #2D1E12;">${brandName.toUpperCase()}</div>
+          <div style="margin-bottom: 4px; font-size: 13px; color: #4A1E17; font-weight: 600;">${market.name}</div>
+          <div style="margin-bottom: 8px; font-size: 11px; color: #70372D; line-height: 1.3;">${market.address}</div>
           <div style="
-            background: linear-gradient(45deg, #10B981, #059669);
-            color: white; padding: 6px 14px; border-radius: 20px;
-            font-weight: bold; font-size: 12px; display: inline-block;
-            margin-bottom: 8px; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+            background: #9BCEC1;
+            color: #0E2C24; padding: 5px 12px; border-radius: 12px;
+            font-weight: bold; font-size: 11px; display: inline-block;
+            margin-bottom: 6px; shadow: 0 2px 4px rgba(0,0,0,0.1);
           ">📍 ${market.distance} km uzaklıkta</div>
-          ${isHidden ? '<div style="margin-top: 8px; font-size: 11px; color: #EF4444; font-weight: 600; background: #FEE2E2; padding: 4px 8px; border-radius: 12px; display: inline-block;">❌ Filtrelenmiş</div>'
-          : '<div style="margin-top: 8px; font-size: 11px; color: #10B981; font-weight: 600; background: #DCFCE7; padding: 4px 8px; border-radius: 12px; display: inline-block;">✅ Seçilmiş</div>'}
+          ${isHidden ? '<div style="margin-top: 6px; font-size: 10px; color: #4A1E17; font-weight: 700; background: #FFB6A6; padding: 3px 8px; border-radius: 10px; display: inline-block;">❌ Filtrelenmiş</div>'
+          : '<div style="margin-top: 6px; font-size: 10px; color: #0E2C24; font-weight: 700; background: #9BCEC1; padding: 3px 8px; border-radius: 10px; display: inline-block;">✅ Seçilmiş</div>'}
         </div>
       `);
 
@@ -178,7 +196,7 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
   return (
     <div 
       ref={mapRef} 
-      style={{ height: '400px', width: '100%', borderRadius: '8px' }}
+      style={{ height: '400px', width: '100%', borderRadius: '16px', border: '1px solid #F7A898' }}
       data-map-instance={instanceId.current}
     />
   );
@@ -191,10 +209,10 @@ const MarketMap = (props) => {
 
   if (!mounted) {
     return (
-      <div className="flex items-center justify-center bg-gray-100 rounded-lg" style={{ height: '400px', width: '100%' }}>
+      <div className="flex items-center justify-center bg-[#FFECE8] border border-[#F7A898] rounded-2xl" style={{ height: '400px', width: '100%' }}>
         <div className="text-center">
           <div className="text-2xl mb-2">🗺️</div>
-          <div className="text-sm text-gray-600">Harita yükleniyor...</div>
+          <div className="text-sm font-bold text-[#70372D]">Harita yükleniyor...</div>
         </div>
       </div>
     );

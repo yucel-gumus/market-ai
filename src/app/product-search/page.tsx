@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Home } from 'lucide-react';
+import { Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineAlert } from '@/components/ui/inline-alert';
@@ -116,26 +116,29 @@ export default function ProductSearchPage() {
 
   if (isSettingsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-green-50">
-        <div
-          className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"
-          role="status"
-          aria-label="Yükleniyor"
-        />
+      <div className="flex min-h-screen items-center justify-center bg-[#FFEBD3]">
+        <div className="flex flex-col items-center gap-3">
+          <div
+            className="h-10 w-10 animate-spin rounded-full border-4 border-[#9BCEC1] border-t-transparent"
+            role="status"
+            aria-label="Yükleniyor"
+          />
+          <span className="text-sm font-bold text-[#4A1E17]">Ayarlar Yükleniyor...</span>
+        </div>
       </div>
     );
   }
 
   if (settingsError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 p-4">
+      <div className="min-h-screen bg-[#FFEBD3] p-4">
         <div className="container mx-auto max-w-2xl pt-16">
           <div className="mb-6 flex items-center gap-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => router.push('/')}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-[#FFECE8] text-[#4A1E17] border-[#F7A898]"
             >
               <Home className="h-4 w-4" />
               Ana Sayfa
@@ -148,26 +151,8 @@ export default function ProductSearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto max-w-4xl px-4 py-8">
-        <div className="mb-6 flex flex-wrap items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push('/')}
-            className="flex items-center gap-2"
-          >
-            <Home className="h-4 w-4" />
-            Ana Sayfa
-          </Button>
-          <Button
-            onClick={() => router.push('/ai-chat')}
-            className="flex items-center gap-2 rounded-2xl border border-gray-300 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 px-4 py-2 text-white shadow-md"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="font-medium">Yapay Zekaya Sor</span>
-          </Button>
-        </div>
+    <div className="min-h-screen bg-[#FFEBD3] text-[#2D1E12] py-8 px-4">
+      <div className="container mx-auto max-w-4xl space-y-6">
 
         {uiError && (
           <InlineAlert
@@ -177,16 +162,20 @@ export default function ProductSearchPage() {
           />
         )}
 
-        <Card className="mb-6 border-0 bg-white/80 shadow-lg backdrop-blur-sm dark:bg-gray-800/80">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2 text-xl">
-              Canlı Ürün Arama
+        {/* Live Search Section */}
+        <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl overflow-visible">
+          <CardHeader className="pb-4 border-b border-[#F7A898]/40">
+            <CardTitle className="flex items-center gap-3 text-lg font-bold font-heading text-[#2D1E12]">
+              <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] shadow-2xs">
+                <Search className="h-5 w-5 stroke-[2.5]" />
+              </div>
+              Canlı Ürün Fiyat Arama
             </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Ürün adı yazın; ilk sonuç sayfası anında gelir
+            <p className="text-xs font-semibold text-[#70372D]">
+              Marketlerde satılan ürünlerin adını yazın; fiyat ve stok alternatifleri anında listelensin
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="pt-6 space-y-4">
             <div className="relative">
               <SearchInput
                 value={searchQuery}
@@ -219,6 +208,7 @@ export default function ProductSearchPage() {
           </CardContent>
         </Card>
 
+        {/* Shopping Cart Summary */}
         {optimization && (
           <ShoppingCartSummary
             optimization={optimization}
@@ -229,8 +219,10 @@ export default function ProductSearchPage() {
           />
         )}
 
+        {/* Tips Section */}
         <SearchTips />
 
+        {/* Modals */}
         {searchSettings && (
           <RouteModal
             isOpen={showSingleMap}

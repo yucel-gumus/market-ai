@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 
 const DynamicMap = dynamic(() => import('@/components/DynamicMap.jsx'), {
   ssr: false,
-  loading: () => <div className="h-96 bg-gray-100 rounded-lg animate-pulse" />
+  loading: () => <div className="h-96 bg-[#FFECE8] border border-[#F7A898] rounded-2xl animate-pulse" />
 });
 
 interface MultiStoreRouteModalProps {
@@ -40,67 +40,71 @@ export function MultiStoreRouteModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-8xl max-h-[90vh] overflow-hidden">
-        <CardHeader className="pb-4">
+    <div className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-[#FFEBD3] border-[#F7A898] shadow-2xl rounded-3xl">
+        <CardHeader className="pb-3 border-b border-[#F7A898]/50 bg-[#FFECE8]">
           <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Navigation className="h-5 w-5 text-blue-600" />
-              <span>Alışveriş Rotası</span>
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-[#9BCEC1] text-[#0E2C24]">
+                <Navigation className="h-5 w-5 stroke-[2.5]" />
+              </div>
+              <span className="text-[#2D1E12] font-bold font-heading text-lg">Optimum Çoklu Mağaza Rotası</span>
             </div>
             <Button 
               onClick={onClose}
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 rounded-full hover:bg-[#FFB6A6]/40 text-[#4A1E17]"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </CardTitle>
         </CardHeader>
 
-        <CardContent className="space-y-4 max-h-[calc(90vh-8rem)] overflow-y-auto">
+        <CardContent className="space-y-4 p-6 max-h-[calc(90vh-7rem)] overflow-y-auto">
           {/* Route Summary */}
-          <div className="grid grid-cols-4 gap-4 p-4 bg-blue-50 rounded-lg">
-            <div className="text-center">
-              <div className="text-lg font-bold text-blue-600">{routeSteps.length}</div>
-              <div className="text-xs text-muted-foreground">Durak</div>
+          <div className="grid grid-cols-4 gap-3 p-4 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl">
+            <div className="text-center p-2 rounded-xl bg-[#FFEBD3]">
+              <div className="text-lg font-bold font-heading text-[#2D1E12]">{routeSteps.length}</div>
+              <div className="text-xs font-semibold text-[#70372D]">Toplam Durak</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{totalDistance.toFixed(1)} km</div>
-              <div className="text-xs text-muted-foreground">Mesafe</div>
+            <div className="text-center p-2 rounded-xl bg-[#FFEBD3]">
+              <div className="text-lg font-bold font-heading text-[#0E2C24]">{totalDistance.toFixed(1)} km</div>
+              <div className="text-xs font-semibold text-[#70372D]">Toplam Mesafe</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-orange-600">~{Math.round(totalTime)} dk</div>
-              <div className="text-xs text-muted-foreground">Süre</div>
+            <div className="text-center p-2 rounded-xl bg-[#FFEBD3]">
+              <div className="text-lg font-bold font-heading text-[#4A1E17]">~{Math.round(totalTime)} dk</div>
+              <div className="text-xs font-semibold text-[#70372D]">Tahmini Süre</div>
             </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-purple-600">₺{totalCost.toFixed(2)}</div>
-              <div className="text-xs text-muted-foreground">Toplam</div>
+            <div className="text-center p-2 rounded-xl bg-[#9BCEC1]/40 border border-[#9BCEC1]">
+              <div className="text-lg font-bold font-heading text-[#0E2C24]">₺{totalCost.toFixed(2)}</div>
+              <div className="text-xs font-bold text-[#0E2C24]">Toplam Tutar</div>
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* Route Steps */}
             <div className="space-y-3">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Car className="h-4 w-4" />
-                Rota Adımları
+              <h3 className="font-bold font-heading text-sm text-[#2D1E12] flex items-center gap-2">
+                <Car className="h-4 w-4 text-[#9BCEC1] stroke-[2.5]" />
+                Sırasıyla Uğranacak Mağazalar
               </h3>
               
-              {routeSteps.map((step, index) => (
-                <RouteStepCard key={index} step={step} />
-              ))}
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+                {routeSteps.map((step, index) => (
+                  <RouteStepCard key={index} step={step} />
+                ))}
+              </div>
             </div>
 
             {/* Map */}
             <div className="space-y-3">
-              <h3 className="font-semibold flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Harita
+              <h3 className="font-bold font-heading text-sm text-[#2D1E12] flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-[#9BCEC1] stroke-[2.5]" />
+                Canlı Rota Haritası
               </h3>
               
-              <div className="h-[450px] rounded-lg overflow-hidden">
+              <div className="h-[400px] rounded-2xl overflow-hidden border border-[#F7A898]/70 shadow-sm">
                 <DynamicMap
                   center={[searchSettings.latitude, searchSettings.longitude]}
                   searchSettings={searchSettings}
@@ -131,54 +135,77 @@ function RouteStepCard({ step }: RouteStepCardProps) {
   const stepTotal = step.items.reduce((sum, item) => sum + item.selectedDepot.price, 0);
 
   return (
-    <Card className="p-3">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-bold">
+    <Card className="p-4 bg-[#FFECE8] border-[#F7A898]/70 shadow-2xs rounded-2xl space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-7 h-7 bg-[#9BCEC1] text-[#0E2C24] text-xs rounded-xl flex items-center justify-center font-bold shadow-2xs shrink-0">
             {step.stepNumber}
           </div>
-          {marketLogo && (
-            <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+          {marketLogo ? (
+            <div className="relative h-7 w-16 shrink-0 flex items-center justify-center bg-[#f5d3b3] p-1 rounded-xl border border-[#F7A898]/60 shadow-2xs">
               <Image
                 src={marketLogo}
                 alt={step.marketName}
-                width={20}
-                height={20}
-                className="max-w-5 max-h-5 object-contain rounded"
+                fill
+                unoptimized
+                className="object-contain p-0.5"
               />
             </div>
+          ) : (
+            <div className="w-8 h-8 shrink-0 flex items-center justify-center rounded-xl bg-[#FFEBD3]">
+              <Package className="h-4 w-4 text-[#2D1E12]" />
+            </div>
           )}
-          <div>
-            <div className="font-medium text-sm">{step.depot.depotName}</div>
-            <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <div className="min-w-0 flex-1">
+            <div className="font-bold text-sm text-[#2D1E12] font-heading truncate">
+              {step.depot.depotName}
+            </div>
+            <div className="text-xs text-[#70372D] flex items-center gap-1.5 font-medium">
               {step.distanceFromPrevious && (
                 <>
-                  <Navigation className="h-3 w-3" />
+                  <Navigation className="h-3 w-3 text-[#0E2C24]" />
                   {step.distanceFromPrevious.toFixed(1)} km
                 </>
               )}
               {step.estimatedTime && (
                 <>
-                  <Clock className="h-3 w-3 ml-2" />
+                  <Clock className="h-3 w-3 ml-1.5 text-[#4A1E17]" />
                   ~{Math.round(step.estimatedTime)} dk
                 </>
               )}
             </div>
           </div>
         </div>
-        <div className="text-sm font-bold text-green-600">
+        <div className="text-xs font-bold text-[#0E2C24] bg-[#9BCEC1] px-2.5 py-1 rounded-xl shrink-0">
           ₺{stepTotal.toFixed(2)}
         </div>
       </div>
       
-      <div className="space-y-1 ml-8">
+      <div className="space-y-2 p-2.5 rounded-2xl bg-[#FFEBD3] border border-[#F7A898]/40">
         {step.items.map((item) => (
-          <div key={item.product.id} className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1">
-              <Package className="h-3 w-3 text-muted-foreground" />
-              <span className="line-clamp-1">{item.product.title}</span>
+          <div key={item.product.id} className="flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 text-[#70372D] min-w-0 flex-1">
+              <div className="relative h-9 w-9 shrink-0 rounded-xl bg-white border border-[#F7A898]/40 overflow-hidden flex items-center justify-center p-0.5 shadow-2xs">
+                {item.product.imageUrl ? (
+                  <Image
+                    src={item.product.imageUrl}
+                    alt={item.product.title}
+                    fill
+                    unoptimized
+                    className="object-contain p-0.5"
+                  />
+                ) : (
+                  <Package className="h-4 w-4 text-[#9BCEC1] stroke-[2]" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <span className="line-clamp-1 font-bold text-[#2D1E12]">{item.product.title}</span>
+                {item.product.refinedVolumeOrWeight && (
+                  <span className="block text-[10px] text-[#70372D] font-medium">{item.product.refinedVolumeOrWeight}</span>
+                )}
+              </div>
             </div>
-            <span className="font-medium">₺{item.selectedDepot.price}</span>
+            <span className="font-bold text-[#2D1E12] shrink-0">₺{item.selectedDepot.price}</span>
           </div>
         ))}
       </div>

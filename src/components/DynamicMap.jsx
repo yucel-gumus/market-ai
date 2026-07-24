@@ -14,9 +14,8 @@ if (typeof window !== 'undefined') {
   ensureLeafletDefaultIcons();
 }
 
-function getMarkerColor(index) {
-  const colors = ['#ff4757', '#2ed573', '#ffa502', '#3742fa', '#f1c40f', '#e67e22'];
-  return colors[index % colors.length];
+function getMarkerColor() {
+  return '#9BCEC1';
 }
 
 function createCustomIcon(color, number, marketName = '') {
@@ -25,55 +24,55 @@ function createCustomIcon(color, number, marketName = '') {
   return L.divIcon({
     html: marketLogo 
       ? `<div style="
-          background-color: ${color}; 
-          color: white; 
+          background-color: #FFECE8; 
+          color: #0E2C24; 
           border-radius: 50%; 
-          width: 35px; 
-          height: 35px; 
+          width: 36px; 
+          height: 36px; 
           display: flex; 
           align-items: center; 
           justify-content: center; 
           font-weight: bold; 
           font-size: 10px; 
-          border: 2px solid white; 
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          border: 3px solid #9BCEC1; 
+          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
           position: relative;
         ">
           <div style="
             position: absolute;
-            top: -5px;
-            right: -5px;
-            background-color: white;
-            color: ${color};
+            top: -6px;
+            right: -6px;
+            background-color: #9BCEC1;
+            color: #0E2C24;
             border-radius: 50%;
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
-            border: 1px solid ${color};
+            border: 1px solid #0E2C24;
           ">${number}</div>
           <img src="${marketLogo}" 
                alt="${marketName}" 
-               style="width: 20px; height: 20px; object-fit: contain; border-radius: 50%;" />
+               style="width: 22px; height: 22px; object-fit: contain; border-radius: 50%;" />
         </div>`
       : `<div style="
-          background-color: ${color}; 
-          color: white; 
+          background-color: #9BCEC1; 
+          color: #0E2C24; 
           border-radius: 50%; 
-          width: 35px; 
-          height: 35px; 
+          width: 36px; 
+          height: 36px; 
           display: flex; 
           align-items: center; 
           justify-content: center; 
           font-weight: bold; 
           font-size: 14px; 
-          border: 2px solid white; 
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          border: 2px solid #0E2C24; 
+          box-shadow: 0 4px 10px rgba(0,0,0,0.2);
         ">${number}</div>`,
-    iconSize: [35, 35],
+    iconSize: [36, 36],
     className: 'custom-div-icon'
   });
 }
@@ -112,7 +111,6 @@ const MapWrapper = ({
       maxZoom: DEFAULTS.MAP_MAX_ZOOM,
       zoomControl: true,
       attributionControl: true,
-      preferCanvas: false,
       fadeAnimation: false,
       zoomAnimation: false,
       markerZoomAnimation: false,
@@ -122,48 +120,48 @@ const MapWrapper = ({
 
     const userIcon = L.divIcon({
       html: `<div style="
-        background-color: #3b82f6; 
-        color: white; 
+        background-color: #9BCEC1; 
+        color: #0E2C24; 
         border-radius: 50%; 
-        width: 30px; 
-        height: 30px; 
+        width: 34px; 
+        height: 34px; 
         display: flex; 
         align-items: center; 
         justify-content: center; 
         font-weight: bold; 
         font-size: 16px; 
-        border: 3px solid white; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        border: 3px solid #0E2C24; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
       ">📍</div>`,
-      iconSize: [30, 30],
+      iconSize: [34, 34],
       className: 'user-location-marker'
     });
 
     const storeIcon = L.divIcon({
       html: `<div style="
-        background-color: #ef4444; 
-        color: white; 
+        background-color: #FFB6A6; 
+        color: #4A1E17; 
         border-radius: 50%; 
-        width: 30px; 
-        height: 30px; 
+        width: 34px; 
+        height: 34px; 
         display: flex; 
         align-items: center; 
         justify-content: center; 
         font-weight: bold; 
         font-size: 16px; 
-        border: 3px solid white; 
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        border: 3px solid #4A1E17; 
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
       ">🏪</div>`,
-      iconSize: [30, 30],
+      iconSize: [34, 34],
       className: 'store-location-marker'
     });
 
     const userMarker = L.marker([searchSettings.latitude, searchSettings.longitude], { icon: userIcon })
       .addTo(map)
       .bindPopup(`
-        <div style="text-align: center;">
-          <strong>📍 Konumunuz</strong><br/>
-          <span style="color: #3b82f6; font-weight: 600;">Buradan başlıyoruz</span>
+        <div style="text-align: center; padding: 6px; font-family: sans-serif;">
+          <strong style="color: #2D1E12;">📍 Konumunuz</strong><br/>
+          <span style="color: #0E2C24; font-weight: 600; font-size: 12px;">Başlangıç Noktası</span>
         </div>
       `);
 
@@ -174,11 +172,10 @@ const MapWrapper = ({
     if (destinations && Array.isArray(destinations) && destinations.length > 0 && showRoute) {
       destinations.forEach((destination, index) => {
         if (!destination || typeof destination.latitude === 'undefined' || typeof destination.longitude === 'undefined') {
-          console.warn('Invalid destination data:', destination);
           return;
         }
         
-        const markerColor = getMarkerColor(index);
+        const markerColor = getMarkerColor();
         const destinationIcon = createCustomIcon(markerColor, index + 1, destination.market || '');
         
         const marker = L.marker([destination.latitude, destination.longitude], { 
@@ -186,10 +183,10 @@ const MapWrapper = ({
         })
           .addTo(map)
           .bindPopup(`
-            <div>
-              <strong>🏪 ${destination.name || 'Mağaza'}</strong><br/>
-              <span>${(destination.market || '').toUpperCase()}</span><br/>
-              <span>Durak ${index + 1}</span>
+            <div style="padding: 6px; font-family: sans-serif;">
+              <strong style="color: #2D1E12;">🏪 ${destination.name || 'Mağaza'}</strong><br/>
+              <span style="color: #4A1E17; font-weight: 600;">${(destination.market || '').toUpperCase()}</span><br/>
+              <span style="color: #0E2C24; font-size: 11px;">Durak ${index + 1}</span>
             </div>
           `);
         
@@ -203,13 +200,15 @@ const MapWrapper = ({
           const waypoints = [
             L.latLng(searchSettings.latitude, searchSettings.longitude),
             ...destinations.map(dest => L.latLng(dest.latitude, dest.longitude))
-          ];          routingControl = L.Routing.control({
+          ];
+
+          routingControl = L.Routing.control({
             waypoints: waypoints,
             routeWhileDragging: false,
             addWaypoints: false,
             createMarker: () => null,
             lineOptions: {
-              styles: [{ color: '#3388ff', weight: 4, opacity: 0.7 }]
+              styles: [{ color: '#9BCEC1', weight: 5, opacity: 0.9 }]
             },
             show: false,
             router: L.Routing.osrmv1({
@@ -262,8 +261,8 @@ const MapWrapper = ({
       const storeIconWithLogo = L.divIcon({
         html: marketLogo 
           ? `<div style="
-              background-color: #ef4444; 
-              color: white; 
+              background-color: #FFB6A6; 
+              color: #4A1E17; 
               border-radius: 50%; 
               width: 40px; 
               height: 40px; 
@@ -272,8 +271,8 @@ const MapWrapper = ({
               justify-content: center; 
               font-weight: bold; 
               font-size: 12px; 
-              border: 3px solid white; 
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              border: 3px solid #4A1E17; 
+              box-shadow: 0 4px 12px rgba(0,0,0,0.25);
               position: relative;
             ">
               <img src="${marketLogo}" 
@@ -281,8 +280,8 @@ const MapWrapper = ({
                    style="width: 24px; height: 24px; object-fit: contain; border-radius: 50%;" />
             </div>`
           : `<div style="
-              background-color: #ef4444; 
-              color: white; 
+              background-color: #FFB6A6; 
+              color: #4A1E17; 
               border-radius: 50%; 
               width: 40px; 
               height: 40px; 
@@ -291,8 +290,8 @@ const MapWrapper = ({
               justify-content: center; 
               font-weight: bold; 
               font-size: 16px; 
-              border: 3px solid white; 
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              border: 3px solid #4A1E17; 
+              box-shadow: 0 4px 12px rgba(0,0,0,0.25);
             ">🏪</div>`,
         iconSize: [40, 40],
         className: 'store-location-marker-with-logo'
@@ -301,11 +300,10 @@ const MapWrapper = ({
       storeMarker = L.marker([selectedStore.latitude, selectedStore.longitude], { icon: storeIconWithLogo })
         .addTo(map)
         .bindPopup(`
-          <div style="text-align: center;">
-            <strong>🏪 ${selectedStore.depotName}</strong><br/>
-            <span style="color: #ef4444; font-weight: 600;">${selectedStore.marketAdi?.toUpperCase()}</span><br/>
-            <span style="color: #16a34a; font-weight: 600;">💰 ${selectedStore.price} ₺</span><br/>
-            <small style="color: #6b7280;">Hedef market</small>
+          <div style="text-align: center; font-family: sans-serif; padding: 6px;">
+            <strong style="color: #2D1E12;">🏪 ${selectedStore.depotName}</strong><br/>
+            <span style="color: #4A1E17; font-weight: 700;">${selectedStore.marketAdi?.toUpperCase()}</span><br/>
+            <span style="color: #0E2C24; font-weight: 700; background: #9BCEC1; padding: 2px 8px; border-radius: 8px; display: inline-block; margin-top: 4px;">💰 ${selectedStore.price} ₺</span>
           </div>
         `);
     }
@@ -323,7 +321,7 @@ const MapWrapper = ({
             addWaypoints: false,
             createMarker: () => null,
             lineOptions: {
-              styles: [{ color: '#3388ff', weight: 4, opacity: 0.7 }]
+              styles: [{ color: '#9BCEC1', weight: 5, opacity: 0.9 }]
             },
             show: false,
             router: L.Routing.osrmv1({
@@ -461,7 +459,7 @@ const MapWrapper = ({
   return (
     <div 
       ref={mapRef} 
-      style={{ height: '400px', width: '100%' }}
+      style={{ height: '400px', width: '100%', borderRadius: '16px', border: '1px solid #F7A898' }}
       data-map-instance={instanceId.current}
     />
   );
@@ -475,7 +473,7 @@ const DynamicMap = (props) => {
   }, []);
 
   if (!mounted) {
-    return <div className="map-loading">🗺️ Harita yükleniyor...</div>;
+    return <div className="p-8 text-center text-sm font-bold text-[#70372D] bg-[#FFECE8] border border-[#F7A898] rounded-2xl">🗺️ Harita yükleniyor...</div>;
   }
 
   return <MapWrapper {...props} />;

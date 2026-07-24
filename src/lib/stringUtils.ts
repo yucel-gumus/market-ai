@@ -19,8 +19,7 @@ export function generateKey(text: string, fallback: string | number = ''): strin
 }
 
 /**
- * Basit token overlap skoru (0–1).
- * Exact match → 1; partial token overlap → 0–1.
+ * Ürün başlığı ile aranan kelime arasındaki token eşleşme skoru (0–1).
  */
 export function titleMatchScore(productTitle: string, query: string): number {
   const a = normalizeString(productTitle);
