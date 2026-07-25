@@ -316,7 +316,7 @@ export default function AiChatPage() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="max-h-[calc(90vh-220px)] overflow-y-auto p-6 space-y-6">
                     <div className="grid gap-6 md:grid-cols-2">
                       <div className="rounded-2xl border border-[#F7A898]/60 bg-[#FFECE8] p-5 space-y-3">
@@ -699,7 +699,7 @@ export default function AiChatPage() {
                   <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFEBD3] p-5 space-y-3">
                     <h3 className="flex items-center text-base font-bold font-heading text-[#2D1E12]">
                       <Sparkles className="mr-2 h-5 w-5 text-[#0E2C24] stroke-[2.5]" />
-                      Yapay Zeka Önerili Muadil Ürünler
+                      KENSAI Önerili  Ürünler
                     </h3>
                     <ul className="space-y-2.5">
                       {pipeline.results.selectedProducts.map((product) => {

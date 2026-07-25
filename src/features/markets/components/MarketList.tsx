@@ -177,7 +177,7 @@ export function MarketList({
             onClick={() => handleSaveAndNavigate('/ai-chat')}
             className="bg-[#9BCEC1] text-[#0E2C24] hover:bg-[#83BEB0] font-bold h-12 rounded-2xl shadow-sm text-sm"
           >
-            <span>AI Asistana Git ({visibleCount} Market)</span>
+            <span>Kensai ile Devam Et ({visibleCount} Market)</span>
             <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
           <Button

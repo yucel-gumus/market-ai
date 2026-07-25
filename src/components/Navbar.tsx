@@ -16,7 +16,7 @@ export default function Navbar() {
 
   const hasSelectedLocation = Boolean(
     (marketSession?.selectedAddress || selectedAddress) &&
-      (marketSession?.selectedMarkets?.length ?? 0) > 0
+    (marketSession?.selectedMarkets?.length ?? 0) > 0
   );
 
   const activeDistrict =
@@ -51,7 +51,7 @@ export default function Navbar() {
       requiresLocation: true,
     },
     {
-      name: 'Yapay Zeka Asistanı',
+      name: 'KENSAI',
       href: '/ai-chat',
       icon: Sparkles,
       requiresLocation: true,
@@ -98,13 +98,12 @@ export default function Navbar() {
                 key={item.href}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href, item.requiresLocation)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                  isActive
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${isActive
                     ? 'bg-[#9BCEC1] text-[#0E2C24] shadow-xs'
                     : isDisabled
-                    ? 'text-[#70372D]/60 hover:bg-[#FFB6A6]/20 cursor-not-allowed'
-                    : 'text-[#4A1E17] hover:bg-[#FFB6A6]/40 hover:text-[#2D1E12]'
-                }`}
+                      ? 'text-[#70372D]/60 hover:bg-[#FFB6A6]/20 cursor-not-allowed'
+                      : 'text-[#4A1E17] hover:bg-[#FFB6A6]/40 hover:text-[#2D1E12]'
+                  }`}
                 title={isDisabled ? 'Önce konum ve market seçmelisiniz' : item.name}
               >
                 {isDisabled ? (
@@ -134,9 +133,8 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href, item.requiresLocation)}
-                  className={`p-2 rounded-lg transition-colors relative ${
-                    isActive ? 'bg-[#9BCEC1] text-[#0E2C24]' : 'text-[#70372D] hover:bg-[#FFB6A6]/40'
-                  }`}
+                  className={`p-2 rounded-lg transition-colors relative ${isActive ? 'bg-[#9BCEC1] text-[#0E2C24]' : 'text-[#70372D] hover:bg-[#FFB6A6]/40'
+                    }`}
                   title={item.name}
                 >
                   <Icon className="h-5 w-5" />
