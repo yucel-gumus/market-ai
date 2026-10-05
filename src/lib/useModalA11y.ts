@@ -19,6 +19,11 @@ const FOCUSABLE = [
 export function useModalA11y<T extends HTMLElement>(isOpen: boolean, onClose?: (() => void) | null) {
   const containerRef = useRef<T | null>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+  // onClose'u ref üzerinden okuyoruz: aksi halde üst bileşen her render olduğunda
+  // (ör. rota verisi geldiğinde) effect yeniden kurulur, odak pencere içinde bir
+  // öğeye geri atlar ve kullanıcının Tab ile geldiği yeri kaybederiz.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -31,9 +36,9 @@ export function useModalA11y<T extends HTMLElement>(isOpen: boolean, onClose?: (
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (!onClose) return;
+        if (!onCloseRef.current) return;
         event.stopPropagation();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== 'Tab' || !node) return;
@@ -67,7 +72,7 @@ export function useModalA11y<T extends HTMLElement>(isOpen: boolean, onClose?: (
       document.removeEventListener('keydown', handleKeyDown);
       restoreRef.current?.focus?.();
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return containerRef;
 }
