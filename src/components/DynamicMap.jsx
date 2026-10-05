@@ -73,26 +73,30 @@ export default function DynamicMap({ selectedStore, destinations = [], showRoute
           const { totalDistance, totalTime } = route.summary;
           const distance = totalDistance / 1000;
           const time = totalTime / 60;
-          // Durak başına değerler de aynı (araç) rotadan gelmelidir; aksi halde özet ile
-          // durak satırları farklı hesapları gösterir. Kütüphane OSRM yanıtını dönüştürdüğü
-          // için ayrı bir "legs" dizisi YOK: bacak toplamları adım (instruction) mesafe/süreleri
-          // ile waypoint sınırlarından çıkarılır.
-          const instructions = Array.isArray(route.instructions) ? route.instructions : [];
-          const waypoints = Array.isArray(route.waypointIndices) ? route.waypointIndices : [];
-          const legs = [];
-          if (instructions.length && waypoints.length > 1) {
-            for (let k = 0; k + 1 < waypoints.length; k++) {
-              let legDistance = 0;
-              let legTime = 0;
-              for (let j = waypoints[k]; j < waypoints[k + 1]; j++) {
-                legDistance += instructions[j]?.distance || 0;
-                legTime += instructions[j]?.time || 0;
-              }
-              legs.push({ distance: legDistance / 1000, time: legTime / 60 });
-            }
+          if (store) {
+            callbacks.current.onRouteFound?.({ distance: distance.toFixed(1), time: Math.round(time), timeText: `${Math.round(time)} dakika`, routeType: 'Arabayla' });
+            return;
           }
-          if (store) callbacks.current.onRouteFound?.({ distance: distance.toFixed(1), time: Math.round(time), timeText: `${Math.round(time)} dakika`, routeType: 'Arabayla' });
-          else callbacks.current.onMultiRouteFound?.({ distance, time, legs: legs.length ? legs : undefined });
+          // Durak başına mesafe/süre özetle AYNI kaynaktan gelmeli. Kütüphanenin dönüştürdüğü
+          // rotada güvenilir bacak verisi yok (waypointIndices yanıltıcı), bu yüzden bacaklar
+          // doğrudan OSRM'den, haritanın kullandığı sırayla istenir. Başarısız olursa yalnızca
+          // özet gösterilir; durak satırlarında tahmin gösterilmez (karışıklık olmasın).
+          const ordered = [L.latLng(latitude, longitude), ...validStops.map(stop => L.latLng(stop.latitude, stop.longitude))];
+          const coords = ordered.map(point => `${point.lng.toFixed(6)},${point.lat.toFixed(6)}`).join(';');
+          fetch(`${LEAFLET.OSRM_SERVICE}/driving/${coords}?overview=false&steps=false`)
+            .then(response => response.json())
+            .then(data => {
+              if (disposed) return;
+              const received = data?.routes?.[0];
+              if (!received) { callbacks.current.onMultiRouteFound?.({ distance, time }); return; }
+              const legs = (received.legs || []).map(leg => ({ distance: leg.distance / 1000, time: leg.duration / 60 }));
+              callbacks.current.onMultiRouteFound?.({
+                distance: received.distance / 1000,
+                time: received.duration / 60,
+                legs: legs.length ? legs : undefined,
+              });
+            })
+            .catch(() => { if (!disposed) callbacks.current.onMultiRouteFound?.({ distance, time }); });
         });
         control.on('routingerror', () => {
           if (disposed) return;
