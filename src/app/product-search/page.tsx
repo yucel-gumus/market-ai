@@ -11,7 +11,7 @@ import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDi
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
 import { RouteModal } from '@/features/products/components/RouteModal';
-import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
+import { MultiStoreRouteModal, type RouteLeg } from '@/features/products/components/MultiStoreRouteModal';
 import { ErrorDisplay, SearchErrorDisplay } from '@/features/products/components/ErrorDisplay';
 import { SearchTips } from '@/features/products/components/SearchTips';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
@@ -32,6 +32,7 @@ export default function ProductSearchPage() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
+  const [realRouteLegs, setRealRouteLegs] = useState<RouteLeg[] | undefined>(undefined);
   const [uiError, setUiError] = useState<string | null>(null);
 
   const [debouncedQuery] = useDebounce(searchQuery, 450);
@@ -59,6 +60,7 @@ export default function ProductSearchPage() {
     setSelectedStore(null);
     setRealRouteDistance(undefined);
     setRealRouteTime(undefined);
+    setRealRouteLegs(undefined);
   }, [optimization]);
 
 
@@ -110,9 +112,10 @@ export default function ProductSearchPage() {
     setRealRouteTime(undefined);
   };
 
-  const handleMultiRouteFound = (routeData: { distance: number; time: number }) => {
+  const handleMultiRouteFound = (routeData: { distance: number; time: number; legs?: RouteLeg[] }) => {
     setRealRouteDistance(routeData.distance);
     setRealRouteTime(routeData.time);
+    setRealRouteLegs(routeData.legs);
   };
 
   const handleViewMultiRoute = () => setShowMultiMap(true);
@@ -271,6 +274,7 @@ export default function ProductSearchPage() {
             searchSettings={searchSettings}
             realRouteDistance={realRouteDistance}
             realRouteTime={realRouteTime}
+            realRouteLegs={realRouteLegs}
             onMultiRouteFound={handleMultiRouteFound}
           />
         )}
