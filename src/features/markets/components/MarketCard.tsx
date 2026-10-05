@@ -5,6 +5,7 @@ import { Navigation, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn, getMarketLogo } from '@/lib/utils';
+import { formatBranchName } from '@/lib/stringUtils';
 import { Market } from '@/types';
 import { MarketService } from '@/services/marketService';
 
@@ -17,6 +18,7 @@ interface MarketCardProps {
 export function MarketCard({ market, isVisible, onToggleMarket }: MarketCardProps) {
   const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
   const logoUrl = getMarketLogo(market.name);
+  const branchLabel = formatBranchName(market.address || market.name);
 
   return (
     <Card className={cn(
@@ -30,6 +32,7 @@ export function MarketCard({ market, isVisible, onToggleMarket }: MarketCardProp
           <div className="flex items-center">
             <Checkbox
               id={`market-${marketKey}`}
+              aria-label={`${market.name} ${branchLabel} marketini seç`}
               checked={isVisible}
               onCheckedChange={() => onToggleMarket(market)}
             />
@@ -55,7 +58,7 @@ export function MarketCard({ market, isVisible, onToggleMarket }: MarketCardProp
               {/* Şube Adı & Mesafe */}
               <div className="min-w-0 flex-1">
                 <h4 className="font-bold text-sm text-[#2D1E12] font-heading leading-tight truncate">
-                  {market.address}
+                  {branchLabel}
                 </h4>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Navigation className="h-3 w-3 text-[#0E2C24] shrink-0" />

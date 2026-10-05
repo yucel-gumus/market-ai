@@ -18,6 +18,8 @@ interface Props {
   onViewSingleRoute?: (depot: ProductDepotInfo) => void;
   onClearCart: () => void;
   onRemoveItem: (id: string) => void;
+  /** Bu tarif akışında sepete eklenen ürünlerin kimlikleri (mevcut sepetten ayırmak için). */
+  recipeProductIds?: string[];
 }
 
 const money = (amount: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
@@ -25,12 +27,18 @@ const labels: Record<ShoppingMode, string> = { single: 'Tek mağaza', two: 'En f
 const dateLabel = (date: string) => new Date(date).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
 
 export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuantityChange, onRefreshPrices,
-  isRefreshing, refreshMessage, onViewRoute, onViewSingleRoute, onClearCart, onRemoveItem }: Props) {
+  isRefreshing, refreshMessage, onViewRoute, onViewSingleRoute, onClearCart, onRemoveItem, recipeProductIds = [] }: Props) {
   const { marketGroups, totalCost, marketCount, options = [], singleStoreCost, totalSavings,
     extraWalkMinutes, oldestPriceCheck, hasUnknownPriceChecks, unavailableProducts = [] } = optimization;
   const count = optimization.totalQuantity ?? marketGroups.reduce((sum, group) => sum + group.items.reduce((n, item) => n + itemQuantity(item), 0), 0);
   const routeAvailable = !unavailableProducts.length && marketGroups.length > 0 && marketGroups.every(group => coordsOf(group.depotInfo));
   const stale = oldestPriceCheck && Date.now() - Date.parse(oldestPriceCheck) > 30 * 60 * 1000;
+  // Tariften gelen kalemler ile kullanıcının önceden sepette olan kalemleri ayrı gösterilir;
+  // aksi halde "sepet 15 ürün / 9 şube" görünüp tarifle ilişkisi anlaşılmıyor.
+  const recipeIds = new Set(recipeProductIds);
+  const recipeItemCount = marketGroups.reduce((sum, group) => sum + group.items.filter(item => recipeIds.has(item.product.id)).reduce((n, item) => n + itemQuantity(item), 0), 0);
+  const recipeCost = marketGroups.reduce((sum, group) => sum + group.items.filter(item => recipeIds.has(item.product.id)).reduce((n, item) => n + Number(item.selectedDepot.price) * itemQuantity(item), 0), 0);
+  const hasRecipeSplit = recipeItemCount > 0 && recipeItemCount < count;
   return (
     <Card className="mb-6 border-[#F7A898] bg-[#FFECE8] shadow-md rounded-2xl">
       <CardHeader className="pb-3 border-b border-[#F7A898]/40">
@@ -40,6 +48,11 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
+        {hasRecipeSplit && (
+          <p role="status" className="rounded-xl bg-[#FFEBD3] p-3 text-xs font-semibold text-[#2D1E12]">
+            Bu tarif için eklenen: {recipeItemCount} adet · {money(recipeCost)}. Sepetin tamamı: {count} adet · {money(totalCost)}.
+          </p>
+        )}
         {unavailableProducts.length > 0 && <div role="alert" className="rounded-xl border border-[#F7A898] p-3 space-y-2 text-sm">
           <p>Bu ürünlerin seçili şubelerde geçerli fiyatı yok. Fiyatları yeniden kontrol edin veya sepetten çıkarın; tam sepet karşılaştırması henüz yapılamıyor.</p>
           {unavailableProducts.map(product => <div key={product.id} className="flex flex-wrap justify-between gap-2"><span>{product.title}</span><Button size="sm" variant="ghost" onClick={() => onRemoveItem(product.id)}>Çıkar</Button></div>)}
@@ -67,8 +80,11 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
           <Stat title="Seçilen sepet" value={unavailableProducts.length ? 'Yenileme gerekli' : money(totalCost)} />
           <Stat title="Uğranacak şube" value={unavailableProducts.length ? 'Belirlenemedi' : String(marketCount)} />
           <Stat title="En ucuz tek şube" value={singleStoreCost !== undefined ? money(singleStoreCost) : 'Tam sepet yok'} />
-          <Stat title="Tek şubeye göre fark" value={totalSavings !== undefined ? money(totalSavings) : 'Karşılaştırılamıyor'} />
+          <Stat title="Tek şubeye göre fark" value={totalSavings !== undefined ? money(totalSavings) : 'Hesaplanamadı'} />
         </dl>
+        {marketCount >= 3 && (
+          <p className="text-xs text-[#70372D]">Bu sepet {marketCount} şubeye dağıldı. Daha az şubeyle alışveriş için Konum &amp; Marketler sayfasından market seçiminizi daraltabilirsiniz.</p>
+        )}
         {extraWalkMinutes !== undefined && <p className="text-sm">Tek şubeye göre yaklaşık {Math.round(Math.abs(extraWalkMinutes))} dk {extraWalkMinutes >= 0 ? 'ek' : 'daha az'} yürüyüş.</p>}
         {singleStoreCost === undefined && <p className="text-xs text-[#70372D]">Aynı ürünlerin tamamı tek şubede bulunamadığı için tasarruf tutarı hesaplanmadı.</p>}
         <div className="rounded-xl border border-[#F7A898]/60 bg-[#FFEBD3] p-3 space-y-2">
@@ -90,7 +106,7 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
 }
 
 function Stat({ title, value }: { title: string; value: string }) {
-  return <div className="text-center min-w-0"><dd className="font-bold text-[#0E2C24] break-words">{value}</dd><dt className="text-xs text-[#70372D] mt-1">{title}</dt></div>;
+  return <div className="text-center min-w-0"><dd className="font-bold text-[#0E2C24] break-words text-xs sm:text-sm">{value}</dd><dt className="text-xs text-[#70372D] mt-1">{title}</dt></div>;
 }
 
 function MarketGroupCard({ group, onRemoveItem, onQuantityChange }: {

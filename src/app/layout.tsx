@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: "MarketAI - Akıllı Market & Ürün Arama Platformu",
-  description: "Modern teknoloji ile yakınınızdaki marketleri ve en uygun ürün fiyatlarını bulun. Next.js 15, TypeScript ve AI destekli market deneyimi.",
+  description: "Yakınınızdaki marketleri ve en uygun ürün fiyatlarını bulun; tarifinizin malzemelerini AI ile seçip tek sepette toplayın.",
   keywords: ["market", "alışveriş", "yakın market", "konum", "harita", "AI", "ürün arama"],
   authors: [{ name: "MarketAI Team" }],
 };

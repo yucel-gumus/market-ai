@@ -14,10 +14,11 @@ export default function Navbar() {
   const selectedAddress = useAppStore((s) => s.selectedAddress);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
-  const hasSelectedLocation = Boolean(
-    (marketSession?.selectedAddress || selectedAddress) &&
-    (marketSession?.selectedMarkets?.length ?? 0) > 0
-  );
+  const hasPickedLocation = Boolean(marketSession?.selectedAddress || selectedAddress);
+  const selectedMarketCount = marketSession?.selectedMarkets?.length ?? 0;
+  // Ürün arama ve asistan için market seçimi şart; ama adres seçildiği anda rozet bunu göstermeli
+  // (oturum "Kensai ile Devam Et" ile kaydedilene kadar "konum seçilmedi" demesi kafa karıştırıyordu).
+  const hasSelectedLocation = hasPickedLocation && selectedMarketCount > 0;
 
   const activeDistrict =
     marketSession?.selectedAddress?.district ||
@@ -25,8 +26,6 @@ export default function Navbar() {
     marketSession?.selectedAddress?.neighborhood ||
     selectedAddress?.neighborhood ||
     'Konum Seçilmedi';
-
-  const selectedMarketCount = marketSession?.selectedMarkets?.length || 0;
 
   const handleNavClick = (e: React.MouseEvent, href: string, requiresLocation: boolean) => {
     if (requiresLocation && !hasSelectedLocation) {
@@ -79,6 +78,13 @@ export default function Navbar() {
               <span className="text-[#2D1E12]">{activeDistrict}</span>{' '}
               <span className="bg-[#9BCEC1] text-[#0E2C24] px-1.5 py-0.5 rounded-md ml-1">
                 {selectedMarketCount} Market
+              </span>
+            </span>
+          ) : hasPickedLocation ? (
+            <span>
+              <span className="text-[#2D1E12]">{activeDistrict}</span>{' '}
+              <span className="bg-[#FFB6A6] text-[#4A1E17] px-1.5 py-0.5 rounded-md ml-1">
+                market seçilmedi
               </span>
             </span>
           ) : (

@@ -21,7 +21,7 @@ function popup(title, detail) {
  * @param {{selectedStore?: import('@/types').ProductDepotInfo | null,
  * destinations?: Array<{latitude: number, longitude: number, name?: string, market?: string}>,
  * showRoute?: boolean, onRouteFound?: (info: import('@/types').RouteInfo) => void,
- * onMultiRouteFound?: (info: {distance: number, time: number}) => void,
+ * onMultiRouteFound?: (info: {distance: number, time: number, legs?: Array<{distance: number, time: number}>}) => void,
  * searchSettings: import('@/types').SearchSettings}} props
  */
 export default function DynamicMap({ selectedStore, destinations = [], showRoute = false,
@@ -69,11 +69,18 @@ export default function DynamicMap({ selectedStore, destinations = [], showRoute
         });
         control.on('routesfound', event => {
           if (disposed || !event.routes?.length) return;
-          const { totalDistance, totalTime } = event.routes[0].summary;
+          const route = event.routes[0];
+          const { totalDistance, totalTime } = route.summary;
           const distance = totalDistance / 1000;
           const time = totalTime / 60;
+          // Durak başına değerler de aynı (araç) rotadan gelir; aksi halde özet ile
+          // durak satırları farklı hesapları gösterip tutarsız görünür.
+          const legs = (route.legs || []).map(leg => ({
+            distance: (leg.distance ?? leg.summary?.totalDistance ?? 0) / 1000,
+            time: (leg.time ?? leg.summary?.totalTime ?? 0) / 60,
+          }));
           if (store) callbacks.current.onRouteFound?.({ distance: distance.toFixed(1), time: Math.round(time), timeText: `${Math.round(time)} dakika`, routeType: 'Arabayla' });
-          else callbacks.current.onMultiRouteFound?.({ distance, time });
+          else callbacks.current.onMultiRouteFound?.({ distance, time, legs });
         });
         control.on('routingerror', () => {
           if (disposed) return;

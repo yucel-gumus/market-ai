@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useDebounce } from 'use-debounce';
 import { Check, ChevronDown, MapPin, Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,8 @@ export function AddressSearch({
   const { 
     data: addresses = [], 
     isLoading: isSearchLoading, 
+    isFetching: isSearchFetching,
+    isPending: isSearchPending,
     error: searchError 
   } = useAddressSearch(debouncedQuery);
 
@@ -84,8 +86,21 @@ export function AddressSearch({
     setIsOpen(false);
   };
 
-  const showLoading = isLoading || isSearchLoading;
+  const showLoading = isLoading || isSearchLoading || isSearchFetching || isSearchPending || searchQuery.trim() !== debouncedQuery.trim();
   const shouldShowDropdown = isOpen && searchQuery.trim().length > 0;
+  // Aynı adres birden fazla kez dönebiliyor (servis tekrarları): gösterimde tekilleştir.
+  const uniqueAddresses = useMemo(() => {
+    const seen = new Set<string>();
+    return addresses.filter((address) => {
+      const key = AddressService.formatAddressForDisplay(address);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [addresses]);
+  // "Sonuç bulunamadı" yalnızca arama gerçekten tamamlandığında söylenir; aksi halde
+  // kullanıcı arama sürerken "yok" sanıp vazgeçiyor.
+  const searchSettled = !showLoading && !searchError && searchQuery.trim() === debouncedQuery.trim();
 
   return (
     <div 
@@ -158,9 +173,9 @@ export function AddressSearch({
               </div>
             )}
 
-            {addresses.length > 0 && !showLoading && (
+            {uniqueAddresses.length > 0 && !showLoading && (
               <div className="space-y-1 p-1">
-                {addresses.map((address, index) => (
+                {uniqueAddresses.map((address, index) => (
                   <Button
                     key={`${address.latitude}-${address.longitude}-${index}`}
                     variant="ghost"
@@ -187,7 +202,7 @@ export function AddressSearch({
               </div>
             )}
 
-            {!showLoading && !searchError && addresses.length === 0 && searchQuery.trim().length >= 2 && (
+            {searchSettled && uniqueAddresses.length === 0 && searchQuery.trim().length >= 2 && (
               <div className="p-4 text-center text-sm font-medium text-[#70372D]">
                 <div className="flex items-center justify-center gap-2">
                   <MapPin className="h-4 w-4 text-[#FFB6A6]" />

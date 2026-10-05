@@ -6,6 +6,7 @@ import { ProductDepotInfo, RouteInfo, SearchSettings } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { getMarketLogo } from '@/lib/utils';
+import { useModalA11y } from '@/lib/useModalA11y';
 import dynamic from 'next/dynamic';
 
 const DynamicMap = dynamic(() => import('@/components/DynamicMap.jsx'), {
@@ -32,6 +33,7 @@ export function RouteModal({
   onClose,
   onRouteFound
 }: RouteModalProps) {
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   if (!isOpen || !selectedStore) {
     return null;
   }
@@ -39,7 +41,7 @@ export function RouteModal({
   const logoPath = getMarketLogo(selectedStore.marketAdi || '');
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4 outline-none">
       <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden bg-[#FFEBD3] border-[#F7A898] shadow-2xl rounded-3xl">
         <CardHeader className="pb-3 border-b border-[#F7A898]/50 bg-[#FFECE8]">
           <CardTitle className="flex items-center justify-between">

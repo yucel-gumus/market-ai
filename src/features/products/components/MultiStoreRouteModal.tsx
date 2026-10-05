@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RouteStep, SearchSettings } from '@/types';
 import { getMarketLogo } from '@/lib/utils';
+import { useModalA11y } from '@/lib/useModalA11y';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { itemQuantity } from '@/lib/shoppingUtils';
@@ -12,6 +13,9 @@ const DynamicMap = dynamic(() => import('@/components/DynamicMap.jsx'), {
   loading: () => <div className="h-96 bg-[#FFECE8] border border-[#F7A898] rounded-2xl animate-pulse" />
 });
 
+/** Araç rotasından gelen durak başına mesafe (km) ve süre (dk). */
+export interface RouteLeg { distance: number; time: number }
+
 interface MultiStoreRouteModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -19,7 +23,8 @@ interface MultiStoreRouteModalProps {
   searchSettings: SearchSettings;
   realRouteDistance?: number; 
   realRouteTime?: number;
-  onMultiRouteFound?: (routeData: { distance: number; time: number }) => void;
+  realRouteLegs?: RouteLeg[];
+  onMultiRouteFound?: (routeData: { distance: number; time: number; legs?: RouteLeg[] }) => void;
 }
 
 export function MultiStoreRouteModal({ 
@@ -29,19 +34,27 @@ export function MultiStoreRouteModal({
   searchSettings,
   realRouteDistance,
   realRouteTime,
+  realRouteLegs,
   onMultiRouteFound
 }: MultiStoreRouteModalProps) {
+  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
   if (!isOpen || !routeSteps || routeSteps.length === 0) return null;
 
-  const totalDistance = realRouteDistance ?? routeSteps.reduce((sum, step) => sum + (step.distanceFromPrevious || 0), 0);
-  const totalTime = realRouteTime ?? routeSteps.reduce((sum, step) => sum + (step.estimatedTime || 0), 0);
+  // Özet ile durak satırları AYNI hesabı göstermeli: araç rotası varsa toplamlar da
+  // durak bacaklarının toplamıdır (ikisi farklı kaynaktan gelirse kullanıcı haklı olarak
+  // "süreler karışıyor" der).
+  const legDistance = realRouteLegs?.reduce((sum, leg) => sum + leg.distance, 0);
+  const legTime = realRouteLegs?.reduce((sum, leg) => sum + leg.time, 0);
+  const useRealRoute = realRouteDistance !== undefined || realRouteTime !== undefined;
+  const totalDistance = legDistance ?? realRouteDistance ?? routeSteps.reduce((sum, step) => sum + (step.distanceFromPrevious || 0), 0);
+  const totalTime = legTime ?? realRouteTime ?? routeSteps.reduce((sum, step) => sum + (step.estimatedTime || 0), 0);
   const totalCost = routeSteps.reduce(
     (sum, step) => sum + step.items.reduce((itemSum, item) => itemSum + Number(item.selectedDepot.price) * itemQuantity(item), 0),
     0
   );
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4 outline-none">
       <Card className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-[#FFEBD3] border-[#F7A898] shadow-2xl rounded-3xl">
         <CardHeader className="pb-3 border-b border-[#F7A898]/50 bg-[#FFECE8]">
           <CardTitle className="flex items-center justify-between">
@@ -65,7 +78,7 @@ export function MultiStoreRouteModal({
 
         <CardContent className="space-y-4 p-6 max-h-[calc(90vh-7rem)] overflow-y-auto">
           {/* Route Summary */}
-          <p className="text-xs">{realRouteTime !== undefined ? 'Gösterilen süre araç rotasına aittir.' : 'Mesafe kuş uçuşu, süre yaklaşık yürüyüş hesabıdır.'} Durak sırası yaklaşık belirlenir; eve dönüş ve alışveriş süresi dahil değildir.</p>
+          <p className="text-xs">{useRealRoute ? 'Mesafe ve süreler araç rotasına (OSRM) göre hesaplanmıştır; aşağıdaki durak değerlerinin toplamı özetle aynıdır.' : 'Araç rotası alınamadı; mesafeler kuş uçuşu, süreler yaklaşık yürüyüş hesabıdır. Durak sırası yaklaşık belirlenir; eve dönüş ve alışveriş süresi dahil değildir.'}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl">
             <div className="text-center p-2 rounded-xl bg-[#FFEBD3]">
               <div className="text-lg font-bold font-heading text-[#2D1E12]">{routeSteps.length}</div>
@@ -95,7 +108,7 @@ export function MultiStoreRouteModal({
               
               <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
                 {routeSteps.map((step, index) => (
-                  <RouteStepCard key={index} step={step} />
+                  <RouteStepCard key={index} step={step} leg={realRouteLegs?.[index]} hideEstimate={useRealRoute && !realRouteLegs?.length} />
                 ))}
               </div>
             </div>
@@ -130,11 +143,17 @@ export function MultiStoreRouteModal({
 
 interface RouteStepCardProps {
   step: RouteStep;
+  /** Araç rotasından gelen bu durağa ait bacak (varsa) */
+  leg?: RouteLeg;
+  /** Araç rotası var ama bacak bilgisi yok: tahmini gösterme (özet ile çelişmesin) */
+  hideEstimate?: boolean;
 }
 
-function RouteStepCard({ step }: RouteStepCardProps) {
+function RouteStepCard({ step, leg, hideEstimate }: RouteStepCardProps) {
   const marketLogo = getMarketLogo(step.marketName);
   const stepTotal = step.items.reduce((sum, item) => sum + Number(item.selectedDepot.price) * itemQuantity(item), 0);
+  const distance = leg?.distance ?? (hideEstimate ? undefined : step.distanceFromPrevious);
+  const time = leg?.time ?? (hideEstimate ? undefined : step.estimatedTime);
 
   return (
     <Card className="p-4 bg-[#FFECE8] border-[#F7A898]/70 shadow-2xs rounded-2xl space-y-3">
@@ -163,16 +182,16 @@ function RouteStepCard({ step }: RouteStepCardProps) {
               {step.depot.depotName}
             </div>
             <div className="text-xs text-[#70372D] flex items-center gap-1.5 font-medium">
-              {step.distanceFromPrevious && (
+              {distance !== undefined && distance > 0 && (
                 <>
                   <Navigation className="h-3 w-3 text-[#0E2C24]" />
-                  {step.distanceFromPrevious.toFixed(1)} km
+                  {distance.toFixed(1)} km
                 </>
               )}
-              {step.estimatedTime && (
+              {time !== undefined && time > 0 && (
                 <>
                   <Clock className="h-3 w-3 ml-1.5 text-[#4A1E17]" />
-                  ~{Math.round(step.estimatedTime)} dk
+                  {leg ? `${Math.round(time)} dk` : `~${Math.round(time)} dk`}
                 </>
               )}
             </div>

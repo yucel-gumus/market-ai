@@ -28,16 +28,30 @@ import { ProductDropdown } from '@/features/products/components/ProductDropdown'
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
-import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
+import { MultiStoreRouteModal, type RouteLeg } from '@/features/products/components/MultiStoreRouteModal';
 import { RouteModal } from '@/features/products/components/RouteModal';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
+import { formatNutritionValue, isNutritionNote, nutritionLabel } from '@/lib/nutritionLabels';
+import { useModalA11y } from '@/lib/useModalA11y';
 import { toErrorMessage } from '@/lib/errorUtils';
 import { LlmService, type RecipeWithCaloriesResponse } from '@/services/llmService';
 import type { Product, ProductDepotInfo, RouteInfo } from '@/types';
 
 const STEPS = ['input', 'ingredients', 'processing', 'complete'] as const;
+
+/**
+ * Tarif/kalori sonucu, ÜRETİLDİĞİ yemek adı ve kişi sayısıyla birlikte saklanır.
+ * Aksi halde kullanıcı kişi sayısını değiştirdiğinde ekrandaki tarif eski kalır ama
+ * başlık yeni sayıyı gösterir (ölçü ve porsiyon çelişkisi).
+ */
+interface RecipeResult {
+  data: RecipeWithCaloriesResponse;
+  foodName: string;
+  servings: number;
+  request: string;
+}
 
 function stepIcon(step: string, className = 'w-6 h-6') {
   switch (step) {
@@ -83,7 +97,7 @@ export default function AiChatPage() {
 
   const pipeline = useRecipePipeline({ addManyToCart });
 
-  const [calorieInfo, setCalorieInfo] = useState<RecipeWithCaloriesResponse | null>(null);
+  const [recipeResult, setRecipeResult] = useState<RecipeResult | null>(null);
   const [isCalorieLoading, setIsCalorieLoading] = useState(false);
   const [calorieError, setCalorieError] = useState<string | null>(null);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
@@ -95,6 +109,12 @@ export default function AiChatPage() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>();
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>();
+  const [realRouteLegs, setRealRouteLegs] = useState<RouteLeg[] | undefined>();
+
+  const recipeDialogRef = useModalA11y<HTMLDivElement>(showRecipeModal, () => setShowRecipeModal(false));
+  const recipeData = recipeResult?.data ?? null;
+  // Girdi, tarifin üretildiği andan farklıysa sonuç "önceki tarif" olarak işaretlenir.
+  const recipeIsStale = Boolean(recipeResult && recipeResult.request !== pipeline.recipeRequest);
 
   useEffect(() => {
     setShowSingleMap(false);
@@ -102,6 +122,7 @@ export default function AiChatPage() {
     setSelectedStore(null);
     setRealRouteDistance(undefined);
     setRealRouteTime(undefined);
+    setRealRouteLegs(undefined);
   }, [optimization]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -118,15 +139,23 @@ export default function AiChatPage() {
     searchSettings,
   });
 
+  // Debounce penceresinde (sorgu henüz sunucuya gitmedi) "sonuç bulunamadı" denmemeli:
+  // arama sürüyor sayılır. Aksi halde kullanıcı ilk mesajı görüp aramadan vazgeçiyor.
+  const isQueryPending = searchQuery.trim() !== debouncedQuery.trim();
+  const isSearchBusy = isQueryPending || isProductsLoading || isSearchFetching;
+
   const handleGetRecipeAndCalorie = async () => {
     if (!pipeline.foodName.trim()) return;
+    // Girdinin O ANKİ hali sonuçla birlikte saklanır; sonradan değişirse sonuç "önceki tarif" olur.
+    const request = pipeline.recipeRequest;
+    const foodName = pipeline.foodName.trim();
+    const servings = pipeline.servings;
     setIsCalorieLoading(true);
     setCalorieError(null);
-    setCalorieInfo(null);
     try {
-      const data = await LlmService.generateRecipeAndCalorie(pipeline.recipeRequest);
+      const data = await LlmService.generateRecipeAndCalorie(request);
       if (data.success) {
-        setCalorieInfo(data);
+        setRecipeResult({ data, foodName, servings, request });
         setShowRecipeModal(true);
       } else {
         setCalorieError(data.message || 'Tarif veya kalori bilgisi bulunamadı.');
@@ -212,11 +241,11 @@ export default function AiChatPage() {
       <div className="container mx-auto max-w-4xl space-y-6">
 
         {/* Hero Header */}
-        <div className="text-center space-y-2 pt-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-3xl bg-[#FFECE8] border border-[#F7A898] text-[#4A1E17] shadow-2xs mb-2">
-            <ChefHat className="h-10 w-10 text-[#0E2C24] stroke-[2.2]" aria-hidden />
+        <div className="text-center space-y-2 pt-1 sm:pt-2">
+          <div className="inline-flex items-center justify-center p-2 sm:p-3 rounded-3xl bg-[#FFECE8] border border-[#F7A898] text-[#4A1E17] shadow-2xs mb-1 sm:mb-2">
+            <ChefHat className="h-8 w-8 sm:h-10 sm:w-10 text-[#0E2C24] stroke-[2.2]" aria-hidden />
           </div>
-          <h1 className="text-3xl font-extrabold font-heading text-[#2D1E12] sm:text-4xl tracking-tight">
+          <h1 className="text-2xl font-extrabold font-heading text-[#2D1E12] sm:text-4xl tracking-tight">
             Yemek Tarifi ve Malzeme Asistanı
           </h1>
           <p className="text-sm sm:text-base font-medium text-[#70372D] max-w-lg mx-auto">
@@ -259,9 +288,11 @@ export default function AiChatPage() {
         <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl p-4 sm:p-6">
           <CardContent className="pt-2">
             {/* Modal for Recipe Details & Calories */}
-            {showRecipeModal && calorieInfo && (
+            {showRecipeModal && recipeData && (
               <div
-                className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D1E12]/60 p-4 backdrop-blur-md"
+                ref={recipeDialogRef}
+                tabIndex={-1}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D1E12]/60 p-4 backdrop-blur-md outline-none"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="recipe-modal-title"
@@ -282,10 +313,10 @@ export default function AiChatPage() {
                       </div>
                       <div>
                         <h2 id="recipe-modal-title" className="text-2xl font-bold font-heading text-[#2D1E12]">
-                          {calorieInfo.name}
+                          {recipeData.name}
                         </h2>
                         <p className="mt-0.5 text-xs font-semibold text-[#70372D]">
-                          {calorieInfo.description}
+                          {recipeData.description}
                         </p>
                       </div>
                     </div>
@@ -293,7 +324,7 @@ export default function AiChatPage() {
                       <div className="flex items-center gap-2.5">
                         <Flame className="h-5 w-5 text-[#4A1E17]" aria-hidden />
                         <div>
-                          <div className="text-lg font-bold font-heading text-[#2D1E12]">{calorieInfo.calories}</div>
+                          <div className="text-lg font-bold font-heading text-[#2D1E12]">{recipeData.calories}</div>
                           <div className="text-[11px] font-semibold text-[#70372D]">kcal/porsiyon</div>
                         </div>
                       </div>
@@ -301,7 +332,8 @@ export default function AiChatPage() {
                       <div className="flex items-center gap-2.5">
                         <Users className="h-5 w-5 text-[#0E2C24]" aria-hidden />
                         <div>
-                          <div className="text-base font-bold text-[#2D1E12]">{pipeline.servings} Kişilik</div>
+                          {/* Sonucun üretildiği kişi sayısı gösterilir, ekrandaki güncel girdi değil. */}
+                          <div className="text-base font-bold text-[#2D1E12]">{recipeResult?.servings ?? pipeline.servings} Kişilik</div>
                           <div className="text-[11px] font-semibold text-[#70372D]">Standart porsiyon</div>
                         </div>
                       </div>
@@ -323,7 +355,7 @@ export default function AiChatPage() {
                           <Package className="h-5 w-5 text-[#9BCEC1] stroke-[2.5]" /> Gerekli Malzemeler
                         </h3>
                         <ul className="space-y-2">
-                          {calorieInfo.ingredients?.map((item, idx) => (
+                          {recipeData.ingredients?.map((item: string, idx: number) => (
                             <li
                               key={idx}
                               className="rounded-xl bg-[#FFEBD3] p-3 text-sm font-semibold text-[#2D1E12] border border-[#F7A898]/40 flex items-center gap-2"
@@ -340,7 +372,7 @@ export default function AiChatPage() {
                           <Utensils className="h-5 w-5 text-[#9BCEC1] stroke-[2.5]" /> Hazırlanışı
                         </h3>
                         <ol className="space-y-3">
-                          {calorieInfo.steps?.map((step, idx) => (
+                          {recipeData.steps?.map((step: string, idx: number) => (
                             <li
                               key={idx}
                               className="flex gap-3 rounded-xl bg-[#FFEBD3] p-3 text-sm font-medium text-[#2D1E12] border border-[#F7A898]/40"
@@ -355,46 +387,46 @@ export default function AiChatPage() {
                       </div>
                     </div>
 
-                    {calorieInfo.nutrition && (
+                    {recipeData.nutrition && (
                       <div className="rounded-2xl border border-[#F7A898]/60 bg-[#FFECE8] p-5 space-y-3">
                         <h3 className="text-lg font-bold font-heading text-[#2D1E12]">
                           Besin Değerleri ve Diyetisyen Değerlendirmesi
                         </h3>
-                        {typeof calorieInfo.nutrition === 'object' && calorieInfo.nutrition !== null ? (
+                        {typeof recipeData.nutrition === 'object' && recipeData.nutrition !== null ? (
                           <div className="space-y-3">
                             <div className="grid gap-2 sm:grid-cols-3">
-                              {Object.entries(calorieInfo.nutrition as Record<string, unknown>)
-                                .filter(([key]) => !['aciklama', 'summary', 'detail', 'note', 'degerlendirme'].includes(key.toLowerCase()))
+                              {Object.entries(recipeData.nutrition as Record<string, unknown>)
+                                .filter(([key]) => !isNutritionNote(key))
                                 .map(([key, val]) => (
                                   <div
                                     key={key}
                                     className="rounded-xl bg-[#FFEBD3] p-3 border border-[#F7A898]/40"
                                   >
-                                    <span className="text-xs font-bold uppercase text-[#70372D] block mb-1">
-                                      {key}
+                                    <span className="text-xs font-bold text-[#70372D] block mb-1">
+                                      {nutritionLabel(key)}
                                     </span>
                                     <span className="text-xs font-medium text-[#2D1E12] leading-snug block">
-                                      {String(val)}
+                                      {formatNutritionValue(val)}
                                     </span>
                                   </div>
                                 ))}
                             </div>
-                            {Object.entries(calorieInfo.nutrition as Record<string, unknown>)
-                              .filter(([key]) => ['aciklama', 'summary', 'detail', 'note', 'degerlendirme'].includes(key.toLowerCase()))
+                            {Object.entries(recipeData.nutrition as Record<string, unknown>)
+                              .filter(([key]) => isNutritionNote(key))
                               .map(([key, val]) => (
                                 <div key={key} className="rounded-xl bg-white/70 p-3.5 border border-[#F7A898]/40">
                                   <span className="text-xs font-bold text-[#0E2C24] block mb-1">
                                     💡 Beslenme ve Diyet Notu:
                                   </span>
                                   <p className="text-xs font-medium leading-relaxed text-[#2D1E12]">
-                                    {String(val)}
+                                    {formatNutritionValue(val)}
                                   </p>
                                 </div>
                               ))}
                           </div>
                         ) : (
                           <p className="text-sm font-medium leading-relaxed text-[#70372D]">
-                            {String(calorieInfo.nutrition)}
+                            {formatNutritionValue(recipeData.nutrition)}
                           </p>
                         )}
                       </div>
@@ -428,21 +460,55 @@ export default function AiChatPage() {
                 searchSettings={searchSettings}
                 realRouteDistance={realRouteDistance}
                 realRouteTime={realRouteTime}
+                realRouteLegs={realRouteLegs}
                 onMultiRouteFound={(d) => {
                   setRealRouteDistance(d.distance);
                   setRealRouteTime(d.time);
+                  setRealRouteLegs(d.legs);
                 }}
               />
             )}
 
+            {/* Adım 2 ve sonrası: tarif/kalori aksiyonu kaybolmasın, her adımda erişilebilir kalsın */}
+            {pipeline.currentStep !== 'input' && (
+              <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-[#F7A898]/60 bg-[#FFEBD3] p-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold text-[#70372D]">
+                  {recipeResult
+                    ? `${recipeIsStale ? 'Önceki tarif' : 'Tarif hazır'}: ${recipeResult.foodName} (${recipeResult.servings} kişilik)`
+                    : 'Bu yemek için tarif ve kalori bilgisini de alabilirsiniz.'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleGetRecipeAndCalorie}
+                    disabled={isCalorieLoading || !pipeline.foodName.trim()}
+                    className="h-9 rounded-xl bg-[#FFB6A6] text-[#4A1E17] hover:bg-[#FA9E8B] text-xs font-bold"
+                  >
+                    {isCalorieLoading ? 'Tarif Hazırlanıyor...' : recipeResult ? 'Tarifi Yenile' : 'Tarif ve Kalori Detayı Al'}
+                  </Button>
+                  {recipeResult && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowRecipeModal(true)}
+                      className="h-9 rounded-xl bg-[#FFEBD3] text-[#2D1E12] border-[#F7A898] text-xs font-bold"
+                    >
+                      {recipeIsStale ? 'Önceki Tarifi Gör' : 'Tarifi Görüntüle'}
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* STEP 1: INPUT */}
             {pipeline.currentStep === 'input' && (
-              <div className="text-center space-y-6 py-4">
-                <div className="mx-auto w-20 h-20 rounded-full bg-[#FFEBD3] border border-[#F7A898] flex items-center justify-center text-[#4A1E17] shadow-2xs">
-                  <ChefHat className="h-10 w-10 text-[#0E2C24] stroke-[2.2]" aria-hidden />
+              <div className="text-center space-y-6 py-1 sm:py-4">
+                <div className="mx-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-[#FFEBD3] border border-[#F7A898] flex items-center justify-center text-[#4A1E17] shadow-2xs">
+                  <ChefHat className="h-7 w-7 sm:h-10 sm:w-10 text-[#0E2C24] stroke-[2.2]" aria-hidden />
                 </div>
                 <div className="space-y-1.5 max-w-md mx-auto">
-                  <h2 className="text-2xl font-bold font-heading text-[#2D1E12]">
+                  <h2 className="text-xl sm:text-2xl font-bold font-heading text-[#2D1E12]">
                     Hangi yemeği hazırlamak istiyorsunuz?
                   </h2>
                   <p className="text-xs font-semibold text-[#70372D]">
@@ -495,15 +561,26 @@ export default function AiChatPage() {
                     <InlineAlert message={calorieError} className="mt-4" />
                   )}
 
-                  {calorieInfo && (
-                    <Button
-                      type="button"
-                      onClick={() => setShowRecipeModal(true)}
-                      className="w-full h-11 rounded-2xl bg-[#FFEBD3] text-[#2D1E12] border border-[#F7A898] hover:bg-[#FFECE8] font-bold text-sm"
-                    >
-                      <ChefHat className="mr-2 h-4 w-4 text-[#0E2C24]" />
-                      Hazırlanan Tarifi Görüntüle
-                    </Button>
+                  {recipeResult && (
+                    <div className="space-y-2 rounded-2xl border border-[#F7A898]/60 bg-[#FFEBD3] p-3">
+                      {recipeIsStale && (
+                        <p role="status" className="text-xs font-semibold text-[#4A1E17]">
+                          Girdiğiniz bilgiler bu tariften sonra değişti. Aşağıdaki tarif
+                          &quot;{recipeResult.foodName} ({recipeResult.servings} kişilik)&quot; için üretildi;
+                          yeni kişi sayısı veya yemek adıyla yeniden oluşturun.
+                        </p>
+                      )}
+                      <Button
+                        type="button"
+                        onClick={() => setShowRecipeModal(true)}
+                        className="w-full h-11 rounded-2xl bg-[#FFEBD3] text-[#2D1E12] border border-[#F7A898] hover:bg-[#FFECE8] font-bold text-sm"
+                      >
+                        <ChefHat className="mr-2 h-4 w-4 text-[#0E2C24]" />
+                        {recipeIsStale
+                          ? `Önceki Tarifi Görüntüle (${recipeResult.foodName} · ${recipeResult.servings} kişilik)`
+                          : 'Hazırlanan Tarifi Görüntüle'}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -580,18 +657,18 @@ export default function AiChatPage() {
                           setSearchQuery('');
                           setIsDropdownOpen(false);
                         }}
-                        isLoading={isProductsLoading}
+                        isLoading={isSearchBusy}
                       />
                       <SearchStatsDisplay
                         stats={{ totalResults, loadedResults, complete: isComplete, loadingMore: isSearchFetching }}
                         query={searchQuery}
-                        isLoading={isProductsLoading}
+                        isLoading={isSearchBusy}
                         error={productsError?.message}
                       />
                       {productsError && <Button type="button" onClick={() => { setIsDropdownOpen(true); void retrySearch(); }}>Aramayı yeniden dene</Button>}
                       <ProductDropdown
                         products={products}
-                        isLoading={isSearchFetching}
+                        isLoading={isSearchBusy}
                         query={searchQuery}
                         isOpen={isDropdownOpen}
                         onClose={() => setIsDropdownOpen(false)}
@@ -652,7 +729,7 @@ export default function AiChatPage() {
                   <div className="rounded-2xl border border-[#F7A898] bg-[#FFEBD3] p-4 space-y-4">
                     <h3 className="font-bold" role="status">Tamamlanması gereken malzemeler ({pipeline.results.missingProducts.length})</h3>
                     <p className="text-xs">Bu malzemeler için doğrulanmış ürün seçilemedi. Adayların yemeğe uygunluğunu kontrol ederek bir ürün seçin.</p>
-                    {pipeline.matches.filter(match => !match.product).map(match => (
+                    {pipeline.matches.filter(match => !match.product && !pipeline.removedIngredients.includes(match.ingredient)).map(match => (
                       <div key={match.ingredient} className="space-y-2">
                         <p className="font-bold text-sm">{match.ingredient}</p>
                         {match.candidates.length ? <select aria-label={`${match.ingredient} için ürün seç`} defaultValue="" onChange={e => pipeline.chooseProduct(match.ingredient, e.target.value)} className="w-full min-w-0 rounded-xl border border-[#F7A898] bg-[#FFECE8] p-2 text-sm">
@@ -662,6 +739,28 @@ export default function AiChatPage() {
                       </div>
                     ))}
                     <Button variant="outline" onClick={() => router.push('/product-search')}>Ürün aramasını aç</Button>
+                  </div>
+                )}
+
+                {pipeline.removedIngredients.length > 0 && (
+                  <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFECE8] p-4 space-y-3">
+                    <h3 className="font-bold" role="status">Sepetten çıkardığınız malzemeler ({pipeline.removedIngredients.length})</h3>
+                    <p className="text-xs">Bunları bilinçli olarak çıkardınız; isterseniz tekrar ekleyebilirsiniz.</p>
+                    {pipeline.matches.filter(match => pipeline.removedIngredients.includes(match.ingredient)).map(match => (
+                      <div key={match.ingredient} className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-sm font-bold">{match.ingredient}</span>
+                        {match.candidates.length > 0 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => pipeline.chooseProduct(match.ingredient, match.candidates[0].id)}
+                            className="rounded-xl text-xs font-bold"
+                          >
+                            Geri ekle: {match.candidates[0].title.slice(0, 34)}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -678,6 +777,7 @@ export default function AiChatPage() {
                     onViewSingleRoute={handleShowRoute}
                     onClearCart={() => { clearCart(); pipeline.clearSelections(); }}
                     onRemoveItem={id => { removeFromCart(id); pipeline.forgetProduct(id); }}
+                    recipeProductIds={pipeline.recipeAddedIds}
                   />
                 )}
 

@@ -78,6 +78,9 @@ export default function ProductSearchPage() {
     totalResults, loadedResults, complete: isComplete, loadingMore: isSearchFetching,
   };
 
+  // Debounce penceresinde "sonuç bulunamadı" denmemeli (bkz. ai-chat): arama sürüyor sayılır.
+  const isSearchBusy = searchQuery.trim() !== debouncedQuery.trim() || isProductsLoading || isSearchFetching;
+
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
     setIsDropdownOpen(value.length >= SEARCH.MIN_QUERY_LENGTH);
@@ -195,13 +198,13 @@ export default function ProductSearchPage() {
                 onFocus={() => setIsDropdownOpen(searchQuery.length >= SEARCH.MIN_QUERY_LENGTH)}
                 onChange={handleSearchChange}
                 onClear={handleClearSearch}
-                isLoading={isProductsLoading}
+                isLoading={isSearchBusy}
               />
 
               <SearchStatsDisplay
                 stats={searchStats}
                 query={searchQuery}
-                isLoading={isProductsLoading}
+                isLoading={isSearchBusy}
                 error={productsError?.message}
               />
               {productsError && <Button type="button" onClick={() => { setIsDropdownOpen(true); void retrySearch(); }}>Aramayı yeniden dene</Button>}
@@ -212,7 +215,7 @@ export default function ProductSearchPage() {
 
               <ProductDropdown
                 products={products}
-                isLoading={isSearchFetching}
+                isLoading={isSearchBusy}
                 query={searchQuery}
                 isOpen={isDropdownOpen}
                 onClose={() => setIsDropdownOpen(false)}

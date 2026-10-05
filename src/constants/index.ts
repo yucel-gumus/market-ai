@@ -75,7 +75,12 @@ export const LEAFLET = {
   SHADOW:
     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
   TILE_URL: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  OSRM_SERVICE: 'https://router.project-osrm.org/route/v1',
+  /**
+   * Rota hesabı OSRM üzerinden yapılır. Varsayılan adres OSRM'in demo sunucusudur ve
+   * üretim trafiği için garanti vermez; kendi OSRM örneğinizi kurduğunuzda
+   * NEXT_PUBLIC_OSRM_BASE_URL ile değiştirin (örn. https://osrm.sizin-alaniniz/route/v1).
+   */
+  OSRM_SERVICE: process.env.NEXT_PUBLIC_OSRM_BASE_URL || 'https://router.project-osrm.org/route/v1',
 } as const;
 
 export const MARKET_API_PATHS = {

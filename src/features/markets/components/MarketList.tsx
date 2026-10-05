@@ -211,7 +211,7 @@ export function MarketList({
           </p>
         </div>
       ) : (
-        <div className="h-96 space-y-3 overflow-y-auto pr-2">
+        <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-2 pb-3">
           {filteredMarkets.map((market, index) => {
             const marketKey =
               market.id ||

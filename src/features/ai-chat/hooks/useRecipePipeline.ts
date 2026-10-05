@@ -22,6 +22,11 @@ export function useRecipePipeline({ addManyToCart }: Options) {
   const [matches, setMatches] = useState<IngredientMatch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Kullanıcının bilinçli olarak listeden/sepetten çıkardığı malzemeler: bunlar
+  // "doğrulanmış ürün seçilemedi" gibi gösterilmemeli (kullanıcı kararı, hata değil).
+  const [removedIngredients, setRemovedIngredients] = useState<string[]>([]);
+  // Bu tarif akışında sepete eklenen ürünler: mevcut sepetle karışmasın.
+  const [recipeAddedIds, setRecipeAddedIds] = useState<string[]>([]);
   const runRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => { runRef.current++; abortRef.current?.abort(); }, []);
@@ -51,6 +56,7 @@ export function useRecipePipeline({ addManyToCart }: Options) {
   const resetForm = useCallback(() => {
     runRef.current++; abortRef.current?.abort();
     setFoodName(''); setCurrentStep('input'); setIngredients([]); setRequirements([]); setMatches([]); setError(null); setIsLoading(false);
+    setRemovedIngredients([]); setRecipeAddedIds([]);
     // Yeni tarif başlatmak mevcut alışveriş listesini silmez.
   }, []);
   const removeIngredient = useCallback((ingredient: string) => setIngredients(prev => prev.filter(i => i !== ingredient)), []);
@@ -74,7 +80,13 @@ export function useRecipePipeline({ addManyToCart }: Options) {
       setIngredients(list);
       setRequirements((data.ingredientDetails ?? []).filter(d => list.includes(d.name) && Number.isFinite(d.amount) && d.amount > 0 && ['g', 'ml', 'adet'].includes(d.unit)));
       setCurrentStep('ingredients');
-    } catch (err) { if (run === runRef.current) setError(toErrorMessage(err, 'Malzeme listesi alınamadı')); }
+    } catch (err) {
+      // Katalogda karşılığı olmayan/yanlış yazılmış yemek adı en sık hata: kullanıcıyı yönlendir.
+      const serverMessage = typeof err === 'object' && err !== null && 'message' in err ? String((err as { message?: unknown }).message ?? '') : '';
+      const base = toErrorMessage(err, 'Malzeme listesi alınamadı');
+      const guidance = `"${foodName.trim()}" için malzeme listesi oluşturulamadı. Yemeğin bilinen adını yazmayı deneyin (örn. "mercimek çorbası", "menemen") veya adı daha genel bir ifadeyle arayın.`;
+      setError(serverMessage && serverMessage !== base ? `${guidance} (Sunucu: ${base})` : guidance);
+    }
     finally { if (run === runRef.current) setIsLoading(false); }
   }, [foodName, recipeRequest, isLoading]);
 
@@ -85,6 +97,7 @@ export function useRecipePipeline({ addManyToCart }: Options) {
     const controller = new AbortController();
     abortRef.current = controller;
     setIsLoading(true); setCurrentStep('processing'); setError(null);
+    setRemovedIngredients([]);
     const warnings: string[] = [];
     try {
       // Malzeme onayından sonrası tamamen sunucuda: arama + seçim + doğrulama.
@@ -109,6 +122,7 @@ export function useRecipePipeline({ addManyToCart }: Options) {
         resolved.flatMap(match => match.product ? [match.product] : []),
         Object.fromEntries(resolved.filter(m => m.product && m.packageQuantity).map(m => [m.product!.id, m.packageQuantity!]))
       );
+      setRecipeAddedIds(resolved.flatMap(match => match.product ? [match.product.id] : []));
       const noProduct = resolved.filter(m => !m.product);
       // Ayrım önemli: "başka şubede var" bir çıkmaz sokak değil, tek dokunuşluk seçim;
       // "hiç bulunamadı" ise gerçek katalog boşluğu.
@@ -153,6 +167,8 @@ export function useRecipePipeline({ addManyToCart }: Options) {
     const packageQuantity = recipePackageQuantity(product, requiredAmount);
     addManyToCart([product], packageQuantity ? { [product.id]: packageQuantity } : undefined);
     setMatches(prev => prev.map(m => m.ingredient === ingredient ? { ...m, product, source: 'manual', requiredAmount, packageQuantity } : m));
+    setRecipeAddedIds(prev => prev.includes(product.id) ? prev : [...prev, product.id]);
+    setRemovedIngredients(prev => prev.filter(name => name !== ingredient));
     if (branch) {
       const label = branch.brand && branch.brand !== branch.name ? `${branch.brand} (${branch.name})` : branch.brand ?? branch.name;
       setError(`${label} şubesi seçili marketlere eklendi: "${product.title}" yalnızca orada bulundu. İstemezseniz Konum & Marketler sayfasından çıkarabilirsiniz.`);
@@ -160,18 +176,25 @@ export function useRecipePipeline({ addManyToCart }: Options) {
   }, [matches, requirements, addManyToCart, marketSession, saveMarketSelection]);
 
   const forgetProduct = useCallback((productId: string) => {
+    // Kullanıcının bilinçli olarak çıkardığı ürün: sepetten gider, eşleşme listesinden düşer
+    // ve "eksik/tamamlanması gereken" sayılmaz; ayrı bir "kaldırdıklarınız" listesinde görünür.
+    const target = matches.find(match => match.product?.id === productId);
+    if (target) setRemovedIngredients(names => names.includes(target.ingredient) ? names : [...names, target.ingredient]);
     setMatches(prev => prev.map(match => match.product?.id === productId ? { ...match, product: undefined, source: undefined, reasoning: undefined } : match));
-  }, []);
+    setRecipeAddedIds(prev => prev.filter(id => id !== productId));
+  }, [matches]);
   const clearSelections = useCallback(() => {
     setMatches(prev => prev.map(match => ({ ...match, product: undefined, source: undefined, reasoning: undefined })));
+    setRecipeAddedIds([]);
   }, []);
 
   return {
     forgetProduct, clearSelections,
     foodName, setFoodName, servings, setServings, recipeRequest, currentStep, ingredients, setIngredients,
     matches, isLoading, error, setError, handleSubmit, confirmIngredients, removeIngredient, resetForm, chooseProduct,
+    removedIngredients, recipeAddedIds,
     // Eski sonuç bileşenleri için yalnızca doğrulanmış seçimleri sun.
-    results: { missingProducts: matches.filter(m => !m.product).map(m => m.ingredient),
+    results: { missingProducts: matches.filter(m => !m.product && !removedIngredients.includes(m.ingredient)).map(m => m.ingredient),
       selectedProducts: matches.flatMap(m => m.product ? [m.product] : []) },
   };
 }

@@ -163,7 +163,7 @@ export default function HomePage() {
             <span>MarketAI • Akıllı Alışveriş ve Market Deneyimi</span>
           </div>
           <p className="text-[11px] font-semibold text-[#70372D]">
-            60-30-10 Tasarım Sistemi • Next.js 15 • TypeScript • Tailwind CSS
+            Konumunuza en yakın marketler, gerçek fiyatlar ve tarifinize göre akıllı sepet.
           </p>
         </footer>
       </div>
