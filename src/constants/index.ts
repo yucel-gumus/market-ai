@@ -46,7 +46,9 @@ export const TIMEOUTS_MS = {
   MARKET_API: 15_000,
   MARKET_NEAREST: 10_000,
   ADDRESS_API: 8_000,
-  LLM_BACKEND: 60_000,
+  // Malzeme seçimi sunucuda yapılıyor: 12 malzemeli bir tarif ölçümde 30-60 sn sürdü,
+  // soğuk başlangıçta daha da uzayabiliyor. 60 sn sınırı gerçek koşuda isteği kesiyordu.
+  LLM_BACKEND: 150_000,
 } as const;
 
 export const CACHE_HEADERS = {
