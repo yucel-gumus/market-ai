@@ -41,11 +41,12 @@ export function MultiStoreRouteModal({
   if (!isOpen || !routeSteps || routeSteps.length === 0) return null;
 
   // Özet ile durak satırları AYNI hesabı göstermeli: araç rotası varsa toplamlar da
-  // durak bacaklarının toplamıdır (ikisi farklı kaynaktan gelirse kullanıcı haklı olarak
-  // "süreler karışıyor" der).
-  const legDistance = realRouteLegs?.reduce((sum, leg) => sum + leg.distance, 0);
-  const legTime = realRouteLegs?.reduce((sum, leg) => sum + leg.time, 0);
-  const useRealRoute = realRouteDistance !== undefined || realRouteTime !== undefined;
+  // durak bacaklarının toplamıdır. Bacak verisi boş/eksikse özet tek başına kullanılır
+  // (boş dizi toplamı 0 olduğu için "length" kontrolü şart).
+  const hasLegs = Boolean(realRouteLegs?.length);
+  const legDistance = hasLegs ? realRouteLegs!.reduce((sum, leg) => sum + leg.distance, 0) : undefined;
+  const legTime = hasLegs ? realRouteLegs!.reduce((sum, leg) => sum + leg.time, 0) : undefined;
+  const useRealRoute = hasLegs || realRouteDistance !== undefined || realRouteTime !== undefined;
   const totalDistance = legDistance ?? realRouteDistance ?? routeSteps.reduce((sum, step) => sum + (step.distanceFromPrevious || 0), 0);
   const totalTime = legTime ?? realRouteTime ?? routeSteps.reduce((sum, step) => sum + (step.estimatedTime || 0), 0);
   const totalCost = routeSteps.reduce(

@@ -73,14 +73,26 @@ export default function DynamicMap({ selectedStore, destinations = [], showRoute
           const { totalDistance, totalTime } = route.summary;
           const distance = totalDistance / 1000;
           const time = totalTime / 60;
-          // Durak başına değerler de aynı (araç) rotadan gelir; aksi halde özet ile
-          // durak satırları farklı hesapları gösterip tutarsız görünür.
-          const legs = (route.legs || []).map(leg => ({
-            distance: (leg.distance ?? leg.summary?.totalDistance ?? 0) / 1000,
-            time: (leg.time ?? leg.summary?.totalTime ?? 0) / 60,
-          }));
+          // Durak başına değerler de aynı (araç) rotadan gelmelidir; aksi halde özet ile
+          // durak satırları farklı hesapları gösterir. Kütüphane OSRM yanıtını dönüştürdüğü
+          // için ayrı bir "legs" dizisi YOK: bacak toplamları adım (instruction) mesafe/süreleri
+          // ile waypoint sınırlarından çıkarılır.
+          const instructions = Array.isArray(route.instructions) ? route.instructions : [];
+          const waypoints = Array.isArray(route.waypointIndices) ? route.waypointIndices : [];
+          const legs = [];
+          if (instructions.length && waypoints.length > 1) {
+            for (let k = 0; k + 1 < waypoints.length; k++) {
+              let legDistance = 0;
+              let legTime = 0;
+              for (let j = waypoints[k]; j < waypoints[k + 1]; j++) {
+                legDistance += instructions[j]?.distance || 0;
+                legTime += instructions[j]?.time || 0;
+              }
+              legs.push({ distance: legDistance / 1000, time: legTime / 60 });
+            }
+          }
           if (store) callbacks.current.onRouteFound?.({ distance: distance.toFixed(1), time: Math.round(time), timeText: `${Math.round(time)} dakika`, routeType: 'Arabayla' });
-          else callbacks.current.onMultiRouteFound?.({ distance, time, legs });
+          else callbacks.current.onMultiRouteFound?.({ distance, time, legs: legs.length ? legs : undefined });
         });
         control.on('routingerror', () => {
           if (disposed) return;
