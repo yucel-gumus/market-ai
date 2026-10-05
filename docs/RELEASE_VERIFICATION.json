@@ -1,0 +1,47 @@
+{
+  "date": "2026-10-04",
+  "frontend": {
+    "unitTestsPassed": 45,
+    "liveMarketIntegrationPassed": true,
+    "lint": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "browserChecks": [
+      "progressive pagination",
+      "later-page failure and retry",
+      "61 visible results after retry",
+      "cart modes",
+      "quantity persistence",
+      "exact-ID price refresh",
+      "model failure and manual selection",
+      "390px layout"
+    ]
+  },
+  "pythonBackend": {
+    "testsPassed": 71,
+    "productIdContractImplemented": true,
+    "unsafePriceFallbackRemoved": true
+  },
+  "liveMarketAPI": {
+    "location": {
+      "latitude": 40.9905,
+      "longitude": 29.0283,
+      "distanceKm": 1
+    },
+    "declaredProducts": 426,
+    "uniqueProductsReceived": 426,
+    "categoryFilteredProducts": 124,
+    "eligibleDiverseCandidates": 12,
+    "wholeMilkCandidatePreserved": true,
+    "exactIdsSynchronized": 2
+  },
+  "remoteBackend": {
+    "url": "https://python-backend-270384591051.europe-west3.run.app",
+    "healthStatus": 200,
+    "realModelSingleExample": "selected plain milk for rice pudding",
+    "productIdsReturned": false,
+    "capabilitiesHttpStatus": 404,
+    "releaseGate": "blocked until updated Python backend is published"
+  },
+  "deploymentPerformed": false
+}

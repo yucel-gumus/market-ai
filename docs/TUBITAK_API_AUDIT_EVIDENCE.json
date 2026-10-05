@@ -1,0 +1,209 @@
+{
+  "auditDate": "2026-10-04",
+  "scope": "Market Fiyatı endpoints used by official consumer frontend; market-ai and python_backend source audit",
+  "testLocation": {
+    "latitude": 40.9905,
+    "longitude": 29.0283,
+    "distanceKm": 1,
+    "isUserLocation": false
+  },
+  "nearestBranchCount": 25,
+  "categoryRootCount": 9,
+  "categoryNodeCount": 674,
+  "liveProbes": [
+    {
+      "probe": "search-milk",
+      "endpoint": "v2/search",
+      "httpStatus": 200,
+      "numberOfFound": 426,
+      "searchResultType": 1,
+      "returnedCount": 24,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "old-category-milk",
+      "endpoint": "v2/searchByCategories",
+      "httpStatus": 200,
+      "numberOfFound": 198,
+      "searchResultType": 1,
+      "returnedCount": 24,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "category-v3-milk",
+      "endpoint": "v3/searchByCategories",
+      "httpStatus": 200,
+      "numberOfFound": 198,
+      "searchResultType": 1,
+      "returnedCount": 24,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "uht",
+      "endpoint": "v3/searchByCategories",
+      "httpStatus": 200,
+      "numberOfFound": 75,
+      "searchResultType": 1,
+      "returnedCount": 25,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "uht-unit-sort",
+      "endpoint": "v3/searchByCategories",
+      "httpStatus": 200,
+      "numberOfFound": 75,
+      "searchResultType": 1,
+      "returnedCount": 25,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "identity-milk",
+      "endpoint": "v2/searchByIdentity",
+      "httpStatus": 200,
+      "numberOfFound": 1,
+      "searchResultType": 0,
+      "returnedCount": 1,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "similar-milk",
+      "endpoint": "v2/searchSimilarProduct",
+      "httpStatus": 200,
+      "numberOfFound": 604,
+      "searchResultType": 1,
+      "returnedCount": 3,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "alternative-milk",
+      "endpoint": "v2/searchAlternative",
+      "httpStatus": 200,
+      "numberOfFound": 27,
+      "searchResultType": 1,
+      "returnedCount": 3,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    },
+    {
+      "probe": "list-sync",
+      "endpoint": "v1/list/sync",
+      "httpStatus": 200,
+      "numberOfFound": 2,
+      "searchResultType": 0,
+      "returnedCount": 2,
+      "responseKeys": [
+        "numberOfFound",
+        "searchResultType",
+        "content",
+        "facetMap"
+      ]
+    }
+  ],
+  "pagination": {
+    "keywords": "süt",
+    "requestedSize50ObservedCount": 25,
+    "requestedSize24ObservedCount": 24,
+    "uniqueProductsAcrossAllPages": 426,
+    "nonEmptyPages": 18,
+    "emptyPage": 18
+  },
+  "cheapest25MainCategories": {
+    "Süt": 19,
+    "Kek": 4,
+    "Gofret": 1,
+    "Diğer Süt Ürünleri": 1
+  },
+  "cheapest25Titles": [
+    "Kidy Kakaolu Süt 70 Ml",
+    "Kidy Vanilyalı Süt 70 Ml",
+    "Minito Bonu Kek Kakao Kaplı Süt Krema 45 Gr",
+    "Yörükoğlu Çilekli Süt 180 Ml",
+    "Yörükoğlu Sade Süt 180 Ml",
+    "Yörükoğlu Kakaolu Süt 180 Ml",
+    "Kekspir Kakaolu Süt Kremalı Kek 38 Gr",
+    "Tadelle Beyaz Çikolata Kaplı Süt Kremalı Dolgulu Gofret 28 Gr",
+    "Aynes %1.5 Yağlı Süt 200 Ml",
+    "Aynes Kidy Çikolatalı Süt 180 Ml",
+    "Aynes Kidy Çilekli Süt 180 Ml",
+    "Milkten Kek Süt Dolgulu 28 Gr",
+    "Milkten Süt Dolgulu Karamelli Kek 28 Gr",
+    "Dost Orman Meyveli Süt 200 Ml",
+    "Birşah Yağlı Süt 200 Ml",
+    "Dost %3.1 Yağlı Süt 200 Ml",
+    "Mis UHT Süt %3.1 Yağlı 200 Ml",
+    "Dost %20 Yağlı Bitkisel Krema 200 Ml",
+    "Carrefour Tam Yağlı Süt 200 Ml",
+    "Mis Muzlu Süt 200 Ml",
+    "Dost Muz Aromalı Süt 200 Ml",
+    "Mis Ballı Süt 200 Ml",
+    "Dost Kakao Aromalı Süt 200 Ml",
+    "Mis Çikolatalı Süt 200 Ml",
+    "Birşah Milkino Kakaolu Süt 200 Ml"
+  ],
+  "reproductions": {
+    "distance": {
+      "inputMeters": 94.13256234112819,
+      "actualKm": 94.13256234112819,
+      "expectedKm": 0.0941325623411282
+    },
+    "frontendAcceptedKnownWrongCandidate": {
+      "ingredient": "süt",
+      "context": "Sütlaç",
+      "productTitle": "Sek Çilekli Süt 180 Ml",
+      "accepted": true
+    },
+    "backendModelFailure": {
+      "method": "Exact OrchestratorAgent source loaded through Python AST; controlled generator exception; no remote model call",
+      "returnedSuccess": true,
+      "selectedProductTitle": "Sek Çilekli Süt 180 Ml",
+      "lostCategories": true,
+      "seventhGroupAbsentWith175Candidates": true
+    }
+  },
+  "limitations": [
+    "No real model accuracy benchmark performed",
+    "Python HTTP backend unavailable during initial connection test; backend source inspected instead",
+    "PDF generation and POST v1/store not live tested",
+    "Public developer SLA, quota and permission status not verified",
+    "Counts and prices are specific to the test date/location"
+  ]
+}
