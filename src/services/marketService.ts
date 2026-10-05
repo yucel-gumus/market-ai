@@ -105,13 +105,7 @@ export class MarketService {
 
   private static parseDistance(value: unknown): number {
     const distance = typeof value === 'string' ? parseFloat(value) : Number(value);
-    if (isNaN(distance)) return 0;
-    
-    if (distance > 100) {
-      return Math.round((distance / 1000) * 100) / 100; 
-    }
-    
-    return Math.max(0, distance);
+    return Number.isFinite(distance) ? Math.max(0, distance / 1000) : 0;
   }
   private static parseCoordinate(value: unknown): number {
     const coordinate = typeof value === 'string' ? parseFloat(value) : Number(value);

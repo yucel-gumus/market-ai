@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { DEFAULTS, STORAGE_KEYS } from '@/constants';
+import { DEFAULTS } from '@/constants';
 import { Market, MarketSearchSession, ParsedAddress } from '@/types';
 
 interface AppState {
@@ -44,14 +44,6 @@ export const useAppStore = create<AppState>()(
           selectedAddress,
           selectedDistance: distance,
         });
-        // Geriye dönük: clientMarketSearch aynı key'i okur
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem(STORAGE_KEYS.MARKET_SEARCH, JSON.stringify(session));
-          } catch {
-            /* ignore quota */
-          }
-        }
       },
     }),
     {

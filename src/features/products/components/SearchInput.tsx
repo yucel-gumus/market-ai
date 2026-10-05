@@ -10,6 +10,7 @@ interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
   onClear: () => void;
+  onFocus?: () => void;
   isLoading?: boolean;
   placeholder?: string;
   className?: string;
@@ -19,6 +20,7 @@ export function SearchInput({
   value,
   onChange,
   onClear,
+  onFocus,
   isLoading = false,
   placeholder = "Ürün adı yazın... (Örn: Süt, Zeytin, Mercimek)",
   className
@@ -39,6 +41,7 @@ export function SearchInput({
       <Input
         ref={inputRef}
         type="text"
+        onFocus={onFocus}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}

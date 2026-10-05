@@ -4,27 +4,23 @@ import apiClient from '@/lib/axios';
 export interface RecipeListResponse {
   success: boolean;
   ingredients: string[];
-  message?: string;
-}
-
-export interface IngredientCategoryItem {
-  ingredient: string;
-  category: string;
-}
-
-export interface IngredientCategoriesResponse {
-  success: boolean;
-  categories: IngredientCategoryItem[];
+  ingredientDetails?: import('@/lib/recipeQuantity').IngredientRequirement[];
   message?: string;
 }
 
 export interface SelectProductsProduct {
+  id?: string;
   title: string;
-  price: number;
-  ingredient?: string;
+  price?: number;
+  brand?: string;
+  imageUrl?: string;
+  refinedVolumeOrWeight?: string;
   main_category?: string;
   menu_category?: string;
   categories?: string[];
+  productDepotInfoList?: import('@/types').ProductDepotInfo[];
+  market?: string;
+  depotName?: string;
 }
 
 export interface SelectProductsSelection {
@@ -32,16 +28,28 @@ export interface SelectProductsSelection {
   searchedIngredient: string;
   matchType: string;
   reasoning: string;
-  product: {
-    title: string;
-    price: number;
-  };
+  product?: SelectProductsProduct | null;
+  /** Kullanıcı ürünü değiştirmek isterse seçebileceği doğrulanmış adaylar. */
+  alternatives?: SelectProductsProduct[];
+}
+
+export interface SelectProductsSummary {
+  total?: number;
+  selected?: number;
+  unresolved?: string[];
+  match_rate?: number;
+  basket_total?: number;
+  markets?: Record<string, number>;
+  single_market_totals?: Record<string, number>;
+  cheapest_single_market?: { market: string; total: number } | null;
+  closest_market?: { market: string; covered: number; total: number; missing: string[]; partial_total?: number } | null;
 }
 
 export interface SelectProductsResponse {
   success: boolean;
   selections: SelectProductsSelection[];
   message?: string;
+  summary?: SelectProductsSummary | null;
 }
 
 export interface RecipeWithCaloriesResponse {
@@ -56,54 +64,52 @@ export interface RecipeWithCaloriesResponse {
 }
 
 export class LlmService {
-  static async generateRecipeList(recipeName: string): Promise<RecipeListResponse> {
+  static async generateRecipeList(recipeName: string, signal?: AbortSignal): Promise<RecipeListResponse> {
     const { data } = await apiClient.post<RecipeListResponse>(
       '/ai-page/recipe-list',
       { recipe_name: recipeName },
-      { timeout: TIMEOUTS_MS.LLM_BACKEND }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND, signal }
     );
     return data;
   }
 
-  static async generateCategory(
-    ingredients: string[],
-    categoryList: string
-  ): Promise<IngredientCategoriesResponse> {
-    const { data } = await apiClient.post<IngredientCategoriesResponse>(
-      '/ai-page/ingredient-categories',
-      {
-        ingredients: ingredients.join(', '),
-        category_list: categoryList,
-      },
-      { timeout: TIMEOUTS_MS.LLM_BACKEND }
-    );
-    return data;
-  }
-
+  /**
+   * Ürünleri SUNUCU bulur ve seçer; istemci aday ürün göndermez.
+   * Konum verilirse o bölgedeki marketler kullanılır.
+   */
   static async selectProducts(
-    products: SelectProductsProduct[],
     ingredients: string[],
-    recipeName: string
+    recipeName: string,
+    location?: { latitude: number; longitude: number; distance?: number; depots?: string[] },
+    signal?: AbortSignal
   ): Promise<SelectProductsResponse> {
     const { data } = await apiClient.post<SelectProductsResponse>(
       '/ai-page/select-products',
       {
         recipe_name: recipeName,
         ingredients: ingredients.join(', '),
-        products,
+        ...(location
+          ? {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              distance: location.distance,
+              depots: location.depots,
+            }
+          : {}),
       },
-      { timeout: TIMEOUTS_MS.LLM_BACKEND }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND, signal }
     );
     return data;
   }
 
   static async generateRecipeAndCalorie(
-    recipeName: string
+    recipeName: string,
+    signal?: AbortSignal
   ): Promise<RecipeWithCaloriesResponse> {
     const { data } = await apiClient.post<RecipeWithCaloriesResponse>(
       '/ai-page/recipe-with-calories',
       { recipe_name: recipeName },
-      { timeout: TIMEOUTS_MS.LLM_BACKEND }
+      { timeout: TIMEOUTS_MS.LLM_BACKEND, signal }
     );
     return data;
   }

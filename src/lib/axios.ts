@@ -20,8 +20,9 @@ export const apiClient = axios.create({
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (axios.isCancel(error)) return Promise.reject(error);
     const errorMessage =
-      error.response?.data?.message || error.message || 'Unknown error';
+      error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
     const statusCode = error.response?.status || 'No status';
 
     console.error(`❌ API Error [${statusCode}]:`, {

@@ -1,181 +1,108 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { STORAGE_KEYS } from '@/constants';
-import {
-  findOptimalDepot,
-  calculateOptimization,
-  optimizeRoute,
-  addDistanceToMarketGroups,
-} from '@/lib/shoppingUtils';
+import { findOptimalDepot, calculateOptimization, optimizeRoute, enrichProductDepots, itemQuantity } from '@/lib/shoppingUtils';
+import { restoreCart } from '@/lib/cartStorage';
 import { logger } from '@/lib/logger';
-import {
-  Product,
-  CartItem,
-  OptimizedShopping,
-  RouteStep,
-  ProductDepotInfo,
-} from '@/types';
+import { ProductService } from '@/services/productService';
+import type { Product, CartItem, RouteStep, SearchSettings, ShoppingMode } from '@/types';
 
-function loadCartFromStorage(): CartItem[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.SHOPPING_CART);
-    if (!saved) return [];
-    const parsed: CartItem[] = JSON.parse(saved);
-    return parsed.map((item) => ({
-      ...item,
-      addedAt: new Date(item.addedAt),
-    }));
-  } catch (error) {
-    logger.error('cart', 'Sepet localStorage okunamadı', error);
-    return [];
-  }
-}
+const MODE_KEY = 'shopping-mode';
 
-export function useShoppingCart() {
+export function useShoppingCart(settings?: SearchSettings | null) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [optimization, setOptimization] = useState<OptimizedShopping | null>(null);
+  const [mode, setMode] = useState<ShoppingMode>('cheapest');
   const [isHydrated, setIsHydrated] = useState(false);
-  const hydratedRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
+  const refreshingRef = useRef(false);
 
   useEffect(() => {
-    const items = loadCartFromStorage();
-    setCartItems(items);
-    hydratedRef.current = true;
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SHOPPING_CART);
+      setCartItems(saved ? restoreCart(JSON.parse(saved)) : []);
+      const savedMode = localStorage.getItem(MODE_KEY);
+      if (savedMode === 'single' || savedMode === 'two' || savedMode === 'cheapest') setMode(savedMode);
+    } catch (error) { logger.error('cart', 'Sepet okunamadı', error); }
     setIsHydrated(true);
   }, []);
 
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (!isHydrated) return;
     try {
       localStorage.setItem(STORAGE_KEYS.SHOPPING_CART, JSON.stringify(cartItems));
-    } catch (error) {
-      logger.error('cart', 'Sepet localStorage yazılamadı', error);
-    }
-  }, [cartItems]);
+      localStorage.setItem(MODE_KEY, mode);
+    } catch (error) { logger.error('cart', 'Sepet yazılamadı', error); }
+  }, [cartItems, mode, isHydrated]);
 
-  useEffect(() => {
-    if (!isHydrated) return;
-    if (cartItems.length > 0) {
-      setOptimization(calculateOptimization(cartItems));
-    } else {
-      setOptimization(null);
-    }
-  }, [cartItems, isHydrated]);
+  const enrichedItems = useMemo(() => cartItems.map(item => ({ ...item,
+    product: enrichProductDepots(settings ? { ...item.product, productDepotInfoList: item.product.productDepotInfoList.filter(depot => settings.depots.includes(depot.depotId)) } : item.product, settings?.selectedMarkets ?? []),
+  })), [cartItems, settings]);
+  const optimization = useMemo(() => isHydrated && enrichedItems.length
+    ? calculateOptimization(enrichedItems, mode, settings ?? undefined) : null,
+  [enrichedItems, mode, settings, isHydrated]);
 
-  const addToCart = useCallback((product: Product) => {
-    setCartItems((prev) => {
-      const optimalDepot = findOptimalDepot(product, prev);
-      if (!optimalDepot) {
-        logger.warn('cart', 'Ürünün depo/fiyat bilgisi yok', { id: product.id });
-        return prev;
-      }
-
-      const newItem: CartItem = {
-        product,
-        selectedDepot: optimalDepot,
-        addedAt: new Date(),
-      };
-
-      const existingIndex = prev.findIndex((item) => item.product.id === product.id);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = newItem;
-        return updated;
-      }
-      return [...prev, newItem];
-    });
-  }, []);
-
-  /** Batch ekleme — stale closure yok */
-  const addManyToCart = useCallback((products: Product[]) => {
-    setCartItems((prev) => {
-      let next = [...prev];
+  const addProducts = useCallback((products: Product[], increment: boolean, quantities?: Record<string, number>) => {
+    setRefreshMessage(null);
+    setCartItems(prev => {
+      const next = [...prev];
       for (const product of products) {
-        const optimalDepot = findOptimalDepot(product, next);
-        if (!optimalDepot) continue;
-
-        const newItem: CartItem = {
-          product,
-          selectedDepot: optimalDepot,
-          addedAt: new Date(),
-        };
-
-        const existingIndex = next.findIndex((item) => item.product.id === product.id);
-        if (existingIndex >= 0) {
-          next = [...next];
-          next[existingIndex] = newItem;
-        } else {
-          next = [...next, newItem];
-        }
+        const depot = findOptimalDepot(product, next);
+        if (!depot) continue;
+        const index = next.findIndex(item => item.product.id === product.id);
+        const requested = quantities?.[product.id];
+        const planned = requested && Number.isInteger(requested) && requested >= 1 && requested <= 999 ? requested : 1;
+        const quantity = index >= 0 ? Math.max(planned, itemQuantity(next[index]) + (increment ? 1 : 0)) : planned;
+        const item: CartItem = { product, selectedDepot: depot, quantity, addedAt: index >= 0 ? next[index].addedAt : new Date() };
+        if (index >= 0) next[index] = item;
+        else next.push(item);
       }
       return next;
     });
   }, []);
-
-  const removeFromCart = useCallback((productId: string) => {
-    setCartItems((prev) => prev.filter((item) => item.product.id !== productId));
+  const addToCart = useCallback((product: Product) => addProducts([product], true), [addProducts]);
+  const addManyToCart = useCallback((products: Product[], quantities?: Record<string, number>) => addProducts(products, false, quantities), [addProducts]);
+  const removeFromCart = useCallback((id: string) => setCartItems(prev => prev.filter(item => item.product.id !== id)), []);
+  const updateQuantity = useCallback((id: string, quantity: number) => {
+    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return;
+    setCartItems(prev => prev.map(item => item.product.id === id ? { ...item, quantity } : item));
   }, []);
+  const clearCart = useCallback(() => { setCartItems([]); setRefreshMessage(null); }, []);
+  const generateRoute = useCallback((lat: number, lon: number): RouteStep[] => {
+    if (!optimization) return [];
+    const route = optimizeRoute(lat, lon, optimization.marketGroups);
+    // Eksik koordinat varsa kısmi rotayı tüm alışveriş rotası olarak sunma.
+    return route.length === optimization.marketGroups.length ? route : [];
+  }, [optimization]);
 
-  const updateProductDepot = useCallback(
-    (productId: string, newDepot: ProductDepotInfo) => {
-      setCartItems((prev) =>
-        prev.map((item) =>
-          item.product.id === productId
-            ? { ...item, selectedDepot: newDepot }
-            : item
-        )
-      );
-    },
-    []
-  );
-
-  const clearCart = useCallback(() => {
-    setCartItems([]);
-    setOptimization(null);
-  }, []);
-
-  const generateRoute = useCallback(
-    (userLat: number, userLon: number): RouteStep[] => {
-      if (!optimization || optimization.marketGroups.length === 0) {
-        return [];
-      }
-      const groupsWithDistance = addDistanceToMarketGroups(
-        optimization.marketGroups,
-        userLat,
-        userLon
-      );
-      return optimizeRoute(userLat, userLon, groupsWithDistance);
-    },
-    [optimization]
-  );
-
-  const isProductInCart = useCallback(
-    (productId: string): boolean => cartItems.some((item) => item.product.id === productId),
-    [cartItems]
-  );
-
-  const getCartItemByProductId = useCallback(
-    (productId: string): CartItem | undefined =>
-      cartItems.find((item) => item.product.id === productId),
-    [cartItems]
-  );
+  const refreshPrices = useCallback(async () => {
+    if (!settings || !cartItems.length || refreshingRef.current) return;
+    refreshingRef.current = true;
+    setIsRefreshing(true);
+    setRefreshMessage(null);
+    try {
+      let results: Product[] = [];
+      try { results = await ProductService.syncProducts(cartItems.map(item => item.product.id), settings); }
+      catch { /* Preserve the entire previous basket when synchronization fails. */ }
+      const updates = new Map(results.filter(p => findOptimalDepot(p, [])).map(p => [p.id, p]));
+      setCartItems(prev => prev.map(item => {
+        const product = updates.get(item.product.id);
+        return product ? { ...item, product, selectedDepot: findOptimalDepot(product, [])! } : item;
+      }));
+      const failed = cartItems.filter(item => !updates.has(item.product.id)).length;
+      setRefreshMessage(failed
+        ? `${failed} ürünün fiyatı doğrulanamadı; önceki kayıtları korundu. Alışverişten önce kontrol edin.`
+        : 'Sepetteki tüm ürünlerin fiyatları yeniden kontrol edildi.');
+    } finally { refreshingRef.current = false; setIsRefreshing(false); }
+  }, [settings, cartItems]);
 
   return {
-    cartItems,
-    optimization,
-    isHydrated,
-    addToCart,
-    addManyToCart,
-    removeFromCart,
-    updateProductDepot,
-    clearCart,
-    generateRoute,
-    isProductInCart,
-    getCartItemByProductId,
-    marketCount: optimization?.marketCount || 0,
-    totalCost: optimization?.totalCost || 0,
-    totalSavings: optimization?.totalSavings || 0,
+    cartItems, optimization, mode, setMode, isHydrated, addToCart, addManyToCart, removeFromCart,
+    updateQuantity, clearCart, generateRoute, refreshPrices, isRefreshing, refreshMessage,
+    isProductInCart: (id: string) => cartItems.some(item => item.product.id === id),
+    getCartItemByProductId: (id: string) => cartItems.find(item => item.product.id === id),
+    marketCount: optimization?.marketCount ?? 0, totalCost: optimization?.totalCost ?? 0,
+    totalSavings: optimization?.totalSavings,
   };
 }

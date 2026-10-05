@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { DEFAULTS, STORAGE_KEYS } from '@/constants';
+import { DEFAULTS } from '@/constants';
 import { useAppStore } from '@/store/useAppStore';
 import { Market, SearchSettings } from '@/types';
 
@@ -23,6 +23,7 @@ function sessionToSettings(data: {
   };
 }
 
+/** Arama ayarları yalnızca store'daki market oturumundan türetilir (tek kaynak). */
 export const useLocalStorageSettings = () => {
   const marketSession = useAppStore((s) => s.marketSession);
   const [searchSettings, setSearchSettings] = useState<SearchSettings | null>(null);
@@ -30,46 +31,16 @@ export const useLocalStorageSettings = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      // 1) Zustand session
-      if (marketSession) {
-        const settings = sessionToSettings(marketSession);
-        if (settings) {
-          setSearchSettings(settings);
-          setError(null);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // 2) Legacy localStorage
-      const raw = localStorage.getItem(STORAGE_KEYS.MARKET_SEARCH);
-      if (!raw) {
-        setError(
-          'Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.'
-        );
-        setSearchSettings(null);
-        setIsLoading(false);
-        return;
-      }
-
-      const data = JSON.parse(raw);
-      const settings = sessionToSettings(data);
-      if (!settings) {
-        setError('Eksik veri. Önce ana sayfadan adres ve market seçimi yapınız.');
-        setSearchSettings(null);
-      } else {
-        setSearchSettings(settings);
-        setError(null);
-      }
-    } catch {
-      setError('Veri okuma hatası oluştu.');
-      setSearchSettings(null);
-    } finally {
-      setIsLoading(false);
-    }
+    const settings = marketSession ? sessionToSettings(marketSession) : null;
+    setSearchSettings(settings);
+    setError(
+      settings
+        ? null
+        : marketSession
+          ? 'Eksik veri. Önce ana sayfadan adres ve market seçimi yapınız.'
+          : 'Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.'
+    );
+    setIsLoading(false);
   }, [marketSession]);
 
   return {

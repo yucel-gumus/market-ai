@@ -1,315 +1,177 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import categoriesData from '@/data/categoriesList.json';
-import { SEARCH } from '@/constants';
-import {
-  fetchCategoriesData,
-  fetchUrunData,
-  getCheapestDepotPrice,
-} from '@/lib/clientMarketSearch';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toErrorMessage } from '@/lib/errorUtils';
-import { withConcurrency } from '@/lib/utils';
 import { LlmService } from '@/services/llmService';
+import { buildIngredientMatches, type IngredientMatch } from '@/lib/ingredientSelection';
+import { branchForProduct } from '@/lib/branchSelection';
+import { recipePackageQuantity, type IngredientRequirement } from '@/lib/recipeQuantity';
+import { normalizeString } from '@/lib/stringUtils';
+import { useAppStore } from '@/store/useAppStore';
 import type { Product } from '@/types';
 
 export type PipelineStep = 'input' | 'ingredients' | 'processing' | 'complete';
+interface Options { addManyToCart: (products: Product[], quantities?: Record<string, number>) => void }
 
-export type PipelineResults = {
-  missingProducts: string[];
-  categoryData: unknown;
-  availableProducts: Product[];
-  selectedProducts: Product[];
-  firstSelectedProduct: Product[];
-};
-
-const emptyResults = (): PipelineResults => ({
-  missingProducts: [],
-  categoryData: null,
-  availableProducts: [],
-  selectedProducts: [],
-  firstSelectedProduct: [],
-});
-
-interface UseRecipePipelineOptions {
-  addManyToCart: (products: Product[]) => void;
-  clearCart: () => void;
-}
-
-type TaggedProduct = Product & { targetIngredient?: string };
-
-/** Malzeme başına AI'ya gönderilecek maksimum aday ürün sayısı */
-const CANDIDATES_PER_INGREDIENT = 25;
-
-export function useRecipePipeline({ addManyToCart, clearCart }: UseRecipePipelineOptions) {
+export function useRecipePipeline({ addManyToCart }: Options) {
   const [foodName, setFoodName] = useState('');
+  const [servings, setServings] = useState(4);
   const [currentStep, setCurrentStep] = useState<PipelineStep>('input');
   const [ingredients, setIngredients] = useState<string[]>([]);
-  const [recipe, setRecipe] = useState<{ ingredients: string[] } | null>(null);
-  const [results, setResults] = useState<PipelineResults>(emptyResults);
+  const [requirements, setRequirements] = useState<IngredientRequirement[]>([]);
+  const [matches, setMatches] = useState<IngredientMatch[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<unknown[]>([]);
+  const runRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => { runRef.current++; abortRef.current?.abort(); }, []);
+  const recipeRequest = `${foodName.trim()} (${servings} kişilik)`;
 
-  const categoryList = categoriesData.categories.join(', ');
+  // Market adımında seçilen konum ve şubeler, ürünlerin doğru marketlerden gelmesi için sunucuya iletilir.
+  const selectedAddress = useAppStore(state => state.selectedAddress);
+  const selectedDistance = useAppStore(state => state.selectedDistance);
+  const selectedMarkets = useAppStore(state => state.marketSession?.selectedMarkets);
+  const marketSession = useAppStore(state => state.marketSession);
+  const saveMarketSelection = useAppStore(state => state.saveMarketSelection);
+  const location = useMemo(
+    () =>
+      selectedAddress
+        ? {
+            latitude: selectedAddress.latitude,
+            longitude: selectedAddress.longitude,
+            distance: selectedDistance,
+            // Yalnızca kullanıcının seçtiği şubeler aransın; aksi halde seçili olmayan
+            // marketlerden ürün gelir ve fiyat/rota karşılaştırması kilitlenir.
+            depots: selectedMarkets?.length ? selectedMarkets.map(m => m.id) : undefined,
+          }
+        : undefined,
+    [selectedAddress, selectedDistance, selectedMarkets]
+  );
 
   const resetForm = useCallback(() => {
-    setFoodName('');
-    clearCart();
-    setCurrentStep('input');
-    setRecipe(null);
-    setIngredients([]);
-    setResults(emptyResults());
-    setError(null);
-    setSearchResults([]);
-  }, [clearCart]);
-
-  const removeIngredient = useCallback((ingredient: string) => {
-    setIngredients((prev) => prev.filter((item) => item !== ingredient));
+    runRef.current++; abortRef.current?.abort();
+    setFoodName(''); setCurrentStep('input'); setIngredients([]); setRequirements([]); setMatches([]); setError(null); setIsLoading(false);
+    // Yeni tarif başlatmak mevcut alışveriş listesini silmez.
   }, []);
+  const removeIngredient = useCallback((ingredient: string) => setIngredients(prev => prev.filter(i => i !== ingredient)), []);
 
-  const handleSubmit = useCallback(
-    async (e?: { preventDefault?: () => void }) => {
-      e?.preventDefault?.();
-      if (!foodName.trim()) return;
-
-      setIsLoading(true);
-      setError(null);
-      setResults(emptyResults());
-      clearCart();
-
-      try {
-        const recipeData = await LlmService.generateRecipeList(foodName);
-        if (recipeData.success) {
-          setRecipe(recipeData);
-          setIngredients(recipeData.ingredients);
-          setCurrentStep('ingredients');
-        } else {
-          setError('Malzeme bulunamadı');
-        }
-      } catch (err) {
-        setError(toErrorMessage(err, 'Malzeme listesi alınamadı'));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [foodName, clearCart]
-  );
-
-  const selectBestProducts = useCallback(
-    async (candidateProducts: TaggedProduct[], targetIngredients: string[], recipeName: string) => {
-      try {
-        const uniqueTitles = new Set<string>();
-        const productTitlesAndPrice: import('@/services/llmService').SelectProductsProduct[] = [];
-
-        for (const product of candidateProducts) {
-          const price = getCheapestDepotPrice(product);
-          if (price == null || uniqueTitles.has(product.title)) continue;
-          uniqueTitles.add(product.title);
-          productTitlesAndPrice.push({
-            title: product.title,
-            price,
-            ingredient: product.targetIngredient,
-            main_category: product.main_category,
-            menu_category: product.menu_category,
-            categories: product.categories,
-          });
-        }
-        if (productTitlesAndPrice.length === 0) {
-          setCurrentStep('complete');
-          return;
-        }
-
-        // Python Backend AI: Tüm ham ürünler arasından en uygun ürünleri AI seçsin
-        const selectedResponse = await LlmService.selectProducts(
-          productTitlesAndPrice,
-          targetIngredients,
-          recipeName
-        );
-        const selectedResult = selectedResponse.selections || [];
-
-        setSearchResults((prev) => [...(Array.isArray(prev) ? prev : []), ...selectedResult]);
-
-        // AI'nın seçtiği ürünleri bellekteki candidateProducts'tan anında eşleştir
-        let selectedProductsData: Product[] = [];
-        if (selectedResult.length > 0) {
-          selectedProductsData = selectedResult
-            .map((sel) => {
-              const matchedTitle = sel.product?.title;
-              const foundProduct =
-                candidateProducts.find((p) => p.title === matchedTitle) ||
-                candidateProducts.find((p) => p.targetIngredient === sel.searchedIngredient);
-              return foundProduct || null;
-            })
-            .filter((p): p is Product => Boolean(p && p.productDepotInfoList?.length));
-        }
-
-        // Güvenli Alternatif: Eğer AI boş dönerse aday ürünleri doğrudan kullan
-        if (selectedProductsData.length === 0 && candidateProducts.length > 0) {
-          selectedProductsData = candidateProducts.slice(0, targetIngredients.length);
-        }
-
-        if (selectedProductsData.length) {
-          addManyToCart(selectedProductsData);
-        }
-        setResults((prev) => ({
-          ...prev,
-          selectedProducts: [...prev.selectedProducts, ...selectedProductsData],
-        }));
-        setCurrentStep('complete');
-      } catch (err) {
-        console.error('❌ [MarketAI LLM Error]:', err);
-        if (candidateProducts.length > 0) {
-          const fallbackList = candidateProducts.slice(0, targetIngredients.length);
-          addManyToCart(fallbackList);
-          setResults((prev) => ({
-            ...prev,
-            selectedProducts: [...prev.selectedProducts, ...fallbackList],
-          }));
-        }
-        setCurrentStep('complete');
-      }
-    },
-    [addManyToCart]
-  );
-
-  const findAlternativeProducts = useCallback(
-    async (missingItems: string[], name: string) => {
-      try {
-        const categoryResult = await LlmService.generateCategory(
-          missingItems,
-          categoryList
-        );
-        setResults((prev) => ({ ...prev, categoryData: categoryResult }));
-
-        if (categoryResult.categories?.length) {
-          const categoryNames = [
-            ...new Set(categoryResult.categories.map((c) => c.category)),
-          ];
-
-          const categoryProducts = await withConcurrency(
-            SEARCH.AI_CONCURRENCY,
-            categoryNames.map((cat) => () => fetchCategoriesData(cat))
-          );
-          const allProducts = categoryProducts.flat().filter(
-            (p): p is Product => Boolean(p?.productDepotInfoList?.length)
-          );
-          setResults((prev) => ({ ...prev, availableProducts: allProducts }));
-          await selectBestProducts(allProducts, missingItems, name);
-        } else {
-          setCurrentStep('complete');
-        }
-      } catch (err) {
-        setError(toErrorMessage(err, 'Kategori arama sırasında hata'));
-        setCurrentStep('complete');
-      }
-    },
-    [categoryList, selectBestProducts]
-  );
-
-  function getRefinedSearchQuery(ingredient: string): string[] {
-    const queries = [ingredient];
-    const lower = ingredient.toLowerCase().trim();
-
-    if (lower.endsWith(' eti') && lower.length > 5) {
-      queries.push(lower.replace(/\s+eti$/, ''));
-    }
-    return queries;
-  }
+  const handleSubmit = useCallback(async (e?: { preventDefault?: () => void }) => {
+    e?.preventDefault?.();
+    if (!foodName.trim() || isLoading) return;
+    const run = ++runRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsLoading(true); setError(null); setMatches([]);
+    try {
+      const data = await LlmService.generateRecipeList(recipeRequest, controller.signal);
+      if (run !== runRef.current) return;
+      if (!data.success || !Array.isArray(data.ingredients)) throw new Error('Malzeme listesi alınamadı.');
+      const seen = new Set<string>();
+      const list = data.ingredients.filter(i => typeof i === 'string' && i.trim())
+        .map(i => i.trim()).filter(i => { const key = normalizeString(i); if (seen.has(key)) return false; seen.add(key); return true; });
+      if (!list.length) throw new Error('Malzeme bulunamadı.');
+      setIngredients(list);
+      setRequirements((data.ingredientDetails ?? []).filter(d => list.includes(d.name) && Number.isFinite(d.amount) && d.amount > 0 && ['g', 'ml', 'adet'].includes(d.unit)));
+      setCurrentStep('ingredients');
+    } catch (err) { if (run === runRef.current) setError(toErrorMessage(err, 'Malzeme listesi alınamadı')); }
+    finally { if (run === runRef.current) setIsLoading(false); }
+  }, [foodName, recipeRequest, isLoading]);
 
   const confirmIngredients = useCallback(async () => {
-    setIsLoading(true);
-    setCurrentStep('processing');
-    setError(null);
-
+    if (isLoading || !ingredients.length) return;
+    const run = ++runRef.current;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setIsLoading(true); setCurrentStep('processing'); setError(null);
+    const warnings: string[] = [];
     try {
-      // 1. Market API'den her malzeme için arama yap (akıllı sorgu türetme ile)
-      const productResults = await withConcurrency(
-        SEARCH.AI_CONCURRENCY,
-        ingredients.map(
-          (ingredient) => async () => {
-            const queries = getRefinedSearchQuery(ingredient);
-            const allFound: Product[] = [];
-
-            for (const q of queries) {
-              const found = await fetchUrunData(q);
-              const valid = (found as Product[]).filter(
-                (p) => p?.title && p.productDepotInfoList?.length
-              );
-              allFound.push(...valid);
-            }
-
-            const seen = new Set<string>();
-            const rawProducts = allFound.filter((p) => {
-              const key = p.id || p.title;
-              if (seen.has(key)) return false;
-              seen.add(key);
-              return true;
-            });
-            return {
-              ingredient,
-              products: rawProducts,
-            };
-          }
-        )
-      );
-
-      const candidateProducts: TaggedProduct[] = [];
-      const missing: string[] = [];
-
-      productResults.forEach(({ ingredient, products }) => {
-        if (products.length > 0) {
-          // Fiyata göre sırala (en ucuz önce) ve ham adayları doğrudan Multi-Agent sistemine gönder
-          const sorted = [...products].sort((a, b) => {
-            const pa = getCheapestDepotPrice(a) ?? Infinity;
-            const pb = getCheapestDepotPrice(b) ?? Infinity;
-            return pa - pb;
-          });
-          const tagged = sorted.slice(0, CANDIDATES_PER_INGREDIENT).map((p) => ({
-            ...p,
-            targetIngredient: ingredient,
-          }));
-          candidateProducts.push(...tagged);
-
-        } else {
-          missing.push(ingredient);
-        }
+      // Malzeme onayından sonrası tamamen sunucuda: arama + seçim + doğrulama.
+      // İstemci yalnızca tarif, malzeme ve konum gönderir; aday ürün göndermez.
+      const response = await LlmService.selectProducts(ingredients, recipeRequest, location, controller.signal);
+      if (run !== runRef.current) return;
+      if (!response.success || !Array.isArray(response.selections)) throw new Error('Ürün seçimi alınamadı.');
+      // Sözleşme nöbeti: başarılı denip kimliksiz ürün dönerse sessizce devam etme.
+      if (response.selections.some(s => s.success && !s.product?.id)) {
+        throw new Error('AI backend ürün kimliği döndürmedi; sunucu sözleşmesi güncel değil.');
+      }
+      const resolved = buildIngredientMatches(ingredients, response.selections).map(match => {
+        const requiredAmount = requirements.find(r => r.name === match.ingredient);
+        return {
+          ...match,
+          requiredAmount,
+          packageQuantity: match.product ? recipePackageQuantity(match.product, requiredAmount) : undefined,
+        };
       });
-
-      // 2. Tüm etiketli ham market ürünlerini doğrudan Python AI backend'e gönder
-      if (candidateProducts.length > 0) {
-        await selectBestProducts(candidateProducts, ingredients, foodName);
+      setMatches(resolved);
+      addManyToCart(
+        resolved.flatMap(match => match.product ? [match.product] : []),
+        Object.fromEntries(resolved.filter(m => m.product && m.packageQuantity).map(m => [m.product!.id, m.packageQuantity!]))
+      );
+      const noProduct = resolved.filter(m => !m.product);
+      // Ayrım önemli: "başka şubede var" bir çıkmaz sokak değil, tek dokunuşluk seçim;
+      // "hiç bulunamadı" ise gerçek katalog boşluğu.
+      const elsewhere = noProduct.filter(m => m.candidates.length).map(m => m.ingredient);
+      const notFound = noProduct.filter(m => !m.candidates.length).map(m => m.ingredient);
+      if (elsewhere.length) {
+        warnings.push(`Şu malzemeler seçtiğiniz şubelerde yok, yakınınızdaki şubelerde bulundu: ${elsewhere.join(', ')}. Aşağıdan seçebilirsiniz.`);
       }
-
-      // 3. Eğer eksik kalan malzeme varsa kategoriye göre AI alternatif arasın
-      if (missing.length > 0) {
-        await findAlternativeProducts(missing, foodName);
-      } else if (candidateProducts.length === 0) {
-        setCurrentStep('complete');
+      if (notFound.length) {
+        warnings.push(`Şu malzemeler için ürün bulunamadı: ${notFound.join(', ')}. Ürün aramasından ekleyebilirsiniz.`);
       }
-    } catch (err) {
-      setError(toErrorMessage(err, 'Ürün arama sırasında hata'));
+      if (response.message) warnings.push(response.message);
+      setError(warnings.length ? [...new Set(warnings)].join(' ') : null);
       setCurrentStep('complete');
-    } finally {
-      setIsLoading(false);
+    } catch (err) {
+      if (run !== runRef.current) return;
+      setError(toErrorMessage(err, 'Ürün araması tamamlanamadı.'));
+      setMatches(ingredients.map(ingredient => ({ ingredient, candidates: [] })));
+      setCurrentStep('complete');
+    } finally { if (run === runRef.current) setIsLoading(false); }
+  }, [isLoading, ingredients, requirements, recipeRequest, addManyToCart, location]);
+
+  const chooseProduct = useCallback((ingredient: string, productId: string) => {
+    const match = matches.find(m => m.ingredient === ingredient);
+    const product = match?.candidates.find(p => p.id === productId);
+    if (!product) return;
+    // Ürün seçili marketlerde satılmıyorsa (örn. yalnızca başka bir şubede varsa), o şubeyi
+    // seçime ekle. Aksi halde fiyatı "seçili şubelerde geçersiz" sayılır ve kullanıcının
+    // kendi seçimiyle tüm sepet karşılaştırması kilitlenir.
+    const branch = marketSession
+      ? branchForProduct(product, marketSession.selectedMarkets.map(m => m.id), marketSession.selectedAddress)
+      : null;
+    if (branch && marketSession) {
+      saveMarketSelection({
+        distance: marketSession.distance,
+        selectedAddress: marketSession.selectedAddress,
+        selectedMarkets: [...marketSession.selectedMarkets, branch],
+        totalMarkets: marketSession.totalMarkets ?? marketSession.selectedMarkets.length + 1,
+      });
     }
-  }, [ingredients, foodName, findAlternativeProducts, selectBestProducts]);
+    const requiredAmount = requirements.find(r => r.name === ingredient);
+    const packageQuantity = recipePackageQuantity(product, requiredAmount);
+    addManyToCart([product], packageQuantity ? { [product.id]: packageQuantity } : undefined);
+    setMatches(prev => prev.map(m => m.ingredient === ingredient ? { ...m, product, source: 'manual', requiredAmount, packageQuantity } : m));
+    if (branch) {
+      const label = branch.brand && branch.brand !== branch.name ? `${branch.brand} (${branch.name})` : branch.brand ?? branch.name;
+      setError(`${label} şubesi seçili marketlere eklendi: "${product.title}" yalnızca orada bulundu. İstemezseniz Konum & Marketler sayfasından çıkarabilirsiniz.`);
+    }
+  }, [matches, requirements, addManyToCart, marketSession, saveMarketSelection]);
+
+  const forgetProduct = useCallback((productId: string) => {
+    setMatches(prev => prev.map(match => match.product?.id === productId ? { ...match, product: undefined, source: undefined, reasoning: undefined } : match));
+  }, []);
+  const clearSelections = useCallback(() => {
+    setMatches(prev => prev.map(match => ({ ...match, product: undefined, source: undefined, reasoning: undefined })));
+  }, []);
 
   return {
-    foodName,
-    setFoodName,
-    currentStep,
-    ingredients,
-    setIngredients,
-    recipe,
-    results,
-    isLoading,
-    error,
-    setError,
-    searchResults,
-    handleSubmit,
-    confirmIngredients,
-    removeIngredient,
-    resetForm,
+    forgetProduct, clearSelections,
+    foodName, setFoodName, servings, setServings, recipeRequest, currentStep, ingredients, setIngredients,
+    matches, isLoading, error, setError, handleSubmit, confirmIngredients, removeIngredient, resetForm, chooseProduct,
+    // Eski sonuç bileşenleri için yalnızca doğrulanmış seçimleri sun.
+    results: { missingProducts: matches.filter(m => !m.product).map(m => m.ingredient),
+      selectedProducts: matches.flatMap(m => m.product ? [m.product] : []) },
   };
 }

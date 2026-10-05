@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import Image from 'next/image';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from 'use-debounce';
 import {
@@ -18,13 +17,12 @@ import {
   Clock as ClockIcon,
   Users,
   Home,
-  Sparkles,
-  Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { SEARCH } from '@/constants';
+import { coordsOf } from '@/lib/shoppingUtils';
 import { useRecipePipeline } from '@/features/ai-chat/hooks/useRecipePipeline';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { SearchInput } from '@/features/products/components/SearchInput';
@@ -36,10 +34,8 @@ import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStora
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
 import { toErrorMessage } from '@/lib/errorUtils';
-import { getMarketLogo } from '@/lib/utils';
 import { LlmService, type RecipeWithCaloriesResponse } from '@/services/llmService';
 import type { Product, ProductDepotInfo, RouteInfo } from '@/types';
-import type { SelectProductsSelection } from '@/services/llmService';
 
 const STEPS = ['input', 'ingredients', 'processing', 'complete'] as const;
 
@@ -66,29 +62,26 @@ function stepColor(step: string, current: string) {
   return 'bg-[#FFECE8] text-[#70372D] border border-[#F7A898]/50';
 }
 
-function safeDepot(product: Product) {
-  return product.productDepotInfoList?.[0] ?? null;
-}
-
 export default function AiChatPage() {
   const router = useRouter();
-  const {
-    optimization,
-    addToCart,
-    addManyToCart,
-    removeFromCart,
-    clearCart,
-    generateRoute,
-    marketCount,
-  } = useShoppingCart();
-
   const {
     searchSettings,
     isLoading: isSettingsLoading,
     error: settingsError,
   } = useLocalStorageSettings();
 
-  const pipeline = useRecipePipeline({ addManyToCart, clearCart });
+  const {
+    optimization,
+    mode, setMode, updateQuantity, refreshPrices, isRefreshing, refreshMessage,
+    addToCart,
+    addManyToCart,
+    removeFromCart,
+    clearCart,
+    generateRoute,
+    marketCount,
+  } = useShoppingCart(searchSettings);
+
+  const pipeline = useRecipePipeline({ addManyToCart });
 
   const [calorieInfo, setCalorieInfo] = useState<RecipeWithCaloriesResponse | null>(null);
   const [isCalorieLoading, setIsCalorieLoading] = useState(false);
@@ -103,6 +96,14 @@ export default function AiChatPage() {
   const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>();
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>();
 
+  useEffect(() => {
+    setShowSingleMap(false);
+    setShowMultiMap(false);
+    setSelectedStore(null);
+    setRealRouteDistance(undefined);
+    setRealRouteTime(undefined);
+  }, [optimization]);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery] = useDebounce(searchQuery, 450);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -111,10 +112,10 @@ export default function AiChatPage() {
     data: products = [],
     isLoading: isProductsLoading,
     error: productsError,
+    totalResults, loadedResults, isComplete, isFetching: isSearchFetching, retrySearch,
   } = useProductSearch({
     query: debouncedQuery,
     searchSettings,
-    fetchAllPages: false,
   });
 
   const handleGetRecipeAndCalorie = async () => {
@@ -123,7 +124,7 @@ export default function AiChatPage() {
     setCalorieError(null);
     setCalorieInfo(null);
     try {
-      const data = await LlmService.generateRecipeAndCalorie(pipeline.foodName);
+      const data = await LlmService.generateRecipeAndCalorie(pipeline.recipeRequest);
       if (data.success) {
         setCalorieInfo(data);
         setShowRecipeModal(true);
@@ -138,7 +139,7 @@ export default function AiChatPage() {
   };
 
   const handleShowRoute = (depot: ProductDepotInfo) => {
-    if (!depot.latitude || !depot.longitude) {
+    if (!coordsOf(depot)) {
       setUiError('Mağaza konumu bulunamadı.');
       return;
     }
@@ -205,8 +206,6 @@ export default function AiChatPage() {
       </div>
     );
   }
-
-  const selections = pipeline.searchResults as SelectProductsSelection[];
 
   return (
     <div className="min-h-screen bg-[#FFEBD3] text-[#2D1E12] py-8 px-4">
@@ -302,7 +301,7 @@ export default function AiChatPage() {
                       <div className="flex items-center gap-2.5">
                         <Users className="h-5 w-5 text-[#0E2C24]" aria-hidden />
                         <div>
-                          <div className="text-base font-bold text-[#2D1E12]">4 Kişilik</div>
+                          <div className="text-base font-bold text-[#2D1E12]">{pipeline.servings} Kişilik</div>
                           <div className="text-[11px] font-semibold text-[#70372D]">Standart porsiyon</div>
                         </div>
                       </div>
@@ -410,6 +409,7 @@ export default function AiChatPage() {
               <RouteModal
                 isOpen={showSingleMap}
                 selectedStore={selectedStore}
+                totalCost={optimization?.totalCost}
                 routeInfo={routeInfo}
                 searchSettings={searchSettings}
                 onClose={handleCloseMap}
@@ -466,6 +466,9 @@ export default function AiChatPage() {
                   </div>
 
                   <div className="grid gap-3">
+                    <label className="flex items-center gap-3 text-sm font-bold">Kişi sayısı
+                      <input aria-label="Kişi sayısı" type="number" min={1} max={20} value={pipeline.servings} onChange={e => { const value = Number(e.target.value); if (Number.isInteger(value) && value >= 1 && value <= 20) pipeline.setServings(value); }} className="w-20 rounded-xl border border-[#F7A898] bg-[#FFEBD3] p-2" />
+                    </label>
                     <Button
                       type="button"
                       onClick={() => pipeline.handleSubmit()}
@@ -580,13 +583,15 @@ export default function AiChatPage() {
                         isLoading={isProductsLoading}
                       />
                       <SearchStatsDisplay
-                        stats={{ totalResults: products.length }}
+                        stats={{ totalResults, loadedResults, complete: isComplete, loadingMore: isSearchFetching }}
                         query={searchQuery}
                         isLoading={isProductsLoading}
                         error={productsError?.message}
                       />
+                      {productsError && <Button type="button" onClick={() => { setIsDropdownOpen(true); void retrySearch(); }}>Aramayı yeniden dene</Button>}
                       <ProductDropdown
                         products={products}
+                        isLoading={isSearchFetching}
                         query={searchQuery}
                         isOpen={isDropdownOpen}
                         onClose={() => setIsDropdownOpen(false)}
@@ -624,7 +629,7 @@ export default function AiChatPage() {
                     En Uygun Fiyatlar Hesaplanıyor...
                   </h2>
                   <p className="text-xs font-semibold text-[#70372D]">
-                    Seçili marketlerdeki stoklar kontrol ediliyor ve en düşük maliyetli kombinasyon oluşturuluyor
+                    Seçili şubelerde ürün ve fiyat kayıtları aranıyor
                   </p>
                 </div>
               </div>
@@ -639,109 +644,54 @@ export default function AiChatPage() {
                   </div>
                   <h2 className="text-2xl font-bold font-heading text-[#2D1E12]">Analiz Tamamlandı</h2>
                   <p className="text-xs font-semibold text-[#70372D]">
-                    Market bazlı en hesaplı sepet dağılımınız aşağıda listelenmiştir
+                    Doğrulanan ürünler sepete eklendi. Eksik malzemeleri kontrol edin.
                   </p>
                 </div>
+
+                {pipeline.results.missingProducts.length > 0 && (
+                  <div className="rounded-2xl border border-[#F7A898] bg-[#FFEBD3] p-4 space-y-4">
+                    <h3 className="font-bold" role="status">Tamamlanması gereken malzemeler ({pipeline.results.missingProducts.length})</h3>
+                    <p className="text-xs">Bu malzemeler için doğrulanmış ürün seçilemedi. Adayların yemeğe uygunluğunu kontrol ederek bir ürün seçin.</p>
+                    {pipeline.matches.filter(match => !match.product).map(match => (
+                      <div key={match.ingredient} className="space-y-2">
+                        <p className="font-bold text-sm">{match.ingredient}</p>
+                        {match.candidates.length ? <select aria-label={`${match.ingredient} için ürün seç`} defaultValue="" onChange={e => pipeline.chooseProduct(match.ingredient, e.target.value)} className="w-full min-w-0 rounded-xl border border-[#F7A898] bg-[#FFECE8] p-2 text-sm">
+                          <option value="" disabled>Ürün seçin</option>
+                          {match.candidates.map(product => <option key={product.id} value={product.id}>{product.title}</option>)}
+                        </select> : <p className="text-xs">Ürün bulunamadı veya arama tamamlanamadı. Ürün aramasından kendiniz ekleyebilirsiniz.</p>}
+                      </div>
+                    ))}
+                    <Button variant="outline" onClick={() => router.push('/product-search')}>Ürün aramasını aç</Button>
+                  </div>
+                )}
 
                 {optimization && (
                   <ShoppingCartSummary
                     optimization={optimization}
+                    mode={mode}
+                    onModeChange={setMode}
+                    onQuantityChange={updateQuantity}
+                    onRefreshPrices={refreshPrices}
+                    isRefreshing={isRefreshing}
+                    refreshMessage={refreshMessage}
                     onViewRoute={() => setShowMultiMap(true)}
                     onViewSingleRoute={handleShowRoute}
-                    onClearCart={clearCart}
-                    onRemoveItem={removeFromCart}
+                    onClearCart={() => { clearCart(); pipeline.clearSelections(); }}
+                    onRemoveItem={id => { removeFromCart(id); pipeline.forgetProduct(id); }}
                   />
                 )}
 
-                {pipeline.results.firstSelectedProduct.length > 0 && (
-                  <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFEBD3] p-5 space-y-3">
-                    <h3 className="text-base font-bold font-heading text-[#2D1E12]">
-                      Marketlerde Bulunan Birincil Malzemeler
-                    </h3>
-                    <ul className="space-y-2.5">
-                      {pipeline.results.firstSelectedProduct.map((product) => {
-                        const depot = safeDepot(product);
-                        const logo = depot ? getMarketLogo(depot.marketAdi) : null;
-                        return (
-                          <li
-                            key={product.id}
-                            className="flex items-center justify-between rounded-xl border border-[#F7A898]/40 bg-[#FFECE8] p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              {logo ? (
-                                <div className="relative h-6 w-14 shrink-0 flex items-center justify-center bg-[#FFEBD3] p-1 rounded-lg border border-[#F7A898]/50 shadow-2xs">
-                                  <Image
-                                    src={logo}
-                                    alt={depot?.marketAdi || ''}
-                                    fill
-                                    unoptimized
-                                    className="object-contain p-0.5"
-                                  />
-                                </div>
-                              ) : (
-                                <Store className="h-5 w-5 text-[#0E2C24]" />
-                              )}
-                              <div>
-                                <h4 className="font-bold text-sm text-[#2D1E12]">{product.title}</h4>
-                              </div>
-                            </div>
-                            <div className="text-sm font-bold text-[#0E2C24] bg-[#9BCEC1] px-2.5 py-1 rounded-lg">
-                              {depot?.price ?? '—'} ₺
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-
-                {pipeline.results.selectedProducts.length > 0 && (
-                  <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFEBD3] p-5 space-y-3">
-                    <h3 className="flex items-center text-base font-bold font-heading text-[#2D1E12]">
-                      <Sparkles className="mr-2 h-5 w-5 text-[#0E2C24] stroke-[2.5]" />
-                      KENSAI Önerili  Ürünler
-                    </h3>
-                    <ul className="space-y-2.5">
-                      {pipeline.results.selectedProducts.map((product) => {
-                        const depot = safeDepot(product);
-                        const logo = depot ? getMarketLogo(depot.marketAdi) : null;
-                        const matched = selections.find(
-                          (item) => item.product?.title === product.title
-                        );
-                        return (
-                          <li
-                            key={product.id}
-                            className="flex items-center justify-between rounded-xl border border-[#F7A898]/40 bg-[#FFECE8] p-3"
-                          >
-                            <div className="flex items-center gap-3">
-                              {logo ? (
-                                <div className="relative h-6 w-14 shrink-0 flex items-center justify-center bg-[#FFEBD3] p-1 rounded-lg border border-[#F7A898]/50 shadow-2xs">
-                                  <Image
-                                    src={logo}
-                                    alt={depot?.marketAdi || ''}
-                                    fill
-                                    unoptimized
-                                    className="object-contain p-0.5"
-                                  />
-                                </div>
-                              ) : (
-                                <Store className="h-5 w-5 text-[#0E2C24]" />
-                              )}
-                              <div className="space-y-0.5">
-                                <h4 className="font-bold text-sm text-[#2D1E12]">{product.title}</h4>
-                                {matched?.reasoning && (
-                                  <span className="block text-xs font-semibold text-[#4A1E17]">
-                                    Öneri Sebebi: {matched.reasoning}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-sm font-bold text-[#0E2C24] bg-[#9BCEC1] px-2.5 py-1 rounded-lg">
-                              {depot?.price ?? 'N/A'} ₺
-                            </div>
-                          </li>
-                        );
-                      })}
+                {pipeline.matches.some(match => match.product) && (
+                  <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFEBD3] p-4 space-y-3">
+                    <h3 className="font-bold">Malzeme ve ürün eşleşmeleri</h3>
+                    <ul className="space-y-3">
+                      {pipeline.matches.filter(match => match.product).map(match => (
+                        <li key={match.ingredient} className="rounded-xl bg-[#FFECE8] p-3 text-sm space-y-1">
+                          <p className="font-bold">{match.ingredient}: {match.product?.title}</p>
+                          {match.requiredAmount && <p className="text-xs">Tarif tahmini: {match.requiredAmount.amount} {match.requiredAmount.unit} · {match.packageQuantity ? `${match.packageQuantity} paket` : 'Paket miktarını ve adedi kontrol edin'}</p>}
+                          <p className="text-xs text-[#70372D]">{match.source === 'manual' ? 'Sizin seçiminiz' : 'Kensai önerisi'}{match.reasoning ? ` · ${match.reasoning}` : ''}</p>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 )}

@@ -16,6 +16,7 @@ const DynamicMap = dynamic(() => import('@/components/DynamicMap.jsx'), {
 interface RouteModalProps {
   isOpen: boolean;
   selectedStore: ProductDepotInfo | null;
+  totalCost?: number;
   routeInfo: RouteInfo | null;
   searchSettings: SearchSettings;
   onClose: () => void;
@@ -25,6 +26,7 @@ interface RouteModalProps {
 export function RouteModal({
   isOpen,
   selectedStore,
+  totalCost,
   routeInfo,
   searchSettings,
   onClose,
@@ -37,7 +39,7 @@ export function RouteModal({
   const logoPath = getMarketLogo(selectedStore.marketAdi || '');
 
   return (
-    <div className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-5xl max-h-[90vh] overflow-hidden bg-[#FFEBD3] border-[#F7A898] shadow-2xl rounded-3xl">
         <CardHeader className="pb-3 border-b border-[#F7A898]/50 bg-[#FFECE8]">
           <CardTitle className="flex items-center justify-between">
@@ -48,6 +50,7 @@ export function RouteModal({
               <span className="text-[#2D1E12] font-bold font-heading text-lg">Mağaza Rotası & Konum</span>
             </div>
             <Button 
+              aria-label="Rotayı kapat"
               onClick={onClose}
               variant="ghost"
               size="sm"
@@ -60,7 +63,7 @@ export function RouteModal({
 
         <CardContent className="space-y-4 p-6 max-h-[calc(90vh-7rem)] overflow-y-auto">
           {/* Route Summary */}
-          <div className="grid grid-cols-4 gap-3 p-4 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl">
             <div className="text-center p-2 rounded-xl bg-[#FFEBD3]">
               <div className="text-lg font-bold font-heading text-[#2D1E12]">1</div>
               <div className="text-xs font-semibold text-[#70372D]">Durak</div>
@@ -78,8 +81,8 @@ export function RouteModal({
               <div className="text-xs font-semibold text-[#70372D]">Tahmini Süre</div>
             </div>
             <div className="text-center p-2 rounded-xl bg-[#9BCEC1]/40 border border-[#9BCEC1]">
-              <div className="text-lg font-bold font-heading text-[#0E2C24]">₺{selectedStore.price}</div>
-              <div className="text-xs font-bold text-[#0E2C24]">Tutar</div>
+              <div className="text-lg font-bold font-heading text-[#0E2C24]">{totalCost !== undefined ? `₺${totalCost.toFixed(2)}` : '—'}</div>
+              <div className="text-xs font-bold text-[#0E2C24]">Sepet toplamı</div>
             </div>
           </div>
 
@@ -107,11 +110,6 @@ export function RouteModal({
               
               <div className="h-[380px] rounded-2xl overflow-hidden border border-[#F7A898]/70 shadow-sm">
                 <DynamicMap
-                  center={[searchSettings.latitude, searchSettings.longitude]}
-                  userCoords={{
-                    lat: searchSettings.latitude,
-                    lng: searchSettings.longitude
-                  }}
                   selectedStore={selectedStore}
                   onRouteFound={onRouteFound}
                   searchSettings={searchSettings}

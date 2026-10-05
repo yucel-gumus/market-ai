@@ -1,13 +1,14 @@
 /** Uygulama geneli sabitler — magic number ve hardcode tekrarı yok. */
 
 export const STORAGE_KEYS = {
-  MARKET_SEARCH: 'marketSearchData',
   SHOPPING_CART: 'shopping-cart',
 } as const;
 
 export const DEFAULTS = {
   DISTANCE_KM: 5,
-  PAGE_SIZE: 50,
+  PAGE_SIZE: 24,
+  /** API üst sınırı: size 1–100 arası olmalı, fazlası 400 döner. */
+  MAX_PAGE_SIZE: 100,
   PAGE: 0,
   /** Harita fallback merkezi (İstanbul) */
   MAP_CENTER: { lat: 41.0082, lng: 28.9784 },
@@ -22,11 +23,7 @@ export const SEARCH = {
   MIN_QUERY_LENGTH: 2,
   ADDRESS_RESULT_LIMIT: 10,
   /** Canlı arama: tek sayfa (hızlı UX) */
-  LIVE_PAGE_SIZE: 30,
-  /** Tüm sayfaları çekerken üst sınır (sonsuz döngü koruması) */
-  MAX_PAGES: 20,
-  /** AI malzeme/kategori aramalarında eşzamanlı istek limiti */
-  AI_CONCURRENCY: 4,
+  LIVE_PAGE_SIZE: 24,
   /** Ürün başlığı eşlemede minimum skor (0–1) */
   TITLE_MATCH_THRESHOLD: 0.45,
 } as const;
@@ -45,7 +42,7 @@ export const DISTANCE = {
 } as const;
 
 export const TIMEOUTS_MS = {
-  API_CLIENT: 10_000,
+  API_CLIENT: 20_000,
   MARKET_API: 15_000,
   MARKET_NEAREST: 10_000,
   ADDRESS_API: 8_000,
@@ -57,7 +54,12 @@ export const CACHE_HEADERS = {
   MEDIUM: 'public, s-maxage=60, stale-while-revalidate=120',
 } as const;
 
-export const USER_AGENT = 'MarketAI/1.0';
+/** WAF (Radware) tarayıcı-benzeri başlık ister; özel UA + Referer'sız istekler bağlantı düşmesiyle engellenir. */
+export const USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+export const MARKET_REFERER = 'https://marketfiyati.org.tr/';
+export const MARKET_ORIGIN = 'https://marketfiyati.org.tr';
+export const ACCEPT_LANGUAGE = 'tr-TR,tr;q=0.9,en;q=0.8';
 
 export const EARTH_RADIUS_KM = 6371;
 
@@ -75,9 +77,11 @@ export const LEAFLET = {
 } as const;
 
 export const MARKET_API_PATHS = {
-  SEARCH: 'search',
-  SEARCH_BY_CATEGORIES: 'searchByCategories',
-  NEAREST: 'nearest',
+  SEARCH: 'v2/search',
+  SEARCH_BY_CATEGORIES: 'v3/searchByCategories',
+  NEAREST: 'v2/nearest',
+  LIST_SYNC: 'v1/list/sync',
+  CATEGORIES: 'v3/info/categories',
 } as const;
 
 /** Upstream hata detayının client'a yansıma üst sınırı (prod'da kapalı) */

@@ -55,13 +55,18 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
-export interface DistanceOption {
-  value: number;
-  label: string;
-}
-
 export interface ProductSearchRequest {
-  keywords: string;
+  keywords?: string;
+  menu_category?: string[];
+  main_category?: string[];
+  sub_category?: string[];
+  market_names?: string[];
+  brand?: string[];
+  refined_quantity_unit?: string[];
+  refined_volume_weight?: string[];
+  offer_price?: string[];
+  offer_discount?: string[];
+  order?: { name: 'lowest_price' | 'offer_unit_price'; type: 'asc' | 'desc' };
   pages: number;
   size: number;
   latitude: number;
@@ -75,6 +80,11 @@ export interface ProductDepotInfo {
   depotName: string;
   price: number;
   unitPrice: string;
+  unitPriceValue?: number;
+  indexTime?: string;
+  discount?: boolean;
+  discountRatio?: number | null;
+  promotionText?: string | null;
   marketAdi: string;
   latitude?: number;
   longitude?: number;
@@ -91,28 +101,63 @@ export interface Product {
   menu_category?: string;
   categories?: string[];
   productDepotInfoList: ProductDepotInfo[];
+  /** Market servisinden fiyatların alındığı zaman; kaynağın fiyat güncelleme tarihi değildir. */
+  priceCheckedAt?: string;
 }
 
 export interface ProductSearchResponse {
+  checkedAt?: string;
   content: Product[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
+  numberOfFound?: number;
+  searchResultType?: number;
+  facetMap?: Record<string, unknown> | null;
+  /** Legacy field is optional; the live service does not return it. */
+  totalPages?: number;
+  number?: number;
+  size?: number;
+}
+
+export interface MarketCategory {
+  id: number;
+  parentId: number | null;
+  name: string;
+  children: MarketCategory[];
 }
 
 export interface CartItem {
   product: Product;
   selectedDepot: ProductDepotInfo;
   addedAt: Date;
+  quantity?: number;
+}
+
+export type ShoppingMode = 'single' | 'two' | 'cheapest';
+
+export interface ShoppingOption {
+  mode: ShoppingMode;
+  items: CartItem[];
+  totalCost: number;
+  marketCount: number;
+  feasible: boolean;
+  reason?: string;
+  /** Kuş uçuşu, başlangıçtan mağazalara; eve dönüş dahil değildir. */
+  estimatedWalkMinutes?: number;
 }
 
 export interface OptimizedShopping {
+  totalQuantity?: number;
+  unavailableProducts?: Product[];
   marketGroups: MarketGroup[];
   totalCost: number;
   marketCount: number;
-  /** En pahalı depo alternatifine göre tahmini tasarruf */
+  /** Aynı sepetin en ucuz tek şubedeki maliyetine göre fark. */
   totalSavings?: number;
+  mode?: ShoppingMode;
+  options?: ShoppingOption[];
+  singleStoreCost?: number;
+  extraWalkMinutes?: number;
+  oldestPriceCheck?: string;
+  hasUnknownPriceChecks?: boolean;
   route?: RouteStep[];
 }
 
@@ -127,6 +172,7 @@ export interface MarketSearchSession {
 }
 
 export interface MarketGroup {
+  depotKey: string;
   marketName: string;
   depotInfo: ProductDepotInfo;
   items: CartItem[];
@@ -159,6 +205,9 @@ export interface SearchSettings {
 
 export interface SearchStats {
   totalResults: number;
+  loadedResults?: number;
+  complete?: boolean;
+  loadingMore?: boolean;
 }
 
 export interface RouteInfo {

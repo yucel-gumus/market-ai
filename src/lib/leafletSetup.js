@@ -23,7 +23,7 @@ export function ensureLeafletDefaultIcons() {
  */
 export function addOsmTileLayer(map, options = {}) {
   return L.tileLayer(LEAFLET.TILE_URL, {
-    attribution: '',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: DEFAULTS.TILE_MAX_ZOOM,
     ...options,
   }).addTo(map);

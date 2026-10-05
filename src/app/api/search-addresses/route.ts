@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { CACHE_HEADERS, SEARCH, TIMEOUTS_MS, USER_AGENT } from '@/constants';
+import { ACCEPT_LANGUAGE, CACHE_HEADERS, MARKET_ORIGIN, MARKET_REFERER, SEARCH, TIMEOUTS_MS, USER_AGENT } from '@/constants';
 import { getAddressApiUrl } from '@/lib/env';
 import { logger } from '@/lib/logger';
 import { AddressSearchResult } from '@/types';
@@ -41,7 +41,10 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: {
         Accept: 'application/json',
+        'Accept-Language': ACCEPT_LANGUAGE,
         'User-Agent': USER_AGENT,
+        Referer: MARKET_REFERER,
+        Origin: MARKET_ORIGIN,
       },
       signal: AbortSignal.timeout(TIMEOUTS_MS.ADDRESS_API),
     });

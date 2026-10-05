@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
 import { useDebounce } from 'use-debounce';
 import { SEARCH } from '@/constants';
+import { coordsOf } from '@/lib/shoppingUtils';
 import { ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
 
 export default function ProductSearchPage() {
@@ -36,33 +37,45 @@ export default function ProductSearchPage() {
   const [debouncedQuery] = useDebounce(searchQuery, 450);
 
   const {
-    optimization,
-    addToCart,
-    removeFromCart,
-    clearCart,
-    generateRoute,
-    isProductInCart,
-    marketCount,
-  } = useShoppingCart();
-
-  const {
     searchSettings,
     isLoading: isSettingsLoading,
     error: settingsError,
   } = useLocalStorageSettings();
 
   const {
+    optimization,
+    mode, setMode, updateQuantity, refreshPrices, isRefreshing, refreshMessage,
+    addToCart,
+    removeFromCart,
+    clearCart,
+    generateRoute,
+    isProductInCart,
+    marketCount,
+  } = useShoppingCart(searchSettings);
+
+  useEffect(() => {
+    setShowSingleMap(false);
+    setShowMultiMap(false);
+    setSelectedStore(null);
+    setRealRouteDistance(undefined);
+    setRealRouteTime(undefined);
+  }, [optimization]);
+
+
+
+
+  const {
     data: products = [],
     isLoading: isProductsLoading,
     error: productsError,
+    totalResults, loadedResults, isComplete, isFetching: isSearchFetching, retrySearch,
   } = useProductSearch({
     query: debouncedQuery,
     searchSettings,
-    fetchAllPages: false,
   });
 
   const searchStats: SearchStats = {
-    totalResults: products.length,
+    totalResults, loadedResults, complete: isComplete, loadingMore: isSearchFetching,
   };
 
   const handleSearchChange = (value: string) => {
@@ -76,7 +89,7 @@ export default function ProductSearchPage() {
   };
 
   const handleShowRoute = (depot: ProductDepotInfo) => {
-    if (!depot.latitude || !depot.longitude) {
+    if (!coordsOf(depot)) {
       setUiError('Mağaza konumu bulunamadı.');
       return;
     }
@@ -172,13 +185,14 @@ export default function ProductSearchPage() {
               Canlı Ürün Fiyat Arama
             </CardTitle>
             <p className="text-xs font-semibold text-[#70372D]">
-              Marketlerde satılan ürünlerin adını yazın; fiyat ve stok alternatifleri anında listelensin
+              Ürün adını yazın. Seçili şubelerdeki tüm sonuçlar sayfa sayfa yüklenir.
             </p>
           </CardHeader>
           <CardContent className="pt-6 space-y-4">
             <div className="relative">
               <SearchInput
                 value={searchQuery}
+                onFocus={() => setIsDropdownOpen(searchQuery.length >= SEARCH.MIN_QUERY_LENGTH)}
                 onChange={handleSearchChange}
                 onClear={handleClearSearch}
                 isLoading={isProductsLoading}
@@ -190,6 +204,7 @@ export default function ProductSearchPage() {
                 isLoading={isProductsLoading}
                 error={productsError?.message}
               />
+              {productsError && <Button type="button" onClick={() => { setIsDropdownOpen(true); void retrySearch(); }}>Aramayı yeniden dene</Button>}
 
               {productsError && (
                 <SearchErrorDisplay error={productsError.message} />
@@ -197,6 +212,7 @@ export default function ProductSearchPage() {
 
               <ProductDropdown
                 products={products}
+                isLoading={isSearchFetching}
                 query={searchQuery}
                 isOpen={isDropdownOpen}
                 onClose={() => setIsDropdownOpen(false)}
@@ -212,6 +228,12 @@ export default function ProductSearchPage() {
         {optimization && (
           <ShoppingCartSummary
             optimization={optimization}
+            mode={mode}
+            onModeChange={setMode}
+            onQuantityChange={updateQuantity}
+            onRefreshPrices={refreshPrices}
+            isRefreshing={isRefreshing}
+            refreshMessage={refreshMessage}
             onViewRoute={handleViewMultiRoute}
             onViewSingleRoute={handleShowRoute}
             onClearCart={clearCart}
@@ -227,6 +249,7 @@ export default function ProductSearchPage() {
           <RouteModal
             isOpen={showSingleMap}
             selectedStore={selectedStore}
+            totalCost={optimization?.totalCost}
             routeInfo={routeInfo}
             searchSettings={searchSettings}
             onClose={handleCloseMap}

@@ -5,11 +5,13 @@ import Image from 'next/image';
 import { Package, Store, Ruler, Search, Plus, Check } from 'lucide-react';
 import { Product } from '@/types';
 import { cn, getMarketLogo } from '@/lib/utils';
+import { findOptimalDepot } from '@/lib/shoppingUtils';
 import { generateKey } from '@/lib/stringUtils';
 import { Button } from '@/components/ui/button';
 
 interface ProductDropdownProps {
   products: Product[];
+  isLoading?: boolean;
   query: string;
   isOpen: boolean;
   onClose: () => void;
@@ -21,6 +23,7 @@ interface ProductDropdownProps {
 
 export function ProductDropdown({
   products,
+  isLoading = false,
   query,
   isOpen,
   onClose,
@@ -76,7 +79,7 @@ export function ProductDropdown({
             ))}
           </div>
         ) : (
-          <NoResultsMessage query={query} />
+          isLoading ? <p role="status" className="p-4 text-sm">Ürünler yükleniyor…</p> : <NoResultsMessage query={query} />
         )}
       </div>
     </div>
@@ -92,18 +95,13 @@ interface ProductDropdownItemProps {
 
 function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }: ProductDropdownItemProps) {
   const depots = product.productDepotInfoList ?? [];
-  const cheapestDepot = depots.length
-    ? depots.reduce((min, depot) =>
-        parseFloat(depot.price.toString()) < parseFloat(min.price.toString())
-          ? depot
-          : min
-      )
-    : undefined;
-  
+  const cheapestDepot = findOptimalDepot(product, []);
+
   const cheapestLogoPath = cheapestDepot ? getMarketLogo(cheapestDepot.marketAdi || '') : null;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!cheapestDepot) return;
     onAddToCart?.(product);
     onProductAdded?.();
   };
@@ -148,7 +146,7 @@ function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }:
             <span>{depots.length} Mağaza</span>
           </div>
           <span className="font-bold bg-[#9BCEC1] text-[#0E2C24] px-2 py-0.5 rounded-md shadow-2xs text-xs">
-            ₺{cheapestDepot?.price || 'N/A'}
+            {cheapestDepot ? `₺${cheapestDepot.price}` : 'Fiyat yok'}
           </span>
           {cheapestDepot?.unitPrice && (
             <span className="text-[11px] text-[#70372D] font-medium">
@@ -184,6 +182,8 @@ function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }:
       <div className="flex items-center gap-2 shrink-0">
         {onAddToCart && (
           <Button
+            disabled={!cheapestDepot}
+            aria-label={`${product.title} ${isInCart ? "bir adet daha ekle" : "sepete ekle"}`}
             onClick={handleAddToCart}
             size="sm"
             variant={isInCart ? "secondary" : "default"}
@@ -197,7 +197,7 @@ function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }:
             {isInCart ? (
               <>
                 <Check className="h-3.5 w-3.5 mr-1 stroke-[3]" />
-                Sepette
+                +1 adet
               </>
             ) : (
               <>
@@ -237,7 +237,7 @@ function getUniqueProducts(products: Product[], query?: string): Product[] {
   
   const uniqueProducts = products
     .filter((product, index) => {
-      const key = generateKey(product.title, index);
+      const key = product.id || generateKey(product.title, index);
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

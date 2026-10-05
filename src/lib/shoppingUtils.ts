@@ -1,223 +1,195 @@
-import { STORAGE_KEYS, WALK_MINUTES_PER_KM } from '@/constants';
+import { WALK_MINUTES_PER_KM } from '@/constants';
 import { haversineKm } from '@/lib/geo';
-import { logger } from '@/lib/logger';
-import {
-  Product,
-  ProductDepotInfo,
-  CartItem,
-  OptimizedShopping,
-  MarketGroup,
-  RouteStep,
-} from '@/types';
+import type { Product, ProductDepotInfo, CartItem, OptimizedShopping, MarketGroup, RouteStep, ShoppingMode, ShoppingOption, Market } from '@/types';
 
-function getSavedMarketData(): {
-  selectedMarkets?: Array<{
-    name: string;
-    distance: number;
-    latitude: number;
-    longitude: number;
-  }>;
-} | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const saved = localStorage.getItem(STORAGE_KEYS.MARKET_SEARCH);
-    if (saved) return JSON.parse(saved);
-  } catch (error) {
-    logger.error('shopping', 'localStorage market data okunamadı', error);
-  }
-  return null;
+export function depotKey(depot: ProductDepotInfo): string {
+  // Şube kimliği olmayan kayıtları zincir adıyla birleştirme.
+  return depot.depotId || depot.id || `${depot.marketAdi}:${depot.depotName}:${depot.latitude ?? '?'}:${depot.longitude ?? '?'}`;
 }
 
-function coordsOf(depot: ProductDepotInfo): { lat: number; lon: number } | null {
-  const lat = depot.latitude;
-  const lon = depot.longitude;
-  if (
-    typeof lat !== 'number' ||
-    typeof lon !== 'number' ||
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lon)
-  ) {
-    return null;
-  }
+export function validPrice(value: unknown): number | null {
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  if (typeof value === 'string' && !value.trim()) return null;
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+export function itemQuantity(item: CartItem): number {
+  return typeof item.quantity === 'number' && Number.isInteger(item.quantity) && item.quantity > 0
+    ? item.quantity : 1;
+}
+
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export function coordsOf(depot: { latitude?: number; longitude?: number }): { lat: number; lon: number } | null {
+  const { latitude: lat, longitude: lon } = depot;
+  if (typeof lat !== 'number' || typeof lon !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lon)
+    || Math.abs(lat) > 90 || Math.abs(lon) > 180 || (lat === 0 && lon === 0)) return null;
   return { lat, lon };
 }
 
-/** En ucuz depo; eşit fiyatta sepetteki marketleri tercih et. */
-export function findOptimalDepot(
-  product: Product,
-  existingCartItems: CartItem[]
-): ProductDepotInfo | null {
-  const depots = product.productDepotInfoList;
-  if (!Array.isArray(depots) || depots.length === 0) {
-    return null;
-  }
-
-  const minPrice = Math.min(...depots.map((d) => Number(d.price) || Infinity));
-  if (!Number.isFinite(minPrice)) return null;
-
-  const cheapestDepots = depots.filter((d) => Number(d.price) === minPrice);
-  if (cheapestDepots.length === 1) return cheapestDepots[0];
-
-  const existingMarkets = new Set(
-    existingCartItems.map((item) => item.selectedDepot.marketAdi)
-  );
-
-  for (const depot of cheapestDepots) {
-    if (existingMarkets.has(depot.marketAdi)) return depot;
-  }
-
-  return cheapestDepots[0] ?? null;
+export function findOptimalDepot(product: Product, existingCartItems: CartItem[]): ProductDepotInfo | null {
+  const valid = (product.productDepotInfoList ?? []).filter(d => validPrice(d.price) !== null);
+  if (!valid.length) return null;
+  const min = Math.min(...valid.map(d => Number(d.price)));
+  const cheapest = valid.filter(d => Number(d.price) === min);
+  const existing = new Set(existingCartItems.map(item => depotKey(item.selectedDepot)));
+  return cheapest.find(d => existing.has(depotKey(d))) ?? cheapest[0];
 }
 
 export function cheapestDepotPrice(product: Product): number | null {
-  const depots = product.productDepotInfoList;
-  if (!depots?.length) return null;
-  const prices = depots.map((d) => Number(d.price)).filter(Number.isFinite);
-  if (!prices.length) return null;
-  return Math.min(...prices);
-}
-
-export function maxDepotPrice(product: Product): number | null {
-  const depots = product.productDepotInfoList;
-  if (!depots?.length) return null;
-  const prices = depots.map((d) => Number(d.price)).filter(Number.isFinite);
-  if (!prices.length) return null;
-  return Math.max(...prices);
+  const prices = (product.productDepotInfoList ?? []).map(d => validPrice(d.price)).filter((p): p is number => p !== null);
+  return prices.length ? Math.min(...prices) : null;
 }
 
 export function groupItemsByMarket(cartItems: CartItem[]): MarketGroup[] {
-  const marketMap = new Map<string, MarketGroup>();
-
-  cartItems.forEach((item) => {
-    const marketName = item.selectedDepot.marketAdi || 'Bilinmeyen market';
-
-    if (!marketMap.has(marketName)) {
-      marketMap.set(marketName, {
-        marketName,
-        depotInfo: item.selectedDepot,
-        items: [],
-        subtotal: 0,
-      });
-    }
-
-    const group = marketMap.get(marketName)!;
+  const groups = new Map<string, MarketGroup>();
+  for (const item of cartItems) {
+    const key = depotKey(item.selectedDepot);
+    if (!groups.has(key)) groups.set(key, {
+      depotKey: key, marketName: item.selectedDepot.marketAdi || 'Bilinmeyen market',
+      depotInfo: item.selectedDepot, items: [], subtotal: 0,
+    });
+    const group = groups.get(key)!;
+    // Aynı şubenin başka bir ürününde koordinat varsa onu kullan.
+    if (!coordsOf(group.depotInfo) && coordsOf(item.selectedDepot)) group.depotInfo = item.selectedDepot;
     group.items.push(item);
-    group.subtotal += Number(item.selectedDepot.price) || 0;
-  });
-
-  return Array.from(marketMap.values());
+    group.subtotal = roundMoney(group.subtotal + (validPrice(item.selectedDepot.price) ?? 0) * itemQuantity(item));
+  }
+  return [...groups.values()];
 }
 
-/**
- * En yakın komşu (nearest-neighbor) rota.
- * userLat/userLon'dan başlar; her adımda mevcut konuma en yakın marketi seçer.
- */
-export function optimizeRoute(
-  userLat: number,
-  userLon: number,
-  marketGroups: MarketGroup[]
-): RouteStep[] {
-  if (marketGroups.length === 0) return [];
-
+/** Yaklaşık durak sırası; eksik koordinat için sahte durak üretmez. */
+export function optimizeRoute(userLat: number, userLon: number, groups: MarketGroup[]): RouteStep[] {
+  if (!coordsOf({ latitude: userLat, longitude: userLon })) return [];
+  const unvisited = groups.filter(group => coordsOf(group.depotInfo));
   const route: RouteStep[] = [];
-  const unvisited = [...marketGroups];
-  let curLat = userLat;
-  let curLon = userLon;
-  let stepNumber = 1;
-
-  while (unvisited.length > 0) {
-    let nearestIndex = 0;
-    let minDistance = Infinity;
-
+  let lat = userLat;
+  let lon = userLon;
+  while (unvisited.length) {
+    let nearest = 0;
+    let distance = Infinity;
     unvisited.forEach((group, index) => {
-      const c = coordsOf(group.depotInfo);
-      if (!c) return;
-      const d = haversineKm(curLat, curLon, c.lat, c.lon);
-      if (d < minDistance) {
-        minDistance = d;
-        nearestIndex = index;
-      }
+      const c = coordsOf(group.depotInfo)!;
+      const d = haversineKm(lat, lon, c.lat, c.lon);
+      if (d < distance) { nearest = index; distance = d; }
     });
-
-    const nearest = unvisited[nearestIndex];
-    const c = coordsOf(nearest.depotInfo);
-    const lat = c?.lat ?? 0;
-    const lon = c?.lon ?? 0;
-    const distance =
-      c && Number.isFinite(minDistance) && minDistance !== Infinity
-        ? minDistance
-        : 0;
-
-    route.push({
-      marketName: nearest.marketName,
-      depot: nearest.depotInfo,
-      items: nearest.items,
-      stepNumber,
-      distanceFromPrevious: distance,
-      estimatedTime: Math.round(distance * WALK_MINUTES_PER_KM),
-      coordinates: { latitude: lat, longitude: lon },
-    });
-
-    curLat = lat;
-    curLon = lon;
-    unvisited.splice(nearestIndex, 1);
-    stepNumber++;
+    const group = unvisited.splice(nearest, 1)[0];
+    const c = coordsOf(group.depotInfo)!;
+    route.push({ marketName: group.marketName, depot: group.depotInfo, items: group.items,
+      stepNumber: route.length + 1, distanceFromPrevious: distance,
+      estimatedTime: distance * WALK_MINUTES_PER_KM,
+      coordinates: { latitude: c.lat, longitude: c.lon } });
+    lat = c.lat;
+    lon = c.lon;
   }
-
   return route;
 }
 
-/** En pahalı depo seçeneğine göre tahmini tasarruf */
-export function calculateTotalSavings(cartItems: CartItem[]): number {
-  return cartItems.reduce((sum, item) => {
-    const max = maxDepotPrice(item.product);
-    const selected = Number(item.selectedDepot.price);
-    if (max == null || !Number.isFinite(selected)) return sum;
-    return sum + Math.max(0, max - selected);
-  }, 0);
-}
-
-export function calculateOptimization(cartItems: CartItem[]): OptimizedShopping {
-  const marketGroups = groupItemsByMarket(cartItems);
-  const totalCost = marketGroups.reduce((sum, group) => sum + group.subtotal, 0);
-  const totalSavings = calculateTotalSavings(cartItems);
-
+function makeOption(mode: ShoppingMode, items: CartItem[], origin?: { latitude: number; longitude: number }): ShoppingOption {
+  const groups = groupItemsByMarket(items);
+  const route = origin ? optimizeRoute(origin.latitude, origin.longitude, groups) : [];
   return {
-    marketGroups,
-    totalCost,
-    marketCount: marketGroups.length,
-    totalSavings,
+    mode, items, feasible: true, marketCount: groups.length,
+    totalCost: roundMoney(groups.reduce((sum, g) => sum + g.subtotal, 0)),
+    estimatedWalkMinutes: route.length === groups.length && groups.length > 0
+      ? route.reduce((sum, step) => sum + (step.estimatedTime ?? 0), 0) : undefined,
   };
 }
 
-export function addDistanceToMarketGroups(
-  marketGroups: MarketGroup[],
-  userLat?: number,
-  userLon?: number
-): MarketGroup[] {
-  const marketData = getSavedMarketData();
+function isBetter(candidate: ShoppingOption, best?: ShoppingOption): boolean {
+  if (!best) return true;
+  if (candidate.totalCost !== best.totalCost) return candidate.totalCost < best.totalCost;
+  if (candidate.marketCount !== best.marketCount) return candidate.marketCount < best.marketCount;
+  return (candidate.estimatedWalkMinutes ?? Infinity) < (best.estimatedWalkMinutes ?? Infinity);
+}
 
-  return marketGroups.map((group) => {
-    const c = coordsOf(group.depotInfo);
-    let distance = 0;
-
-    if (
-      c &&
-      typeof userLat === 'number' &&
-      typeof userLon === 'number' &&
-      Number.isFinite(userLat) &&
-      Number.isFinite(userLon)
-    ) {
-      distance = haversineKm(userLat, userLon, c.lat, c.lon);
-    } else if (marketData?.selectedMarkets) {
-      const match = marketData.selectedMarkets.find(
-        (m) =>
-          m.name?.toLowerCase().includes(group.marketName.toLowerCase()) ||
-          group.marketName.toLowerCase().includes(m.name?.toLowerCase() || '')
-      );
-      distance = match?.distance || 0;
+/** Tek ve iki şube seçeneklerinde bütün şube kombinasyonlarını karşılaştırır. */
+export function buildShoppingOptions(items: CartItem[], origin?: { latitude: number; longitude: number }): ShoppingOption[] {
+  const depotMaps = items.map(item => {
+    const map = new Map<string, ProductDepotInfo>();
+    for (const d of item.product.productDepotInfoList ?? []) {
+      const price = validPrice(d.price);
+      if (price === null) continue;
+      const key = depotKey(d);
+      if (!map.has(key) || price < Number(map.get(key)!.price)) map.set(key, d);
     }
-
-    return { ...group, distance };
+    return map;
   });
+  const keys = [...new Set(depotMaps.flatMap(map => [...map.keys()]))].sort();
+  const impossible = (mode: ShoppingMode, reason: string): ShoppingOption => ({
+    mode, feasible: false, reason, items: [], totalCost: 0, marketCount: 0,
+  });
+  if (!items.length || depotMaps.some(map => !map.size)) {
+    return (['single', 'two', 'cheapest'] as const).map(mode => impossible(mode, 'Bazı ürünlerde geçerli fiyat bulunamadı.'));
+  }
+  const candidate = (mode: ShoppingMode, a: string, b?: string): ShoppingOption | undefined => {
+    const chosen: CartItem[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const first = depotMaps[i].get(a);
+      const second = b ? depotMaps[i].get(b) : undefined;
+      const d = first && second ? (Number(first.price) <= Number(second.price) ? first : second) : first ?? second;
+      if (!d) return undefined;
+      chosen.push({ ...items[i], quantity: itemQuantity(items[i]), selectedDepot: d });
+    }
+    return makeOption(mode, chosen, origin);
+  };
+  let single: ShoppingOption | undefined;
+  let two: ShoppingOption | undefined;
+  for (const key of keys) {
+    const option = candidate('single', key);
+    if (option && isBetter(option, single)) single = option;
+  }
+  if (single) two = { ...single, mode: 'two' };
+  for (let a = 0; a < keys.length; a++) {
+    for (let b = a + 1; b < keys.length; b++) {
+      const option = candidate('two', keys[a], keys[b]);
+      if (option && isBetter(option, two)) two = option;
+    }
+  }
+  const cheapestItems: CartItem[] = [];
+  for (const item of items) {
+    cheapestItems.push({ ...item, quantity: itemQuantity(item), selectedDepot: findOptimalDepot(item.product, cheapestItems)! });
+  }
+  const cheapest = makeOption('cheapest', cheapestItems, origin);
+  // Aynı minimum toplamı sağlayan tek/iki şube varsa daha az durak kullan.
+  const cheapestWithFewestStops = two && two.totalCost === cheapest.totalCost && isBetter(two, cheapest)
+    ? { ...two, mode: 'cheapest' as const } : cheapest;
+  return [
+    single ?? impossible('single', 'Seçili şubelerin hiçbiri tüm ürünleri karşılamıyor.'),
+    two ?? impossible('two', 'Bu sepet seçili şubelerin en fazla ikisiyle tamamlanamıyor.'),
+    cheapestWithFewestStops,
+  ];
+}
+
+export function calculateOptimization(items: CartItem[], mode: ShoppingMode = 'cheapest',
+  origin?: { latitude: number; longitude: number }): OptimizedShopping {
+  const options = buildShoppingOptions(items, origin);
+  const selected = options.find(option => option.mode === mode && option.feasible) ?? options[2];
+  const single = options[0];
+  const displayedItems = selected.feasible ? selected.items : items.flatMap(item => {
+    const depot = findOptimalDepot(item.product, []);
+    return depot ? [{ ...item, selectedDepot: depot }] : [];
+  });
+  const dates = items.map(item => item.product.priceCheckedAt).filter((date): date is string => !!date && Number.isFinite(Date.parse(date)));
+  return {
+    totalQuantity: items.reduce((sum, item) => sum + itemQuantity(item), 0),
+    unavailableProducts: items.filter(item => cheapestDepotPrice(item.product) === null).map(item => item.product),
+    marketGroups: groupItemsByMarket(displayedItems), totalCost: selected.totalCost, marketCount: selected.marketCount,
+    mode: selected.mode, options, singleStoreCost: single.feasible ? single.totalCost : undefined,
+    totalSavings: single.feasible ? roundMoney(Math.max(0, single.totalCost - selected.totalCost)) : undefined,
+    extraWalkMinutes: single.feasible && single.estimatedWalkMinutes !== undefined && selected.estimatedWalkMinutes !== undefined
+      ? selected.estimatedWalkMinutes - single.estimatedWalkMinutes : undefined,
+    oldestPriceCheck: dates.length ? dates.sort((a, b) => Date.parse(a) - Date.parse(b))[0] : undefined,
+    hasUnknownPriceChecks: dates.length !== items.length,
+  };
+}
+
+export function enrichProductDepots(product: Product, markets: Market[]): Product {
+  return { ...product, productDepotInfoList: (product.productDepotInfoList ?? []).map(depot => {
+    const match = markets.find(m => m.id === depotKey(depot));
+    return match && !coordsOf(depot) ? { ...depot, latitude: match.latitude, longitude: match.longitude } : depot;
+  }) };
 }

@@ -5,6 +5,7 @@ import { RouteStep, SearchSettings } from '@/types';
 import { getMarketLogo } from '@/lib/utils';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
+import { itemQuantity } from '@/lib/shoppingUtils';
 
 const DynamicMap = dynamic(() => import('@/components/DynamicMap.jsx'), {
   ssr: false,
@@ -32,15 +33,15 @@ export function MultiStoreRouteModal({
 }: MultiStoreRouteModalProps) {
   if (!isOpen || !routeSteps || routeSteps.length === 0) return null;
 
-  const totalDistance = realRouteDistance || routeSteps.reduce((sum, step) => sum + (step.distanceFromPrevious || 0), 0);
-  const totalTime = realRouteTime || routeSteps.reduce((sum, step) => sum + (step.estimatedTime || 0), 0);
+  const totalDistance = realRouteDistance ?? routeSteps.reduce((sum, step) => sum + (step.distanceFromPrevious || 0), 0);
+  const totalTime = realRouteTime ?? routeSteps.reduce((sum, step) => sum + (step.estimatedTime || 0), 0);
   const totalCost = routeSteps.reduce(
-    (sum, step) => sum + step.items.reduce((itemSum, item) => itemSum + item.selectedDepot.price, 0), 
+    (sum, step) => sum + step.items.reduce((itemSum, item) => itemSum + Number(item.selectedDepot.price) * itemQuantity(item), 0),
     0
   );
 
   return (
-    <div className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#2D1E12]/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-[#FFEBD3] border-[#F7A898] shadow-2xl rounded-3xl">
         <CardHeader className="pb-3 border-b border-[#F7A898]/50 bg-[#FFECE8]">
           <CardTitle className="flex items-center justify-between">
@@ -48,9 +49,10 @@ export function MultiStoreRouteModal({
               <div className="p-2 rounded-xl bg-[#9BCEC1] text-[#0E2C24]">
                 <Navigation className="h-5 w-5 stroke-[2.5]" />
               </div>
-              <span className="text-[#2D1E12] font-bold font-heading text-lg">Optimum Çoklu Mağaza Rotası</span>
+              <span className="text-[#2D1E12] font-bold font-heading text-lg">Çoklu Mağaza Rotası</span>
             </div>
             <Button 
+              aria-label="Rotayı kapat"
               onClick={onClose}
               variant="ghost"
               size="sm"
@@ -63,7 +65,8 @@ export function MultiStoreRouteModal({
 
         <CardContent className="space-y-4 p-6 max-h-[calc(90vh-7rem)] overflow-y-auto">
           {/* Route Summary */}
-          <div className="grid grid-cols-4 gap-3 p-4 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl">
+          <p className="text-xs">{realRouteTime !== undefined ? 'Gösterilen süre araç rotasına aittir.' : 'Mesafe kuş uçuşu, süre yaklaşık yürüyüş hesabıdır.'} Durak sırası yaklaşık belirlenir; eve dönüş ve alışveriş süresi dahil değildir.</p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl">
             <div className="text-center p-2 rounded-xl bg-[#FFEBD3]">
               <div className="text-lg font-bold font-heading text-[#2D1E12]">{routeSteps.length}</div>
               <div className="text-xs font-semibold text-[#70372D]">Toplam Durak</div>
@@ -106,7 +109,6 @@ export function MultiStoreRouteModal({
               
               <div className="h-[400px] rounded-2xl overflow-hidden border border-[#F7A898]/70 shadow-sm">
                 <DynamicMap
-                  center={[searchSettings.latitude, searchSettings.longitude]}
                   searchSettings={searchSettings}
                   destinations={routeSteps.map(step => ({
                     latitude: step.coordinates.latitude,
@@ -132,7 +134,7 @@ interface RouteStepCardProps {
 
 function RouteStepCard({ step }: RouteStepCardProps) {
   const marketLogo = getMarketLogo(step.marketName);
-  const stepTotal = step.items.reduce((sum, item) => sum + item.selectedDepot.price, 0);
+  const stepTotal = step.items.reduce((sum, item) => sum + Number(item.selectedDepot.price) * itemQuantity(item), 0);
 
   return (
     <Card className="p-4 bg-[#FFECE8] border-[#F7A898]/70 shadow-2xs rounded-2xl space-y-3">
@@ -205,7 +207,7 @@ function RouteStepCard({ step }: RouteStepCardProps) {
                 )}
               </div>
             </div>
-            <span className="font-bold text-[#2D1E12] shrink-0">₺{item.selectedDepot.price}</span>
+            <span className="font-bold text-[#2D1E12] shrink-0">{itemQuantity(item)} adet · ₺{(Number(item.selectedDepot.price) * itemQuantity(item)).toFixed(2)}</span>
           </div>
         ))}
       </div>

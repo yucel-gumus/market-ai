@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  ACCEPT_LANGUAGE,
   CACHE_HEADERS,
   DEFAULTS,
   DISTANCE,
   MARKET_API_PATHS,
+  MARKET_ORIGIN,
+  MARKET_REFERER,
   TIMEOUTS_MS,
   UPSTREAM_ERROR_DETAIL_MAX,
   USER_AGENT,
@@ -11,21 +14,9 @@ import {
 import { getMarketApiUrl, isProduction } from '@/lib/env';
 import { logger } from '@/lib/logger';
 
-export type MarketProductSearchBody = {
-  keywords?: string;
-  pages?: number;
-  size?: number;
-  latitude?: number;
-  longitude?: number;
-  distance?: number;
-  depots?: string[];
-  menuCategory?: boolean;
-};
-
-export type MarketApiPath =
-  | typeof MARKET_API_PATHS.SEARCH
-  | typeof MARKET_API_PATHS.SEARCH_BY_CATEGORIES
-  | typeof MARKET_API_PATHS.NEAREST;
+export type MarketProductSearchBody = Partial<import('@/types').ProductSearchRequest> & { identities?: string[]; identityType?: string };
+export type MarketApiPath = typeof MARKET_API_PATHS[keyof typeof MARKET_API_PATHS];
+export const MARKET_FILTER_FIELDS = ['menu_category', 'main_category', 'sub_category', 'market_names', 'brand', 'refined_quantity_unit', 'refined_volume_weight', 'offer_price', 'offer_discount'] as const;
 
 /** JSON body'nin plain object olup olmadığını doğrular (null/array/primitive reddedilir) */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -39,14 +30,14 @@ export function validateLatLngDistance(body: {
 }): string | null {
   const { latitude, longitude, distance } = body;
 
-  if (typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
+  if (!Number.isFinite(latitude) || typeof latitude !== 'number' || latitude < -90 || latitude > 90) {
     return 'Enlem -90 ile 90 arasında bir sayı olmalıdır';
   }
-  if (typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
+  if (!Number.isFinite(longitude) || typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
     return 'Boylam -180 ile 180 arasında bir sayı olmalıdır';
   }
   if (
-    typeof distance !== 'number' ||
+    !Number.isFinite(distance) || typeof distance !== 'number' ||
     distance < DISTANCE.MIN_KM ||
     distance > DISTANCE.MAX_KM
   ) {
@@ -60,9 +51,16 @@ export function validateMarketProductSearchBody(
 ): string | null {
   const geoError = validateLatLngDistance(body);
   if (geoError) return geoError;
-  if (!Array.isArray(body.depots)) {
+  if (!Array.isArray(body.depots) || !body.depots.length || body.depots.length > 1000 || body.depots.some(d => typeof d !== 'string' || !d.trim() || d.length > 200)) {
     return 'depots bir dizi olmalıdır';
   }
+  if (body.pages !== undefined && (!Number.isSafeInteger(body.pages) || body.pages < 0)) return 'pages sıfır veya pozitif tam sayı olmalıdır';
+  if (body.size !== undefined && (!Number.isInteger(body.size) || body.size < 1 || body.size > DEFAULTS.MAX_PAGE_SIZE)) return `size 1 ile ${DEFAULTS.MAX_PAGE_SIZE} arasında tam sayı olmalıdır`;
+  for (const field of MARKET_FILTER_FIELDS) {
+    const values = body[field];
+    if (values !== undefined && (!Array.isArray(values) || values.length > 100 || values.some(v => typeof v !== 'string' || !v.trim() || v.length > 200))) return `${field} geçerli metinlerden oluşan bir dizi olmalıdır`;
+  }
+  if (body.order && (!['lowest_price', 'offer_unit_price'].includes(body.order.name) || !['asc', 'desc'].includes(body.order.type))) return 'Geçersiz sıralama';
   return null;
 }
 
@@ -73,7 +71,8 @@ type CallMarketApiResult =
 export async function callMarketApi(
   path: MarketApiPath,
   body: Record<string, unknown>,
-  timeoutMs: number = TIMEOUTS_MS.MARKET_API
+  timeoutMs: number = TIMEOUTS_MS.MARKET_API,
+  method: 'GET' | 'POST' = 'POST'
 ): Promise<CallMarketApiResult> {
   const apiBaseUrl = getMarketApiUrl();
   if (!apiBaseUrl) {
@@ -87,18 +86,23 @@ export async function callMarketApi(
     };
   }
 
-  const apiUrl = `${apiBaseUrl.replace(/\/$/, '')}/${path}`;
+  const apiRoot = apiBaseUrl.replace(/\/$/, '').replace(/\/v\d+$/, '');
+  const apiUrl = `${apiRoot}/${path}`;
 
   try {
     const response = await fetch(apiUrl, {
-      method: 'POST',
+      method,
       headers: {
         Accept: 'application/json',
+        'Accept-Language': ACCEPT_LANGUAGE,
         'Content-Type': 'application/json',
         'User-Agent': USER_AGENT,
+        Referer: MARKET_REFERER,
+        Origin: MARKET_ORIGIN,
       },
-      body: JSON.stringify(body),
+      body: method === 'POST' ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(timeoutMs),
+      cache: 'no-store',
     });
 
     if (!response.ok) {
@@ -158,7 +162,8 @@ export async function proxyMarketApiPost(
   const result = await callMarketApi(path, body, TIMEOUTS_MS.MARKET_API);
   if (!result.ok) return result.response;
 
-  const res = NextResponse.json(result.data);
+  const res = NextResponse.json(isPlainObject(result.data)
+    ? { ...result.data, checkedAt: new Date().toISOString() } : result.data);
   res.headers.set('Cache-Control', CACHE_HEADERS.SHORT);
   return res;
 }
@@ -166,8 +171,7 @@ export async function proxyMarketApiPost(
 /** search-products ve search-by-categories için ortak POST handler */
 export async function handleMarketProductSearchRoute(
   request: NextRequest,
-  path: typeof MARKET_API_PATHS.SEARCH | typeof MARKET_API_PATHS.SEARCH_BY_CATEGORIES,
-  options: { includeMenuCategory?: boolean } = {}
+  path: typeof MARKET_API_PATHS.SEARCH | typeof MARKET_API_PATHS.SEARCH_BY_CATEGORIES | typeof MARKET_API_PATHS.LIST_SYNC
 ): Promise<NextResponse> {
   try {
     let raw: unknown;
@@ -190,11 +194,14 @@ export async function handleMarketProductSearchRoute(
 
     const body = raw as unknown as MarketProductSearchBody;
 
-    if (!body.keywords || String(body.keywords).trim().length < 1) {
-      return NextResponse.json(
-        { success: false, error: 'keywords gerekli' },
-        { status: 400 }
-      );
+    const hasKeywords = typeof body.keywords === 'string' && body.keywords.trim().length > 0 && body.keywords.length <= 500;
+    const hasCategories = ['menu_category', 'main_category', 'sub_category'].some(field => Array.isArray(raw[field]) && (raw[field] as unknown[]).length > 0);
+    if (path === MARKET_API_PATHS.LIST_SYNC) {
+      if (body.identityType !== 'id' || !Array.isArray(body.identities) || !body.identities.length || body.identities.length > 100 || body.identities.some(id => typeof id !== 'string' || !id.trim() || id.length > 100)) {
+        return NextResponse.json({ success: false, error: 'Geçerli ürün kimlikleri gerekli' }, { status: 400 });
+      }
+    } else if ((path === MARKET_API_PATHS.SEARCH && !hasKeywords) || (path === MARKET_API_PATHS.SEARCH_BY_CATEGORIES && !hasCategories)) {
+      return NextResponse.json({ success: false, error: 'Geçerli arama kelimesi veya kategori gerekli' }, { status: 400 });
     }
 
     const validationError = validateMarketProductSearchBody(body);
@@ -206,7 +213,7 @@ export async function handleMarketProductSearchRoute(
     }
 
     const payload: Record<string, unknown> = {
-      keywords: String(body.keywords).trim(),
+      ...(hasKeywords ? { keywords: body.keywords!.trim() } : {}),
       pages: typeof body.pages === 'number' ? body.pages : DEFAULTS.PAGE,
       size: typeof body.size === 'number' ? body.size : DEFAULTS.PAGE_SIZE,
       latitude: body.latitude,
@@ -215,10 +222,9 @@ export async function handleMarketProductSearchRoute(
       depots: body.depots,
     };
 
-    if (options.includeMenuCategory) {
-      payload.menuCategory =
-        typeof body.menuCategory === 'boolean' ? body.menuCategory : false;
-    }
+    for (const field of MARKET_FILTER_FIELDS) if (body[field] !== undefined) payload[field] = body[field];
+    if (body.order) payload.order = body.order;
+    if (path === MARKET_API_PATHS.LIST_SYNC) { payload.identities = body.identities; payload.identityType = 'id'; }
 
     return proxyMarketApiPost(path, payload);
   } catch (error: unknown) {
