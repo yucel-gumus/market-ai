@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { RouteStep, SearchSettings } from '@/types';
 import { getMarketLogo } from '@/lib/utils';
 import { useModalA11y } from '@/lib/useModalA11y';
+import { formatBranchName } from '@/lib/stringUtils';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import { itemQuantity } from '@/lib/shoppingUtils';
@@ -180,7 +181,7 @@ function RouteStepCard({ step, leg, hideEstimate }: RouteStepCardProps) {
           )}
           <div className="min-w-0 flex-1">
             <div className="font-bold text-sm text-[#2D1E12] font-heading truncate">
-              {step.depot.depotName}
+              {formatBranchName(step.depot.depotName)}
             </div>
             <div className="text-xs text-[#70372D] flex items-center gap-1.5 font-medium">
               {distance !== undefined && distance > 0 && (

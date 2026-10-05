@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { coordsOf, itemQuantity, validPrice } from '@/lib/shoppingUtils';
 import type { OptimizedShopping, MarketGroup, ProductDepotInfo, ShoppingMode } from '@/types';
 import { getMarketLogo } from '@/lib/utils';
+import { formatBranchName } from '@/lib/stringUtils';
 import Image from 'next/image';
 
 interface Props {
@@ -117,7 +118,7 @@ function MarketGroupCard({ group, onRemoveItem, onQuantityChange }: {
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div className="flex items-center gap-2 min-w-0">
         {logo && <Image src={logo} alt={group.marketName} width={48} height={24} unoptimized />}
-        <span className="text-sm font-bold break-words">{group.depotInfo.depotName || group.marketName}</span>
+        <span className="text-sm font-bold break-words">{formatBranchName(group.depotInfo.depotName || group.marketName)}</span>
       </div>
       <span className="text-sm font-bold text-[#0E2C24]">{money(group.subtotal)}</span>
     </div>
