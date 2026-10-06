@@ -39,6 +39,19 @@ export function findOptimalDepot(product: Product, existingCartItems: CartItem[]
   return cheapest.find(d => existing.has(depotKey(d))) ?? cheapest[0];
 }
 
+/**
+ * Sepete eklerken ürünü belirli bir şubeye sabitlemeyi dener.
+ * Sabitlenen şube geçerli fiyat sunmuyorsa mevcut en-ucuz/sepette-olan
+ * tercih davranışına (findOptimalDepot) düşer.
+ */
+export function pickDepot(product: Product, preferredDepotId: string | undefined, existingCartItems: CartItem[]): ProductDepotInfo | null {
+  if (preferredDepotId) {
+    const preferred = (product.productDepotInfoList ?? []).find(d => d.depotId === preferredDepotId);
+    if (preferred && validPrice(preferred.price) !== null) return preferred;
+  }
+  return findOptimalDepot(product, existingCartItems);
+}
+
 export function cheapestDepotPrice(product: Product): number | null {
   const prices = (product.productDepotInfoList ?? []).map(d => validPrice(d.price)).filter((p): p is number => p !== null);
   return prices.length ? Math.min(...prices) : null;

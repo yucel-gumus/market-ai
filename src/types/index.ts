@@ -203,6 +203,41 @@ export interface SearchSettings {
   selectedMarkets: Market[];
 }
 
+export interface ConsolidationBranch {
+  depotId: string;
+  depotName?: string;
+  marketAdi?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface ConsolidationItem {
+  ingredient: string;
+  product: Product;
+  depotId: string;
+  price: number;
+}
+
+export interface ConsolidationSwitch {
+  ingredient: string;
+  fromTitle?: string;
+  toTitle?: string;
+  delta: number;
+}
+
+export interface ConsolidationPlan {
+  branches: ConsolidationBranch[];
+  total: number;
+  delta: number;
+  items: ConsolidationItem[];
+  switches: ConsolidationSwitch[];
+}
+
+export interface ConsolidationPlans {
+  single?: ConsolidationPlan | null;
+  two?: ConsolidationPlan | null;
+}
+
 export interface SearchStats {
   totalResults: number;
   loadedResults?: number;

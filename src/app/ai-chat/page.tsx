@@ -90,12 +90,13 @@ export default function AiChatPage() {
     addToCart,
     addManyToCart,
     removeFromCart,
+    setItemDepot,
     clearCart,
     generateRoute,
     marketCount,
   } = useShoppingCart(searchSettings);
 
-  const pipeline = useRecipePipeline({ addManyToCart });
+  const pipeline = useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot });
 
   const [recipeResult, setRecipeResult] = useState<RecipeResult | null>(null);
   const [isCalorieLoading, setIsCalorieLoading] = useState(false);
@@ -778,6 +779,8 @@ export default function AiChatPage() {
                     onClearCart={() => { clearCart(); pipeline.clearSelections(); }}
                     onRemoveItem={id => { removeFromCart(id); pipeline.forgetProduct(id); }}
                     recipeProductIds={pipeline.recipeAddedIds}
+                    plans={pipeline.plans}
+                    onApplyPlan={pipeline.applyPlan}
                   />
                 )}
 
@@ -789,7 +792,7 @@ export default function AiChatPage() {
                         <li key={match.ingredient} className="rounded-xl bg-[#FFECE8] p-3 text-sm space-y-1">
                           <p className="font-bold">{match.ingredient}: {match.product?.title}</p>
                           {match.requiredAmount && <p className="text-xs">Tarif tahmini: {match.requiredAmount.amount} {match.requiredAmount.unit} · {match.packageQuantity ? `${match.packageQuantity} paket` : 'Paket miktarını ve adedi kontrol edin'}</p>}
-                          <p className="text-xs text-[#70372D]">{match.source === 'manual' ? 'Sizin seçiminiz' : 'Kensai önerisi'}{match.reasoning ? ` · ${match.reasoning}` : ''}</p>
+                          <p className="text-xs text-[#70372D]">{match.source === 'manual' ? 'Sizin seçiminiz' : match.source === 'plan' ? 'Tek mağaza planı' : 'Kensai önerisi'}{match.reasoning ? ` · ${match.reasoning}` : ''}</p>
                         </li>
                       ))}
                     </ul>

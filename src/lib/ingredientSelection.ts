@@ -7,7 +7,7 @@ export type IngredientMatch = {
   ingredient: string;
   product?: Product;
   candidates: Product[];
-  source?: 'ai' | 'manual';
+  source?: 'ai' | 'manual' | 'plan';
   reasoning?: string;
   requiredAmount?: import('@/lib/recipeQuantity').IngredientRequirement;
   packageQuantity?: number;

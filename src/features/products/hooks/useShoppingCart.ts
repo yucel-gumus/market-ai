@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { STORAGE_KEYS } from '@/constants';
-import { findOptimalDepot, calculateOptimization, optimizeRoute, enrichProductDepots, itemQuantity } from '@/lib/shoppingUtils';
+import { findOptimalDepot, pickDepot, calculateOptimization, optimizeRoute, enrichProductDepots, itemQuantity, validPrice } from '@/lib/shoppingUtils';
 import { restoreCart } from '@/lib/cartStorage';
 import { logger } from '@/lib/logger';
 import { ProductService } from '@/services/productService';
@@ -43,12 +43,13 @@ export function useShoppingCart(settings?: SearchSettings | null) {
     ? calculateOptimization(enrichedItems, mode, settings ?? undefined) : null,
   [enrichedItems, mode, settings, isHydrated]);
 
-  const addProducts = useCallback((products: Product[], increment: boolean, quantities?: Record<string, number>) => {
+  const addProducts = useCallback((products: Product[], increment: boolean, quantities?: Record<string, number>, depotOverrides?: Record<string, string>) => {
     setRefreshMessage(null);
     setCartItems(prev => {
       const next = [...prev];
       for (const product of products) {
-        const depot = findOptimalDepot(product, next);
+        // depotOverrides ile sabitlenen şube öncelikli; geçersizse en-ucuz davranışa düşülür.
+        const depot = pickDepot(product, depotOverrides?.[product.id], next);
         if (!depot) continue;
         const index = next.findIndex(item => item.product.id === product.id);
         const requested = quantities?.[product.id];
@@ -62,8 +63,16 @@ export function useShoppingCart(settings?: SearchSettings | null) {
     });
   }, []);
   const addToCart = useCallback((product: Product) => addProducts([product], true), [addProducts]);
-  const addManyToCart = useCallback((products: Product[], quantities?: Record<string, number>) => addProducts(products, false, quantities), [addProducts]);
+  const addManyToCart = useCallback((products: Product[], quantities?: Record<string, number>, depotOverrides?: Record<string, string>) => addProducts(products, false, quantities, depotOverrides), [addProducts]);
   const removeFromCart = useCallback((id: string) => setCartItems(prev => prev.filter(item => item.product.id !== id)), []);
+  const setItemDepot = useCallback((productId: string, depotId: string) => {
+    setCartItems(prev => prev.map(item => {
+      if (item.product.id !== productId) return item;
+      // Ürünün depo listesinden geçerli fiyatlı eşleşme bulunamazsa hiçbir şey yapma.
+      const depot = (item.product.productDepotInfoList ?? []).find(d => d.depotId === depotId && validPrice(d.price) !== null);
+      return depot ? { ...item, selectedDepot: depot } : item;
+    }));
+  }, []);
   const updateQuantity = useCallback((id: string, quantity: number) => {
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 999) return;
     setCartItems(prev => prev.map(item => item.product.id === id ? { ...item, quantity } : item));
@@ -99,7 +108,7 @@ export function useShoppingCart(settings?: SearchSettings | null) {
 
   return {
     cartItems, optimization, mode, setMode, isHydrated, addToCart, addManyToCart, removeFromCart,
-    updateQuantity, clearCart, generateRoute, refreshPrices, isRefreshing, refreshMessage,
+    updateQuantity, clearCart, generateRoute, refreshPrices, isRefreshing, refreshMessage, setItemDepot,
     isProductInCart: (id: string) => cartItems.some(item => item.product.id === id),
     getCartItemByProductId: (id: string) => cartItems.find(item => item.product.id === id),
     marketCount: optimization?.marketCount ?? 0, totalCost: optimization?.totalCost ?? 0,

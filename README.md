@@ -1,171 +1,225 @@
-# 🛒 Market AI - Smart Grocery Price Optimizer & Recipe Planner
+# 🛒 Market AI
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Next.js 15](https://img.shields.io/badge/Next.js_15-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![TanStack Query](https://img.shields.io/badge/TanStack_Query-FF4154?style=for-the-badge&logo=react-query&logoColor=white)](https://tanstack.com/query)
-[![Leaflet](https://img.shields.io/badge/Leaflet-GIS_Map-199900?style=for-the-badge&logo=leaflet&logoColor=white)](https://leafletjs.com/)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-Recipe_%26_Price_AI-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
-[![Portfolio](https://img.shields.io/badge/Portfolio-yucelgumus.dev-2563EB?style=for-the-badge&logo=google-chrome&logoColor=white)](https://www.yucelgumus.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vercel](https://img.shields.io/badge/Vercel-Production-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://market-ai-coral.vercel.app)
+[![Google Cloud Run](https://img.shields.io/badge/Cloud_Run-python--backend-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)](https://cloud.google.com/run)
 
-> Farklı market zincirleri arasındaki ürün fiyatlarını karşılaştıran, en ekonomik sepeti oluşturan, **Google Gemini AI** ile kullanıcı hedeflerine göre yemek tarifleri & kalori hesaplamaları yapan ve en uygun market alışveriş rotasını haritada optimize eden akıllı alışveriş asistanı.
-
----
-
-## 🌟 Öne Çıkan Özellikler
-
-- 💰 **Çoklu Market Fiyat Karşılaştırması:** Aynı ürünün seçili şubelerde market servisinden alınan fiyat kayıtlarını kıyaslama. Fiyat kontrol zamanı gösterilir; mağazanın güncel fiyatı veya stok durumu garanti edilmez.
-- 🍳 **Yapay Zeka Destekli Tarif & Kalori Planlayıcı (`AI Recipe Pipeline`):** *"4 kişilik bütçe dostu ve 500 kalorilik akşam yemeği"* gibi isteklerle anında malzeme listesi ve tarif üretimi.
-- 🛍️ **Sepet Tercihleri:** Aynı ürün ve adetlerle tek şube, en fazla iki şube veya ürün toplamı en düşük seçeneklerini karşılaştırma. Tek/iki şubede tüm şube kombinasyonları değerlendirilir; ürünler mağaza sınırı için listeden düşürülmez.
-- 🗺️ **Çoklu Mağaza Rota Planlama:** Şube kimliği üzerinden ayrı duraklar oluşturma, yaklaşık durak sırası ve haritada araç rotası gösterme. Eksik koordinat varsa tam alışveriş rotası engellenir; en kısa rota garantisi verilmez.
-- 📦 **Adet ve Fiyat Kontrolü:** Paket/adet düzenleme, eski sepetlerin taşınması, fiyatları yeniden kontrol etme ve en ucuz tam tek şube sepetine göre maliyet farkını gösterme.
-- ✅ **Doğrulanmış Malzeme Seçimi:** AI yanıtları gerçek aday ürünlerle malzeme bazında eşleştirilir. Hatalı veya eksik seçimlerde rastgele ürün eklemek yerine kullanıcıdan aday ürün seçmesi istenir. Yeni tarif mevcut sepeti silmez.
-- 📍 **Konum & Mesafe Filtreleme:** Kullanıcının mevcut adresine veya seçtiği konuma göre en yakın mağazaları filtreleme.
+`marketfiyati.org.tr` verisiyle çalışan tarif → malzeme → ürün eşleştirme ve market karşılaştırma
+uygulaması.
 
 ---
 
-## 🏗️ Mimari & Modül Hiyerarşisi
+## Ne yapar
 
-```mermaid
-graph TD
-    User([Kullanıcı]) --> Search[Ürün & Adres Arama]
-    User --> AIChat[AI Tarif & Menü Asistanı]
-    AIChat --> RecipeRoute[/api/ai-page/recipe-with-calories/]
-    RecipeRoute --> Gemini[Google Gemini AI]
-    Search --> MarketAPI[Market & Ürün Arama API'leri]
-    MarketAPI --> Cart[Akıllı Sepet Yöneticisi]
-    Cart --> RouteModal[Çoklu Mağaza Rota Optimizasyonu]
-    RouteModal --> LeafletMap[İnteraktif Leaflet Haritası]
+Market AI, kullanıcıdan bir tarif isteği (ör. *"4 kişilik bütçe dostu akşam yemeği"*) alır; **FastAPI**
+tabanlı Python backend (`python_backend`) üzerinde çalışan bir LLM ile tarifi malzeme listesine
+böler, her malzeme için `marketfiyati.org.tr` kataloğundan **gerçek ürün adayları** toplar ve seçilen
+şubelerdeki fiyatlara göre en ucuz sepeti/kombinasyonu hesaplar. Serbest ürün arama, adres ve market
+arama, çoklu mağaza için yaklaşık araç rotası (OSRM) hesaplama özellikleri de vardır. Fiyat ve stok
+bilgisi **yalnızca üst kaynak API'den** gelir; uygulama kendi fiyat verisini üretmez.
+
+---
+
+## Mimari
+
+```
+        Tarayıcı (React 19 / Next.js 15 App Router)
+                     │
+                     ▼
+   Next.js sunucu-taraflı proxy rotaları (/src/app/api/**)
+        │                                    │
+        │ (market / adres arama)             │ (LLM işlemleri)
+        ▼                                    ▼
+  marketfiyati.org.tr API'leri        FastAPI backend (Cloud Run, europe-west3)
+                                             │
+                                             ▼
+                                 Google Gemini + ürün seçim orkestrasyonu
 ```
 
-| Özellik Grubu | İlgili Dizin / Dosya | Açıklama |
-| :--- | :--- | :--- |
-| **Ürün & Sepet** | `src/features/products/` | Ürün arama, filtreler, sepet özeti ve açılır menüler |
-| **Market & Rota** | `src/features/markets/` | Market kartları, mesafe seçimi ve harita markerları |
-| **Yapay Zeka** | `src/features/ai-chat/` | Gemini tarif hattı ve kalori hesaplayıcı |
-| **Harita** | `src/components/MarketMap.js` | Dinamik Leaflet market ve rota haritası |
+- **Next.js App Router + Vercel proxy rotaları → FastAPI/Cloud Run.** Tarayıcı, `marketfiyati.org.tr`
+  API'sine ve Python backend'e **doğrudan** gitmez. Tüm çağrılar Next.js sunucu rotalarından geçer
+  (`src/app/api/**`), böylece API anahtarları istemci paketine sızmaz.
+  - Market/adres proxy'leri: `src/lib/marketApiProxy.ts`
+  - LLM proxy'leri: `src/lib/backendProxy.ts` (backend'e `X-API-Key` başlığıyla gider)
+  - İstemciye bakan ürün arama/sayfalama: `src/services/productService.ts`
+- **Sunucu-taraflı ürün seçimi.** Ürün arama, sayfalama ve aday seçimi istemcide değil sunucuda
+  yürür; istemci yalnızca doğrulanmış sonuçları gösterir.
+- **"Agent yargılar, kod doğrular".** LLM (agent) uygun ürünü adaylar arasından seçer; ancak seçimin
+  gerçekten aday listesinde bulunduğu, kimlik/başlık/malzeme ilişkisinin tutarlı olduğu **kod
+  tarafında** doğrulanır. Model hata verdiğinde ucuz ürün otomatik seçilmez; kullanıcıya aday ürünler
+  sunulur. (Denetim noktaları: `src/lib/ingredientSelection.ts`,
+  `python_backend/app/services/market_orchestrator.py`.)
 
 ---
 
-## 🚀 Hızlı Başlangıç
-
-### Gereksinimler
-- **Node.js**: v18.18+ veya v20+
-- Market ve adres servislerine erişim
-- Ayrı Python AI backend'i ve bu backend'e erişim anahtarı (tarif özellikleri için)
-
-### Kurulum
+## Kurulum ve yerel çalıştırma
 
 ```bash
-git clone https://github.com/yucel-gumus/market-ai.git
-cd market-ai
-
 npm install
 ```
 
-### Ortam Değişkenleri (`.env.local`)
+Kök dizinde `.env.local` oluşturun (`.env.example` şablonundan türetilebilir):
 
-```env
+```dotenv
+# Yerel Python backend
+PYTHON_API_URL=http://localhost:8000
+PYTHON_API_KEY=<backend'in istemci API anahtarı>
+
+# Market ve adres arama (sunucu-taraflı)
 MARKET_API_URL=https://api.marketfiyati.org.tr/api
 ADDRESS_API_URL=https://harita.marketfiyati.org.tr/Service/api/v1
-PYTHON_API_URL=http://localhost:8000
-PYTHON_API_KEY=your_python_backend_client_api_key
+
+# Rota servisi (opsiyonel; yalnızca demo sunucudan farklı bir örnek için)
+# NEXT_PUBLIC_OSRM_BASE_URL=https://osrm.sizin-alaniniz/route/v1
 ```
 
-Bu depo Next.js arayüzünü ve proxy endpoint'lerini içerir. Python backend ayrı çalıştırılır; model sağlayıcısı ve onun anahtarları backend tarafında yapılandırılır. Next.js tek başına `GEMINI_API_KEY` ile tarif üretemez.
-
-### Çalıştırma
+Ardından geliştirme sunucusunu başlatın:
 
 ```bash
 npm run dev
+# http://localhost:3000
 ```
 
-Uygulamaya tarayıcınızdan `http://localhost:3000` adresinden erişebilirsiniz.
+Bu depo yalnızca Next.js arayüzünü ve proxy rotalarını içerir. Python backend ayrı çalıştırılır;
+model sağlayıcısı ve anahtarları backend tarafında yapılandırılır. Next.js tek başına tarif üretemez.
 
 ---
 
-## Sepet Hesaplamalarının Sınırları
+## Ortam değişkenleri
 
-- Şube gruplaması `depotId` ile yapılır; aynı zincirin farklı şubeleri ayrı duraktır.
-- Maliyet, birim paket fiyatı × adet üzerinden hesaplanır. Tarif gramajından paket sayısı otomatik türetilmez; kişi sayısı tarif isteğine aktarılır ve paket adedi kullanıcı tarafından düzenlenir.
-- Tasarruf, aynı ürün ve adetlerin tamamını karşılayan en ucuz tek şubenin maliyetiyle karşılaştırılır. Böyle bir şube yoksa tasarruf rakamı gösterilmez.
-- Ürün toplamı yol, yakıt ve zaman maliyetini içermez. Seçeneklerde kuş uçuşu mesafeden yaklaşık yürüyüş süresi gösterilir; harita servisi yanıt verdiğinde rota modalinde araç mesafesi ve süresi gösterilir. Eve dönüş ve alışveriş süresi dahil değildir.
-- Fiyat kontrol zamanı market API yanıtının alındığı zamandır; kaynağın fiyat güncelleme tarihi değildir. Kontrol zamanı bilinmeyen veya 30 dakikadan eski kayıtlar belirtilir. Yenileme başarısızsa önceki kayıt ve zamanı korunur.
-- Konum veya şube seçimi değiştiğinde önceki şubelerin fiyatları karşılaştırmaya katılmaz. Seçili şubede fiyatı olmayan ürünler görünür kalır ve yeniden kontrol edilmesi istenir.
+Tüm değişkenler **koddan** doğrulanmıştır (okuma noktaları tabloda).
 
-## Doğrulama
+| Değişken | Zorunlu | Nerede okunur | Açıklama |
+|---|---|---|---|
+| `PYTHON_API_URL` | Evet (LLM özellikleri için) | `src/lib/env.ts` → `getPythonApiUrl` | FastAPI backend taban URL'i. Sunucu-taraflı; istemciye gitmez. `NEXT_PUBLIC_PYTHON_API_URL` yoksa fallback olarak kullanılır. Yerel: `http://localhost:8000`. |
+| `PYTHON_API_KEY` | Evet | `src/lib/env.ts` → `getPythonApiKey` | Backend'e `X-API-Key` başlığı olarak gönderilen istemci anahtarı. Yalnızca sunucu-taraflı okunur; **asla** `NEXT_PUBLIC_` önekiyle tanımlanmamalıdır. |
+| `MARKET_API_URL` | Evet (arama için) | `src/lib/env.ts` → `getMarketApiUrl` | Market/ürün API taban adresi. `NEXT_PUBLIC_MARKET_API_URL` fallback'i vardır. |
+| `ADDRESS_API_URL` | Evet (adres/market arama için) | `src/lib/env.ts` → `getAddressApiUrl` | Adres ve harita API taban adresi. `NEXT_PUBLIC_ADDRESS_API_URL` fallback'i vardır. |
+| `NEXT_PUBLIC_OSRM_BASE_URL` | Hayır | `src/constants/index.ts` (`LEAFLET.OSRM_SERVICE`) | Araç rotası hesaplayan OSRM servis adresi. **Varsayılan**, OSRM'in genel demo sunucusudur (`https://router.project-osrm.org/route/v1`) ve **üretim trafiği için uygun değildir / garanti vermez.** Üretimde kendi OSRM örneğinizi veya ücretli bir servisi bu değişkenle bağlayın. Demo sunucu kullanılırken konsola uyarı yazılır (`src/components/DynamicMap.jsx`). |
+| `NEXT_PUBLIC_MARKET_API_URL` | Hayır | `src/lib/env.ts` (fallback) | Geriye dönük uyumluluk alias'ı; yalnızca `MARKET_API_URL` tanımsızsa kullanılır. |
+| `NEXT_PUBLIC_ADDRESS_API_URL` | Hayır | `src/lib/env.ts` (fallback) | Geriye dönük uyumluluk alias'ı; yalnızca `ADDRESS_API_URL` tanımsızsa kullanılır. |
+| `NEXT_PUBLIC_PYTHON_API_URL` | Hayır | `src/lib/env.ts` (fallback) | Geriye dönük uyumluluk alias'ı; yalnızca `PYTHON_API_URL` tanımsızsa kullanılır. İstemci paketine gömülür (URL; anahtar değil). |
+| `MARKET_LIVE_TEST` | Hayır | `src/services/marketApi.live.test.ts` | `1` yapıldığında canlı market API'sine karşı testleri açar (`npm run test:live`). |
+| `MARKET_LIVE_BASE_URL` | Hayır | `src/services/marketApi.live.test.ts` | Canlı testlerin hedef taban URL'ini geçersiz kılar. |
+| `UI_TEST_BASE_URL` | Hayır | `scripts/verify-shopping-ui.cjs` | UI doğrulama betiğinin hedef adresini geçersiz kılar (varsayılan `http://localhost:3016`; canlıya karşı çalıştırmak için dağıtım adresine ayarlayın). |
+| `PLAYWRIGHT_CHROMIUM_EXECUTABLE` | Hayır | `scripts/verify-shopping-ui.cjs` | Chromium yürütülebilir dosyasının yolu (özel kurulumlar için). |
+| `NODE_ENV` | Hayır | `src/lib/env.ts` → `isProduction` | Üretimde hata mesajlarının ayrıntısını kısıtlar. |
 
-```bash
-npm test
-npm run lint
-npx tsc --noEmit --incremental false
-npm run build
-```
-
-Tarayıcı regresyon testlerini çalıştırmak için:
-
-```bash
-npx playwright install chromium
-npm run test:ui
-```
-
-`test:ui` yerel geliştirme sunucusunu 3016 portunda başlatır, bağımsız bir tarayıcı oturumu kullanır ve test sonunda kapatır. Market, AI ve rota yanıtları test verileriyle sağlanır; gerçek backend veya ücretli model çağrısı gerekmez. Testler mağaza tercihlerini, adetlerin kalıcılığını, fiyat yenilemesini, başarısız yenilemede kayıtların korunmasını, AI hata durumunda malzeme başına manuel seçimi, rota callback'lerini, değişen şube seçimini ve 390 px mobil taşmayı kapsar. Ekran görüntüleri `test-results/` altına yazılır.
-
-Hazır çalışan sunucu için `UI_TEST_BASE_URL`, kurulu tarayıcı için `PLAYWRIGHT_CHROMIUM_EXECUTABLE` ortam değişkenleri kullanılabilir.
+> `.env*` dosyaları `.gitignore` ile hariç tutulur (`.env.example` hariç); gerçek sırlar repoya girmez.
 
 ---
 
-## 📂 Proje Dizin Yapısı
+## Komutlar
+
+`package.json`'dan doğrulanmıştır:
+
+| Komut | Ne yapar |
+|---|---|
+| `npm run dev` | Geliştirme sunucusu (`next dev --turbopack`). |
+| `npm run build` | Üretim derlemesi (`next build`). |
+| `npm run start` | Derlenmiş uygulamayı sunar (`next start`). |
+| `npm run lint` | ESLint denetimi (`next lint`). |
+| `npm run test` | Birim testleri (Vitest, tek çalıştırma). Kapsam: `src/**/*.{test,spec}.{ts,tsx}` (`vitest.config.ts`). |
+| `npm run test:watch` | Vitest'i izleme modunda çalıştırır. |
+| `npm run test:ui` | `scripts/verify-shopping-ui.cjs` — Playwright ile uçtan uca arayüz doğrulaması (gerektiğinde dev sunucusunu 3016 portunda kendi başlatır; hedef `UI_TEST_BASE_URL` ile değiştirilir). |
+| `npm run test:live` | `MARKET_LIVE_TEST=1` ile canlı market API'sine karşı testler (`src/services/marketApi.live.test.ts`). |
+| `npm run test:backend` | `scripts/verify-backend-contract.cjs` — Python backend'in ürün seçim sözleşmesini doğrular (`PYTHON_API_URL` + `PYTHON_API_KEY` gerekir). |
+
+Tarayıcı regresyon testleri için bir kez `npx playwright install chromium` çalıştırın.
+
+**E2E hakkında not:** Bu depoda ayrı bir `playwright.config.*` dosyası veya dosya-tabanlı
+`npx playwright test` kurgusu **yoktur**. Uçtan uca arayüz doğrulaması, Playwright'ı kullanan
+`npm run test:ui` betiğiyle yapılır; canlıya karşı çalıştırmak için `UI_TEST_BASE_URL` değişkenini
+dağıtım adresine ayarlayın. Birim testleri `vitest.config.ts` ile `src/**` altından toplanır.
+
+---
+
+## Yayına alma
+
+### Frontend — Vercel
+
+`git push` sonrası Vercel otomatik olarak production dağıtımını yapar (`market-ai-coral.vercel.app`).
+Ortam değişkenleri Vercel proje ayarlarından tanımlanır.
+
+### Backend — Cloud Run
+
+`python_backend` deposu için:
+
+```bash
+gcloud run deploy python-backend \
+  --source . \
+  --region europe-west3 \
+  --project agenticai-500618
+```
+
+> Frontend ve backend birlikte güncellenmelidir. Backend'deki seçim sözleşmesi değiştiyse önce yeni
+> backend sürümünü yayımlayıp `npm run test:backend` ile doğrulayın, sonra frontend'i dağıtın.
+
+---
+
+## Bilinen sınırlar
+
+- **Ürün önbelleği boş sonuçları önbelleklemez.** Tarif malzemesi için yapılan hatırlama (recall)
+  aramasında bir sorgu **boş** dönerse sonuç geçerli kabul edilmez; sıradaki sorgu (sadeleştirilmiş
+  ad → katalog eş adı → kategori araması) denenir. Boş bir sonuç "nihai cevap" olarak kilitlenmez
+  (`python_backend/app/services/market_orchestrator.py` → `recall`).
+- **Tarif adı ≠ katalog adı.** Kullanıcının/LLM'in ürettiği malzeme adı, `marketfiyati.org.tr`
+  kataloğundaki ürün adıyla birebir örtüşmeyebilir. Eşleştirme katmanlı kurallarla yapılır (tam ad →
+  sadeleştirilmiş ad → katalog eş adı → kategori) ve her katmanda kabul ölçütü her zaman **tam ad**
+  uygunluğudur; kurallar `app/services/ingredient_rules.json` içinde tutulur.
+- **Fiyat/stok yalnızca üst kaynak API'den.** Uygulama fiyat veya stok tahmini üretmez; mağazanın
+  güncel fiyatını/stok durumunu garanti etmez. Fiyatların kontrol zamanı kullanıcıya gösterilir.
+- **Rota servisi demo sunucu uyarısı.** `NEXT_PUBLIC_OSRM_BASE_URL` ayarlanmazsa OSRM'in **demo**
+  sunucusu kullanılır; bu sunucu üretim trafiği için uygun değildir ve garanti vermez.
+
+---
+
+## Mimari kararı notları
+
+- **Arama + seçim sunucu tarafında.** Ürün arama, sayfalama ve aday seçimi Next.js API rotalarında
+  ve Python backend'de yürür; istemci yalnızca doğrulanmış sonucu görür. API anahtarları istemci
+  paketine sızmaz.
+- **Şube dışı ürün önerilir, ikame edilmez.** Seçili şubelerde bir malzeme bulunamazsa, aynı yarıçap
+  içindeki **başka bir şubede** varsa kullanıcıya "başka şubede var" olarak sunulur
+  (`status: "outside_branches"`); bu ürün sepete kendiliğinden eklenmez, kullanıcı onayı istenir.
+  Rastgele/ikame ürün eklenmez (`market_orchestrator.py`).
+- **Boş arama sonucu asla önbelleğe alınmaz.** Boş bir hatırlama sonucu geçerli cevap sayılmaz ve
+  sıradaki eşleştirme katmanı denenir; "bulunamadı" durumu yalnızca tüm katmanlar tükendiğinde
+  raporlanır.
+
+---
+
+## Proje dizin yapısı
 
 ```
 market-ai/
-├── package.json
-├── tailwind.config.ts
 ├── next.config.ts
+├── package.json
+├── vitest.config.ts
+├── scripts/                  # test:ui ve test:backend doğrulama betikleri
+├── docs/                     # yayın hazırlığı ve API denetim dokümanları
 └── src/
     ├── app/
-    │   ├── page.tsx                    # Ana sayfa
-    │   ├── product-search/             # Ürün arama sayfası
-    │   ├── ai-chat/                    # Yapay zeka tarif sayfası
-    │   └── api/                        # Market, ürün ve AI endpoint'leri
+    │   ├── page.tsx              # Ana sayfa
+    │   ├── product-search/       # Ürün arama sayfası
+    │   ├── ai-chat/              # AI tarif sayfası
+    │   └── api/                  # Market, ürün ve AI proxy rotaları
     ├── features/
-    │   ├── products/                   # Ürün özellikleri ve sepet kancaları
-    │   ├── markets/                    # Market filtreleri ve kartları
-    │   ├── address/                    # Adres arama ve konum ayrıştırma
-    │   └── ai-chat/                    # Gemini tarif akışı
-    ├── components/                     # Harita, Navbar ve temel UI bileşenleri
-    ├── lib/                            # Coğrafi hesaplamalar, proxy ve yardımcılar
-    └── store/                          # Global Zustand state'i
+    │   ├── products/             # Ürün arama, sepet ve rota özellikleri
+    │   ├── markets/              # Market filtreleri ve kartları
+    │   ├── address/              # Adres arama ve konum ayrıştırma
+    │   └── ai-chat/              # Tarif hattı
+    ├── components/               # Harita, Navbar ve temel UI bileşenleri
+    ├── lib/                      # Coğrafi hesaplamalar, proxy'ler ve yardımcılar
+    ├── services/                 # API istemcileri (productService, marketService)
+    └── store/                    # Global Zustand state'i
 ```
 
 ---
 
-## 📄 Lisans
-Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
+## Ek dokümantasyon
 
----
-
-## 👨‍💻 Geliştirici & İletişim
-
-**Yücel Gümüş** - Full Stack Developer
-
-- 🌐 **Web Sitesi / Portfolyo:** [yucelgumus.dev](https://www.yucelgumus.dev/)
-- 💼 **LinkedIn:** [linkedin.com/in/yucel-gumus](https://www.linkedin.com/in/yucel-gumus/)
-- 🐙 **GitHub:** [@yucel-gumus](https://github.com/yucel-gumus)
-
-<p align="left">
-  <a href="https://www.yucelgumus.dev/" target="_blank" rel="noopener noreferrer">
-    <img src="https://img.shields.io/badge/Developed%20by-Yücel%20Gümüş-blue?style=for-the-badge&logo=google-chrome&logoColor=white" alt="Yücel Gümüş Portfolio" />
-  </a>
-</p>
-
-## API sayfalaması ve güvenli tarif seçimi
-
-Ürün araması bütün sayfaları otomatik yükler; alınan ve toplam ürün sayısı gösterilir. Sayfa hatasında kısmi sonuç tamamlanmış gibi sunulmaz ve kaldığı yerden yeniden denenebilir. Sunucunun sayfa boyutunu düşürmesi ve aynı ürünün farklı sayfalarda farklı şube teklifleriyle görünmesi desteklenir.
-
-Tarif adayları güncel V3 kategori ağacı ve malzeme uygunluğu ile daraltılır. Fiyat, uygunluk kontrolünden sonra değerlendirilir. Python backend her malzemeyi kendi aday grubuyla işler; seçim ürün kimliğiyle doğrulanır. Model hatasında veya belirsiz seçimde otomatik ürün eklenmez. Backend ve frontend birlikte güncellenmelidir.
-
-- `npm run test:live`: çalışan uygulama üzerinden canlı Market Fiyatı sayfalama/kategori/kimlik eşitleme testi. Varsayılan adres localhost:3015; `MARKET_LIVE_BASE_URL` ile değiştirilebilir.
-- `npm run test:backend`: yapılandırılmış backend'in güvenli seçim sözleşmesini doğrular; model çağrısı yapmaz.
 - [Yayın hazırlığı ve sürüm bağımlılığı](docs/RELEASE_READINESS.md)
 - [API denetimi ve endpoint envanteri](docs/TUBITAK_API_AUDIT.md)

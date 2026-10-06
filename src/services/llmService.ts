@@ -50,6 +50,8 @@ export interface SelectProductsResponse {
   selections: SelectProductsSelection[];
   message?: string;
   summary?: SelectProductsSummary | null;
+  /** Backend'in malzeme başına alternatif ürün seçenekleriyle ürettiği konsolidasyon planları. */
+  plans?: import('@/types').ConsolidationPlans;
 }
 
 export interface RecipeWithCaloriesResponse {

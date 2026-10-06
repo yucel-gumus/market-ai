@@ -5,21 +5,28 @@ import { toErrorMessage } from '@/lib/errorUtils';
 import { LlmService } from '@/services/llmService';
 import { buildIngredientMatches, type IngredientMatch } from '@/lib/ingredientSelection';
 import { branchForProduct } from '@/lib/branchSelection';
+import { planCartChanges } from '@/lib/applyConsolidation';
 import { recipePackageQuantity, type IngredientRequirement } from '@/lib/recipeQuantity';
 import { normalizeString } from '@/lib/stringUtils';
 import { useAppStore } from '@/store/useAppStore';
-import type { Product } from '@/types';
+import type { ConsolidationPlan, ConsolidationPlans, Product } from '@/types';
 
 export type PipelineStep = 'input' | 'ingredients' | 'processing' | 'complete';
-interface Options { addManyToCart: (products: Product[], quantities?: Record<string, number>) => void }
+interface Options {
+  addManyToCart: (products: Product[], quantities?: Record<string, number>, depotOverrides?: Record<string, string>) => void;
+  removeFromCart: (id: string) => void;
+  setItemDepot: (productId: string, depotId: string) => void;
+}
 
-export function useRecipePipeline({ addManyToCart }: Options) {
+export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot }: Options) {
   const [foodName, setFoodName] = useState('');
   const [servings, setServings] = useState(4);
   const [currentStep, setCurrentStep] = useState<PipelineStep>('input');
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [requirements, setRequirements] = useState<IngredientRequirement[]>([]);
   const [matches, setMatches] = useState<IngredientMatch[]>([]);
+  // Sunucunun konsolidasyon planları (tek/iki şube): modlar bu planla gerçekten uygulanabilir olur.
+  const [plans, setPlans] = useState<ConsolidationPlans | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Kullanıcının bilinçli olarak listeden/sepetten çıkardığı malzemeler: bunlar
@@ -55,7 +62,7 @@ export function useRecipePipeline({ addManyToCart }: Options) {
 
   const resetForm = useCallback(() => {
     runRef.current++; abortRef.current?.abort();
-    setFoodName(''); setCurrentStep('input'); setIngredients([]); setRequirements([]); setMatches([]); setError(null); setIsLoading(false);
+    setFoodName(''); setCurrentStep('input'); setIngredients([]); setRequirements([]); setMatches([]); setPlans(null); setError(null); setIsLoading(false);
     setRemovedIngredients([]); setRecipeAddedIds([]);
     // Yeni tarif başlatmak mevcut alışveriş listesini silmez.
   }, []);
@@ -118,6 +125,7 @@ export function useRecipePipeline({ addManyToCart }: Options) {
         };
       });
       setMatches(resolved);
+      setPlans(response.plans ?? null);
       addManyToCart(
         resolved.flatMap(match => match.product ? [match.product] : []),
         Object.fromEntries(resolved.filter(m => m.product && m.packageQuantity).map(m => [m.product!.id, m.packageQuantity!]))
@@ -183,13 +191,48 @@ export function useRecipePipeline({ addManyToCart }: Options) {
     setMatches(prev => prev.map(match => match.product?.id === productId ? { ...match, product: undefined, source: undefined, reasoning: undefined } : match));
     setRecipeAddedIds(prev => prev.filter(id => id !== productId));
   }, [matches]);
+  /**
+   * Sunucunun konsolidasyon planını sepete uygular: farklı ürün seçilmişse ürünü değiştirir,
+   * aynı ürün başka şubedeyse şubeyi sabitler. Böylece "tek/iki mağaza" modları gerçekten çalışır
+   * (seçilen depo ancak ürün o şubede satılıyorsa geçerli olur).
+   */
+  const applyPlan = useCallback((plan: ConsolidationPlan) => {
+    const changes = planCartChanges(plan, matches.map(match => ({
+      ingredient: match.ingredient,
+      product: match.product,
+      quantity: match.packageQuantity ?? 1,
+    })));
+    for (const id of changes.removes) removeFromCart(id);
+    for (const update of changes.depotUpdates) setItemDepot(update.productId, update.depotId);
+    if (changes.adds.length) {
+      addManyToCart(
+        changes.adds.map(change => change.product),
+        Object.fromEntries(changes.adds.map(change => [change.product.id, change.quantity])),
+        Object.fromEntries(changes.adds.map(change => [change.product.id, change.depotId])),
+      );
+    }
+    for (const item of plan.items) {
+      setMatches(prev => prev.map(m => m.ingredient === item.ingredient ? { ...m, product: item.product, source: 'plan' } : m));
+    }
+    const applied = changes.productIds;
+    setRecipeAddedIds(prev => [...new Set([...prev.filter(id => !changes.removes.includes(id)), ...applied])]);
+    const switches = changes.switches.map(item => `${item.ingredient}: ${item.fromTitle ?? '—'} → ${item.toTitle ?? '—'}`);
+    const label = plan.branches.map(branch => branch.marketAdi || branch.depotName || branch.depotId).join(' + ');
+    const delta = `${plan.delta > 0 ? '+' : ''}₺${plan.delta.toFixed(2)}`;
+    const head = applied.length
+      ? `${label} planı uygulandı: ${applied.length} kalem, sepet farkı ${delta}.`
+      : 'Plan uygulanacak kalem bulunamadı.';
+    const detail = switches.length ? ` Değişen ürünler — ${switches.join('; ')}.` : '';
+    setError(`${head}${detail}`);
+  }, [matches, addManyToCart, removeFromCart, setItemDepot]);
+
   const clearSelections = useCallback(() => {
     setMatches(prev => prev.map(match => ({ ...match, product: undefined, source: undefined, reasoning: undefined })));
     setRecipeAddedIds([]);
   }, []);
 
   return {
-    forgetProduct, clearSelections,
+    forgetProduct, clearSelections, plans, applyPlan,
     foodName, setFoodName, servings, setServings, recipeRequest, currentStep, ingredients, setIngredients,
     matches, isLoading, error, setError, handleSubmit, confirmIngredients, removeIngredient, resetForm, chooseProduct,
     removedIngredients, recipeAddedIds,

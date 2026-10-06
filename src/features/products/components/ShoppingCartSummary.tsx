@@ -2,7 +2,7 @@ import { ShoppingCart, Package, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { coordsOf, itemQuantity, validPrice } from '@/lib/shoppingUtils';
-import type { OptimizedShopping, MarketGroup, ProductDepotInfo, ShoppingMode } from '@/types';
+import type { ConsolidationPlan, ConsolidationPlans, OptimizedShopping, MarketGroup, ProductDepotInfo, ShoppingMode } from '@/types';
 import { getMarketLogo } from '@/lib/utils';
 import { formatBranchName } from '@/lib/stringUtils';
 import Image from 'next/image';
@@ -21,6 +21,9 @@ interface Props {
   onRemoveItem: (id: string) => void;
   /** Bu tarif akışında sepete eklenen ürünlerin kimlikleri (mevcut sepetten ayırmak için). */
   recipeProductIds?: string[];
+  /** Sunucunun tek/iki şube planları: sepeti değiştirerek uygulanır (ürün ikamesi + şube sabitleme). */
+  plans?: ConsolidationPlans | null;
+  onApplyPlan?: (plan: ConsolidationPlan) => void;
 }
 
 const money = (amount: number) => new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(amount);
@@ -28,10 +31,13 @@ const labels: Record<ShoppingMode, string> = { single: 'Tek mağaza', two: 'En f
 const dateLabel = (date: string) => new Date(date).toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul', dateStyle: 'short', timeStyle: 'short' });
 
 export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuantityChange, onRefreshPrices,
-  isRefreshing, refreshMessage, onViewRoute, onViewSingleRoute, onClearCart, onRemoveItem, recipeProductIds = [] }: Props) {
+  isRefreshing, refreshMessage, onViewRoute, onViewSingleRoute, onClearCart, onRemoveItem, recipeProductIds = [],
+  plans = null, onApplyPlan }: Props) {
   const { marketGroups, totalCost, marketCount, options = [], singleStoreCost, totalSavings,
     extraWalkMinutes, oldestPriceCheck, hasUnknownPriceChecks, unavailableProducts = [] } = optimization;
   const count = optimization.totalQuantity ?? marketGroups.reduce((sum, group) => sum + group.items.reduce((n, item) => n + itemQuantity(item), 0), 0);
+  const planModes = (['single', 'two'] as const).filter(planMode => plans?.[planMode]
+    && !options.find(option => option.mode === planMode)?.feasible);
   const routeAvailable = !unavailableProducts.length && marketGroups.length > 0 && marketGroups.every(group => coordsOf(group.depotInfo));
   const stale = oldestPriceCheck && Date.now() - Date.parse(oldestPriceCheck) > 30 * 60 * 1000;
   // Tariften gelen kalemler ile kullanıcının önceden sepette olan kalemleri ayrı gösterilir;
@@ -83,7 +89,35 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
           <Stat title="En ucuz tek şube" value={singleStoreCost !== undefined ? money(singleStoreCost) : 'Tam sepet yok'} />
           <Stat title="Tek şubeye göre fark" value={totalSavings !== undefined ? money(totalSavings) : 'Hesaplanamadı'} />
         </dl>
-        {marketCount >= 3 && (
+        {planModes.map(planMode => {
+          const plan = plans![planMode]!;
+          const branchLabel = plan.branches.map(branch => branch.marketAdi || branch.depotName || branch.depotId).join(' + ');
+          const sign = plan.delta > 0 ? '+' : '−';
+          return (
+            <div key={planMode} role="status" className="rounded-xl border border-[#9BCEC1] bg-[#9BCEC1]/20 p-3 space-y-2">
+              <p className="text-sm font-bold text-[#0E2C24]">{labels[planMode]} planı hazır: {branchLabel} · {money(plan.total)}</p>
+              <p className="text-xs text-[#70372D]">
+                {plan.switches.length ? `${plan.switches.length} ürün değişir` : 'Ürünler aynı kalır, yalnızca şube sabitlenir'}
+                {' · '}mevcut seçime göre fark {sign}{money(Math.abs(plan.delta))}
+              </p>
+              {plan.switches.length > 0 && (
+                <ul className="space-y-0.5 text-xs text-[#70372D]">
+                  {plan.switches.map(item => (
+                    <li key={item.ingredient}>
+                      • {item.ingredient}: {item.fromTitle ?? '—'} → {item.toTitle ?? '—'} ({item.delta > 0 ? '+' : '−'}{money(Math.abs(item.delta))})
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {onApplyPlan && (
+                <Button type="button" size="sm" onClick={() => onApplyPlan(plan)}>
+                  Planı uygula ({plan.switches.length ? `${plan.switches.length} ürün değişir` : 'şube sabitlenir'})
+                </Button>
+              )}
+            </div>
+          );
+        })}
+        {marketCount >= 3 && !planModes.length && (
           <p className="text-xs text-[#70372D]">Bu sepet {marketCount} şubeye dağıldı. Daha az şubeyle alışveriş için Konum &amp; Marketler sayfasından market seçiminizi daraltabilirsiniz.</p>
         )}
         {extraWalkMinutes !== undefined && <p className="text-sm">Tek şubeye göre yaklaşık {Math.round(Math.abs(extraWalkMinutes))} dk {extraWalkMinutes >= 0 ? 'ek' : 'daha az'} yürüyüş.</p>}
