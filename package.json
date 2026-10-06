@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "test:ui": "node scripts/verify-shopping-ui.cjs",
     "test:live": "MARKET_LIVE_TEST=1 vitest run src/services/marketApi.live.test.ts",
-    "test:backend": "node scripts/verify-backend-contract.cjs"
+    "test:backend": "node scripts/verify-backend-contract.cjs",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.2",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
