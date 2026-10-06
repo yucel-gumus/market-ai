@@ -53,21 +53,31 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
   }, [filteredMarkets, hiddenMarkets]);
 
   const toggleBrand = (brand: MarketBrand) => {
-    const newSelectedBrands = new Set(selectedBrands);
-    if (newSelectedBrands.has(brand)) {
-      newSelectedBrands.delete(brand);
-    } else {
-      newSelectedBrands.add(brand);
+    // Fonksiyonel güncelleme: ardışık tıklamalar aynı render'ın kopyasından hesaplanıp
+    // birbirini ezmesin (marka kapatma/açma kaydı sessizce kaybolabiliyordu).
+    const wasSelected = selectedBrands.has(brand);
+    setSelectedBrands(prev => {
+      const next = new Set(prev);
+      if (next.has(brand)) {
+        next.delete(brand);
+      } else {
+        next.add(brand);
+      }
+      return next;
+    });
 
-      const newHiddenMarkets = new Set(hiddenMarkets);
-      markets.forEach(market => {
-        if (detectMarketBrand(market.name) === brand) {
-          newHiddenMarkets.delete(marketKey(market));
-        }
+    // Marka yeniden açılıyorsa şubeleri listede geri gelsin (daha önce tek tek gizlenmiş olabilir).
+    if (!wasSelected) {
+      setHiddenMarkets(prev => {
+        const next = new Set(prev);
+        markets.forEach(market => {
+          if (detectMarketBrand(market.name) === brand) {
+            next.delete(marketKey(market));
+          }
+        });
+        return next;
       });
-      setHiddenMarkets(newHiddenMarkets);
     }
-    setSelectedBrands(newSelectedBrands);
   };
 
   const toggleMarket = (market: Market) => {
