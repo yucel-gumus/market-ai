@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
@@ -184,12 +184,12 @@ export default function ProductSearchPage() {
         {/* Live Search Section */}
         <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl overflow-visible">
           <CardHeader className="pb-4 border-b border-[#F7A898]/40">
-            <CardTitle className="flex items-center gap-3 text-lg font-bold font-heading text-[#2D1E12]">
+            <h1 className="flex items-center gap-3 leading-snug font-bold font-heading text-lg text-[#2D1E12]">
               <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] shadow-2xs">
                 <Search className="h-5 w-5 stroke-[2.5]" />
               </div>
               Canlı Ürün Fiyat Arama
-            </CardTitle>
+            </h1>
             <p className="text-xs font-semibold text-[#70372D]">
               Ürün adını yazın. Seçili şubelerdeki tüm sonuçlar sayfa sayfa yüklenir.
             </p>
