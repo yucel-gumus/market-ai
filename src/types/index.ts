@@ -222,7 +222,8 @@ export interface ConsolidationSwitch {
   ingredient: string;
   fromTitle?: string;
   toTitle?: string;
-  delta: number;
+  /** Fark hesaplanamadıysa sunucu null gönderir. */
+  delta?: number | null;
 }
 
 export interface ConsolidationPlan {

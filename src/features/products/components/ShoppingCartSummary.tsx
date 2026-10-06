@@ -104,7 +104,8 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
                 <ul className="space-y-0.5 text-xs text-[#70372D]">
                   {plan.switches.map(item => (
                     <li key={item.ingredient}>
-                      • {item.ingredient}: {item.fromTitle ?? '—'} → {item.toTitle ?? '—'} ({item.delta > 0 ? '+' : '−'}{money(Math.abs(item.delta))})
+                      • {item.ingredient}: {item.fromTitle ?? '—'} → {item.toTitle ?? '—'}
+                      {typeof item.delta === 'number' && ` (${item.delta > 0 ? '+' : '−'}${money(Math.abs(item.delta))})`}
                     </li>
                   ))}
                 </ul>
