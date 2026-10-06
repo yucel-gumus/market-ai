@@ -1,5 +1,5 @@
 import { expect, test } from 'playwright/test';
-import { readStoreState, replaceAddress, seedSession, seedStaleSession } from './utils';
+import { readStoreState, replaceAddress, seedSession, seedStaleSession, selectFirstAddress } from './utils';
 
 const ADDRESS_PLACEHOLDER = 'Örn: Kızılcaşar Mahallesi, Gölbaşı, Ankara';
 
@@ -65,6 +65,47 @@ test.describe('Konum ve market seçimini güncelleme', () => {
       .poll(async () => (await readStoreState(page))?.marketSession, { timeout: 15_000 })
       .toBeNull();
     await expect(input).toHaveValue('');
+  });
+
+  test('marka filtresi seçimi dönüşte korunur', async ({ page }) => {
+    // Gerçek akış: adres seç → marka satırından yalnızca birini bırak → kaydet →
+    // ürün aramaya git → geri dön. Önceden dönüşte marka satırı "hepsi aktif" oluyordu.
+    await page.goto('/');
+    const picked = await selectFirstAddress(page, 'Kirazlıtepe Üsküdar');
+    expect(picked, 'adres önerisi seçilemedi').toBe(true);
+
+    const brandButtons = page.locator('[data-brand]');
+    await expect(brandButtons.first()).toBeVisible({ timeout: 25_000 });
+    const labels = await brandButtons.evaluateAll((els) =>
+      els.map((el) => el.getAttribute('data-brand') ?? ''),
+    );
+    test.skip(labels.length < 2, 'konumda tek marka var, filtre senaryosu kurulamadı');
+
+    const kept = labels[0];
+    for (const label of labels.slice(1)) {
+      await page.locator(`[data-brand="${label}"]`).click();
+    }
+    await expect(page.locator('[data-brand][aria-pressed="true"]')).toHaveCount(1);
+
+    const gitBtn = page.getByRole('button', { name: /Ürün Aramaya Git/ }).first();
+    const savedCount = Number((await gitBtn.innerText()).match(/\((\d+) Market\)/)?.[1]);
+    expect(savedCount).toBeGreaterThan(0);
+    await gitBtn.click();
+    await page.waitForURL(/\/product-search/, { timeout: 20_000 });
+
+    const store = await readStoreState(page);
+    const session = store?.marketSession as { selectedMarkets?: unknown[] } | null;
+    expect(session?.selectedMarkets?.length).toBe(savedCount);
+
+    // Geri dön: yalnızca bırakılan marka açık kalmalı, seçim "hepsi aktif"e dönmemeli.
+    await page.getByRole('link', { name: /Konum & Marketler/ }).click();
+    await expect(page.locator('[data-brand][aria-pressed="true"]')).toHaveCount(1, {
+      timeout: 25_000,
+    });
+    await expect(page.locator(`[data-brand="${kept}"]`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(
+      page.getByRole('button', { name: new RegExp(`Ürün Aramaya Git \\(${savedCount} Market\\)`) }),
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test('uyumsuz (eski) oturum ürün arama sayfasını beslemez', async ({ page }) => {

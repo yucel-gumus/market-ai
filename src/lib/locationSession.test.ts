@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { hiddenKeysForPreselection, isSameLocation, sessionMatchesSelection, settingsFromSession } from './locationSession';
-import { marketKey } from './marketUtils';
+import { brandsFromPreselectedMarkets, hiddenKeysForPreselection, isSameLocation, sessionMatchesSelection, settingsFromSession } from './locationSession';
+import { detectMarketBrand, marketKey } from './marketUtils';
 import type { Market, MarketSearchSession, ParsedAddress } from '@/types';
 
 const address: ParsedAddress = {
@@ -73,6 +73,26 @@ describe('sessionMatchesSelection', () => {
 
   it('oturum yoksa geçersizdir', () => {
     expect(sessionMatchesSelection(null, address, 5)).toBe(false);
+  });
+});
+
+describe('brandsFromPreselectedMarkets', () => {
+  it('seçili şubesi olan markaları döndürür', () => {
+    expect(brandsFromPreselectedMarkets(markets, ['b'], marketKey, detectMarketBrand)).toEqual(new Set(['a101']));
+  });
+
+  it('hiç kayıt yoksa null döner (varsayılan: tüm markalar açık)', () => {
+    expect(brandsFromPreselectedMarkets(markets, [], marketKey, detectMarketBrand)).toBeNull();
+  });
+
+  it('kayıtlı seçim listeyle örtüşmüyorsa null döner', () => {
+    expect(brandsFromPreselectedMarkets(markets, ['yok'], marketKey, detectMarketBrand)).toBeNull();
+  });
+
+  it('birden fazla marka seçiliyse hepsini döndürür', () => {
+    expect(brandsFromPreselectedMarkets(markets, ['a', 'b'], marketKey, detectMarketBrand)).toEqual(
+      new Set(['bim', 'a101']),
+    );
   });
 });
 

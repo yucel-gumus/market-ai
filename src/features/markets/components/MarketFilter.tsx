@@ -31,6 +31,8 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
                 type="button"
                 onClick={() => onToggleBrand(brand)}
                 aria-label={brand}
+                aria-pressed={isSelected}
+                data-brand={brand}
                 className={cn(
                   "flex items-center justify-center h-12 px-4 py-2 rounded-xl border transition-all duration-200 hover:scale-105 relative cursor-pointer min-w-[72px]",
                   isSelected

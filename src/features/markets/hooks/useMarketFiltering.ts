@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Market } from '@/types';
 import { detectMarketBrand, marketKey, type MarketBrand } from '@/lib/marketUtils';
-import { hiddenKeysForPreselection } from '@/lib/locationSession';
+import { brandsFromPreselectedMarkets, hiddenKeysForPreselection } from '@/lib/locationSession';
 
 /**
  * @param preselectedKeys Kayıtlı oturumdaki seçili şubelerin anahtarları. Verilirse
@@ -22,23 +22,24 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
     return Array.from(brands);
   }, [markets]);
 
-  useEffect(() => {
-    setSelectedBrands(new Set(uniqueBrands));
-  }, [uniqueBrands]);
-
-  // Kurulum imzası: aynı liste + aynı kayıtlı seçim için tekrar uygulanmaz; aksi halde
-  // react-query yeniden çektiğinde kullanıcının o an yaptığı değişiklikler ezilirdi.
+  // Marka satırı ve şube seçimi TEK imzayla kurulur: aynı liste + aynı kayıtlı seçim için
+  // tekrar uygulanmaz; aksi halde her yeniden çekmede/sayfaya dönüşte kullanıcının filtre
+  // seçimi "hepsi aktif" hâline sıfırlanırdı.
   const marketSignature = useMemo(() => markets.map(marketKey).join('|'), [markets]);
   const preselectionSignature = preselectedKeys ? [...preselectedKeys].sort().join('|') : '';
-  const appliedSignatureRef = useRef<string | null>(null);
+  const seedSignature = `${preselectionSignature}::${marketSignature}`;
+  const appliedSeedRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!preselectedKeys || markets.length === 0) return;
-    const signature = `${preselectionSignature}::${marketSignature}`;
-    if (appliedSignatureRef.current === signature) return;
-    appliedSignatureRef.current = signature;
-    setHiddenMarkets(hiddenKeysForPreselection(markets, preselectedKeys, marketKey));
-  }, [preselectedKeys, preselectionSignature, marketSignature, markets]);
+    if (markets.length === 0) return;
+    if (appliedSeedRef.current === seedSignature) return;
+    appliedSeedRef.current = seedSignature;
+
+    const preselected = preselectedKeys ?? [];
+    setHiddenMarkets(hiddenKeysForPreselection(markets, preselected, marketKey));
+    const brands = brandsFromPreselectedMarkets(markets, preselected, marketKey, detectMarketBrand);
+    setSelectedBrands(brands ?? new Set(uniqueBrands));
+  }, [markets, seedSignature, preselectedKeys, uniqueBrands]);
 
   const filteredMarkets = useMemo(() => {
     return markets.filter(market => {
@@ -97,7 +98,7 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
   const resetFilters = () => {
     setSelectedBrands(new Set(uniqueBrands));
     setHiddenMarkets(new Set());
-    appliedSignatureRef.current = null;
+    appliedSeedRef.current = null;
   };
 
   return {

@@ -51,6 +51,26 @@ export function hiddenKeysForPreselection(
 }
 
 /**
+ * Kayıtlı seçimden hangi markaların açık kalacağını türetir: seçili en az bir şubesi
+ * olan markalar. Örtüşme yoksa null döner (çağıran "tüm markalar açık" davranışına düşer).
+ * Aksi halde anasayfaya dönüşte marka satırı yeniden "hepsi aktif" olurdu.
+ */
+export function brandsFromPreselectedMarkets(
+  markets: Market[],
+  preselectedKeys: string[],
+  keyOf: (market: Market) => string,
+  brandOf: (marketName?: string | null) => string,
+): Set<string> | null {
+  if (!preselectedKeys.length) return null;
+  const preselected = new Set(preselectedKeys);
+  const brands = new Set<string>();
+  markets.forEach((market) => {
+    if (preselected.has(keyOf(market))) brands.add(brandOf(market.name));
+  });
+  return brands.size ? brands : null;
+}
+
+/**
  * Kayıtlı oturumdan arama ayarlarını türetir; oturum ekrandaki seçimle uyuşmuyorsa null.
  * null → arama yapılmaz, kullanıcı "önce adres ve market seçin" mesajını görür. Aksi halde
  * eski konumun şubeleriyle sessizce arama yapılırdı.
