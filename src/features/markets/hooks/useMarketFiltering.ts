@@ -1,10 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Market } from '@/types';
-import { detectMarketBrand, type MarketBrand } from '@/lib/marketUtils';
+import { detectMarketBrand, marketKey, type MarketBrand } from '@/lib/marketUtils';
+import { hiddenKeysForPreselection } from '@/lib/locationSession';
 
-export function useMarketFiltering(markets: Market[]) {
+/**
+ * @param preselectedKeys Kayıtlı oturumdaki seçili şubelerin anahtarları. Verilirse
+ *   liste yüklendiğinde seçim bu hâle kurulur (kullanıcı anasayfaya döndüğünde
+ *   seçiminin sıfırlanmaması, görünüp düzenlenebilmesi için).
+ */
+export function useMarketFiltering(markets: Market[], preselectedKeys?: string[] | null) {
   const [selectedBrands, setSelectedBrands] = useState<Set<MarketBrand>>(new Set());
   const [hiddenMarkets, setHiddenMarkets] = useState<Set<string>>(new Set());
 
@@ -20,6 +26,20 @@ export function useMarketFiltering(markets: Market[]) {
     setSelectedBrands(new Set(uniqueBrands));
   }, [uniqueBrands]);
 
+  // Kurulum imzası: aynı liste + aynı kayıtlı seçim için tekrar uygulanmaz; aksi halde
+  // react-query yeniden çektiğinde kullanıcının o an yaptığı değişiklikler ezilirdi.
+  const marketSignature = useMemo(() => markets.map(marketKey).join('|'), [markets]);
+  const preselectionSignature = preselectedKeys ? [...preselectedKeys].sort().join('|') : '';
+  const appliedSignatureRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!preselectedKeys || markets.length === 0) return;
+    const signature = `${preselectionSignature}::${marketSignature}`;
+    if (appliedSignatureRef.current === signature) return;
+    appliedSignatureRef.current = signature;
+    setHiddenMarkets(hiddenKeysForPreselection(markets, preselectedKeys, marketKey));
+  }, [preselectedKeys, preselectionSignature, marketSignature, markets]);
+
   const filteredMarkets = useMemo(() => {
     return markets.filter(market => {
       const brand = detectMarketBrand(market.name);
@@ -28,10 +48,7 @@ export function useMarketFiltering(markets: Market[]) {
   }, [markets, selectedBrands]);
 
   const visibleMarkets = useMemo(() => {
-    return filteredMarkets.filter(market => {
-      const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-      return !hiddenMarkets.has(marketKey);
-    });
+    return filteredMarkets.filter(market => !hiddenMarkets.has(marketKey(market)));
   }, [filteredMarkets, hiddenMarkets]);
 
   const toggleBrand = (brand: MarketBrand) => {
@@ -40,12 +57,11 @@ export function useMarketFiltering(markets: Market[]) {
       newSelectedBrands.delete(brand);
     } else {
       newSelectedBrands.add(brand);
-      
+
       const newHiddenMarkets = new Set(hiddenMarkets);
       markets.forEach(market => {
         if (detectMarketBrand(market.name) === brand) {
-          const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-          newHiddenMarkets.delete(marketKey);
+          newHiddenMarkets.delete(marketKey(market));
         }
       });
       setHiddenMarkets(newHiddenMarkets);
@@ -54,16 +70,16 @@ export function useMarketFiltering(markets: Market[]) {
   };
 
   const toggleMarket = (market: Market) => {
-    const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-    const newHiddenMarkets = new Set(hiddenMarkets);
-    
-    if (newHiddenMarkets.has(marketKey)) {
-      newHiddenMarkets.delete(marketKey);
-    } else {
-      newHiddenMarkets.add(marketKey);
-    }
-    
-    setHiddenMarkets(newHiddenMarkets);
+    const key = marketKey(market);
+    setHiddenMarkets(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   };
 
   const hideMarket = (marketId: string) => {
@@ -81,6 +97,7 @@ export function useMarketFiltering(markets: Market[]) {
   const resetFilters = () => {
     setSelectedBrands(new Set(uniqueBrands));
     setHiddenMarkets(new Set());
+    appliedSignatureRef.current = null;
   };
 
   return {

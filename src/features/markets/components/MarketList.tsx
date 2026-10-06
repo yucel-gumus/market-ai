@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { DEFAULTS } from '@/constants';
 import { useMarketFiltering } from '@/features/markets/hooks/useMarketFiltering';
+import { marketKey } from '@/lib/marketUtils';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { Market, ParsedAddress } from '@/types';
@@ -33,6 +34,8 @@ interface MarketListProps {
   markets: Market[];
   distance?: number;
   selectedAddress?: ParsedAddress | null;
+  /** Kayıtlı oturumdaki seçili şubeler; anasayfaya dönüldüğünde seçim bununla kurulur. */
+  preselectedMarketKeys?: string[] | null;
   isLoading?: boolean;
   error?: Error | null;
   onRetry?: () => void;
@@ -43,6 +46,7 @@ export function MarketList({
   markets,
   distance = DEFAULTS.DISTANCE_KM,
   selectedAddress = null,
+  preselectedMarketKeys = null,
   isLoading = false,
   error = null,
   onRetry,
@@ -61,19 +65,14 @@ export function MarketList({
     toggleBrand,
     toggleMarket,
     visibleCount,
-  } = useMarketFiltering(markets);
+  } = useMarketFiltering(markets, preselectedMarketKeys);
 
   const handleMarkerClick = (market: Market) => {
     toggleMarket(market);
   };
 
   const getSelectedMarkets = (): Market[] =>
-    filteredMarkets.filter((market) => {
-      const marketKey =
-        market.id ||
-        `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-      return !hiddenMarkets.has(marketKey);
-    });
+    filteredMarkets.filter((market) => !hiddenMarkets.has(marketKey(market)));
 
   const handleSaveAndNavigate = (destination: '/ai-chat' | '/product-search') => {
     setSaveError(null);
@@ -213,10 +212,7 @@ export function MarketList({
       ) : (
         <div className="max-h-[32rem] space-y-3 overflow-y-auto pr-2 pb-3">
           {filteredMarkets.map((market, index) => {
-            const marketKey =
-              market.id ||
-              `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-            const isVisible = !hiddenMarkets.has(marketKey);
+            const isVisible = !hiddenMarkets.has(marketKey(market));
 
             return (
               <MarketCard

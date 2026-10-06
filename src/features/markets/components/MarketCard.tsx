@@ -5,6 +5,7 @@ import { Navigation, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn, getMarketLogo } from '@/lib/utils';
+import { marketKey as keyOfMarket } from '@/lib/marketUtils';
 import { formatBranchName } from '@/lib/stringUtils';
 import { Market } from '@/types';
 import { MarketService } from '@/services/marketService';
@@ -16,7 +17,7 @@ interface MarketCardProps {
 }
 
 export function MarketCard({ market, isVisible, onToggleMarket }: MarketCardProps) {
-  const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
+  const marketKey = keyOfMarket(market);
   const logoUrl = getMarketLogo(market.name);
   const branchLabel = formatBranchName(market.address || market.name);
 

@@ -1,4 +1,16 @@
+import type { Market } from '@/types';
+
 export type MarketBrand = string;
+
+/**
+ * Bir marketin seçim kimliği. API bazı şubelerde `id` döndürmediği için ad + konumdan
+ * türetilen yedeğe düşülür. Liste, harita, filtre ve kayıtlı oturum AYNI fonksiyonu
+ * kullanmalı: farklı yerde üretilen anahtar, seçimin kaybolması/donması demek.
+ */
+export function marketKey(market: Market): string {
+  if (market.id) return market.id;
+  return `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
+}
 
 /**
  * API'den gelen market adını (bim, a101, sok, migros, carrefour, hakmar, tarim_kredi, file vb.)

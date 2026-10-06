@@ -55,7 +55,7 @@ export async function selectFirstAddress(page: Page, text: string): Promise<bool
   const input = page.getByPlaceholder('Örn: Kızılcaşar Mahallesi, Gölbaşı, Ankara');
   await input.waitFor({ state: 'visible', timeout: 20_000 });
 
-  const suggestion = page.locator('[data-address-search] button').first();
+  const suggestion = page.locator('[data-address-option]').first();
 
   // React hidrasyonu tamamlanmadan yazılan girdi onChange'i tetiklemez; bu yüzden
   // birkaç kez dene (ilk deneme çoğu zaman hidrasyon yarışına takılır).
@@ -72,4 +72,37 @@ export async function selectFirstAddress(page: Page, text: string): Promise<bool
     }
   }
   return false;
+}
+
+/**
+ * Kutuyu BOŞALTMDAN yeni adres yazar ve öneriden ilkini seçer. `selectFirstAddress`'ten
+ * farkı: araya boş değer girmediği için "adres temizlendi" yolu değil, gerçek
+ * "adres değiştirildi" yolu tetiklenir.
+ */
+export async function replaceAddress(page: Page, text: string): Promise<boolean> {
+  const input = page.getByPlaceholder('Örn: Kızılcaşar Mahallesi, Gölbaşı, Ankara');
+  await input.waitFor({ state: 'visible', timeout: 20_000 });
+
+  const suggestion = page.locator('[data-address-option]').first();
+
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    await input.click();
+    await input.fill(text);
+    try {
+      await suggestion.waitFor({ state: 'visible', timeout: 8_000 });
+      await suggestion.click();
+      return true;
+    } catch {
+      await page.waitForTimeout(700);
+    }
+  }
+  return false;
+}
+
+/** Persist edilen store'un okunabilir hâli. */
+export async function readStoreState(page: Page): Promise<Record<string, unknown> | null> {
+  return page.evaluate((key) => {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw).state as Record<string, unknown>) : null;
+  }, STORE_KEY);
 }

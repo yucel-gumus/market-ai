@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { DEFAULTS } from '@/constants';
 import { addOsmTileLayer, ensureLeafletDefaultIcons } from '@/lib/leafletSetup';
 import { injectMapMarkerStyles } from '@/lib/mapMarkers';
-import { getMarketLogo, detectMarketBrand } from '@/lib/marketUtils';
+import { getMarketLogo, detectMarketBrand, marketKey } from '@/lib/marketUtils';
 
 let mapInstanceCounter = 0;
 
@@ -119,8 +119,8 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
     markets.forEach((market) => {
       if (!market.latitude || !market.longitude) return;
 
-      const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-      const isHidden = hiddenMarkets.has(marketKey);
+      const marketKeyValue = marketKey(market);
+      const isHidden = hiddenMarkets.has(marketKeyValue);
       const marketLogo = market.logo || getMarketLogo(market.name);
       const brandName = market.brand || detectMarketBrand(market.name);
 
@@ -170,7 +170,7 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
 
       if (onMarkerClick) marker.on('click', () => onMarkerClick(market));
 
-      markers.set(marketKey, marker);
+      markers.set(marketKeyValue, marker);
     });
 
     if (!mapInstanceRef.current.hasFitted) {
@@ -178,8 +178,8 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       if (userLocation) visibleMarkers.push([userLocation.latitude, userLocation.longitude]);
       markets.forEach(market => {
         if (market.latitude && market.longitude) {
-          const marketKey = market.id || `${market.name}-${market.address}-${market.latitude}-${market.longitude}`;
-          if (!hiddenMarkets.has(marketKey)) visibleMarkers.push([market.latitude, market.longitude]);
+          const key = marketKey(market);
+          if (!hiddenMarkets.has(key)) visibleMarkers.push([market.latitude, market.longitude]);
         }
       });
       if (visibleMarkers.length > 1) {

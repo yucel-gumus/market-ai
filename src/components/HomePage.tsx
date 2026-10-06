@@ -1,24 +1,26 @@
 'use client';
 
-import { useState } from 'react';
 import { MapPin, Store, Navigation, Search, ShieldCheck } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { DEFAULTS } from '@/constants';
 import { AddressSearch } from '@/features/address/components/AddressSearch';
 import { DistanceSelect } from '@/features/markets/components/DistanceSelect';
 import { MarketList } from '@/features/markets/components/MarketList';
 import { useMarketSearch } from '@/features/markets/hooks/useMarketSearch';
 import { useAppStore } from '@/store/useAppStore';
+import { marketKey } from '@/lib/marketUtils';
+import { sessionMatchesSelection } from '@/lib/locationSession';
 import { MarketSearchRequest, ParsedAddress } from '@/types';
 
 export default function HomePage() {
-  const [selectedAddress, setSelectedAddress] = useState<ParsedAddress | null>(null);
-  const [selectedDistance, setSelectedDistance] = useState<number>(DEFAULTS.DISTANCE_KM);
-
-  const {
-    setSelectedAddress: setStoreAddress,
-    setSelectedDistance: setStoreDistance,
-  } = useAppStore();
+  // Seçim TEK kaynaktan (persist edilen store) okunur: anasayfaya dönüldüğünde
+  // adres/mesafe kaybolmasın, düzenlenebilsin. Yerel state + store ikiliği, eski
+  // seçimin ekranda ve aramalarda donmasına yol açıyordu.
+  const selectedAddress = useAppStore((s) => s.selectedAddress);
+  const selectedDistance = useAppStore((s) => s.selectedDistance);
+  const marketSession = useAppStore((s) => s.marketSession);
+  const setStoreAddress = useAppStore((s) => s.setSelectedAddress);
+  const setStoreDistance = useAppStore((s) => s.setSelectedDistance);
+  const setMarketSession = useAppStore((s) => s.setMarketSession);
 
   const marketSearchRequest: MarketSearchRequest | null = selectedAddress
     ? {
@@ -35,14 +37,23 @@ export default function HomePage() {
     refetch: refetchMarkets,
   } = useMarketSearch(marketSearchRequest);
 
+  // Kayıtlı oturum ekrandaki adres/mesafeyle uyuşuyorsa seçim hâlâ geçerlidir.
+  const sessionIsCurrent = sessionMatchesSelection(marketSession, selectedAddress, selectedDistance);
+
   const handleAddressSelect = (address: ParsedAddress | null) => {
-    setSelectedAddress(address);
     setStoreAddress(address);
+    // Adres değiştiyse eski şubeler o konuma ait değil: oturum düşer, kullanıcı
+    // yeni adres için market seçer. Aksi halde ürün arama/asistan eski şubeleri kullanırdı.
+    if (!sessionMatchesSelection(useAppStore.getState().marketSession, address, selectedDistance)) {
+      setMarketSession(null);
+    }
   };
 
   const handleDistanceSelect = (distance: number) => {
-    setSelectedDistance(distance);
     setStoreDistance(distance);
+    if (!sessionMatchesSelection(useAppStore.getState().marketSession, selectedAddress, distance)) {
+      setMarketSession(null);
+    }
   };
 
   const shouldShowMarkets = selectedAddress && selectedDistance > 0;
@@ -128,6 +139,9 @@ export default function HomePage() {
                   markets={markets}
                   distance={selectedDistance}
                   selectedAddress={selectedAddress}
+                  preselectedMarketKeys={
+                    sessionIsCurrent ? marketSession!.selectedMarkets.map(marketKey) : null
+                  }
                   isLoading={isMarketsLoading}
                   error={marketsError}
                   onRetry={() => refetchMarkets()}

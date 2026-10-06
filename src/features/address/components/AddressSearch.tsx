@@ -179,6 +179,7 @@ export function AddressSearch({
                   <Button
                     key={`${address.latitude}-${address.longitude}-${index}`}
                     variant="ghost"
+                    data-address-option
                     className="w-full justify-start h-auto p-3 text-left rounded-xl hover:bg-[#9BCEC1] hover:text-[#0E2C24] transition-all group"
                     onClick={() => handleAddressSelect(address)}
                   >
