@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ShoppingCart, Package, MapPin } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -36,8 +37,17 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
   const { marketGroups, totalCost, marketCount, options = [], singleStoreCost, totalSavings,
     extraWalkMinutes, oldestPriceCheck, hasUnknownPriceChecks, unavailableProducts = [] } = optimization;
   const count = optimization.totalQuantity ?? marketGroups.reduce((sum, group) => sum + group.items.reduce((n, item) => n + itemQuantity(item), 0), 0);
+  // Uygulanan planın kartı ekranda kalmaz: aksi hâlde "4 ürün değişir" yazısı,
+  // karışık sepetlerde (mod hâlâ mümkün görünmediği için) uygulandıktan sonra da kalıyordu.
+  const [appliedPlanModes, setAppliedPlanModes] = useState<Record<string, boolean>>({});
   const planModes = (['single', 'two'] as const).filter(planMode => plans?.[planMode]
-    && !options.find(option => option.mode === planMode)?.feasible);
+    && !options.find(option => option.mode === planMode)?.feasible
+    && !appliedPlanModes[planMode]);
+  // Plan yalnızca bu tarifin malzemelerini kapsar; sepette başka ürünler varsa bunu söyle.
+  const cartItemCount = marketGroups.reduce((total, group) => total + group.items.length, 0);
+  const planScope = recipeProductIds.length > 0 && recipeProductIds.length < cartItemCount
+    ? ' (bu tarifin malzemeleri için)'
+    : '';
   const routeAvailable = !unavailableProducts.length && marketGroups.length > 0 && marketGroups.every(group => coordsOf(group.depotInfo));
   const stale = oldestPriceCheck && Date.now() - Date.parse(oldestPriceCheck) > 30 * 60 * 1000;
   // Tariften gelen kalemler ile kullanıcının önceden sepette olan kalemleri ayrı gösterilir;
@@ -95,7 +105,7 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
           const sign = plan.delta > 0 ? '+' : '−';
           return (
             <div key={planMode} role="status" className="rounded-xl border border-[#9BCEC1] bg-[#9BCEC1]/20 p-3 space-y-2">
-              <p className="text-sm font-bold text-[#0E2C24]">{labels[planMode]} planı hazır: {branchLabel} · {money(plan.total)}</p>
+              <p className="text-sm font-bold text-[#0E2C24]">{labels[planMode]} planı hazır{planScope}: {branchLabel} · {money(plan.total)}</p>
               <p className="text-xs text-[#70372D]">
                 {plan.switches.length ? `${plan.switches.length} ürün değişir` : 'Ürünler aynı kalır, yalnızca şube sabitlenir'}
                 {' · '}mevcut seçime göre fark {sign}{money(Math.abs(plan.delta))}
@@ -111,7 +121,7 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
                 </ul>
               )}
               {onApplyPlan && (
-                <Button type="button" size="sm" onClick={() => onApplyPlan(plan)}>
+                <Button type="button" size="sm" onClick={() => { setAppliedPlanModes(prev => ({ ...prev, [planMode]: true })); onApplyPlan(plan); }}>
                   Planı uygula ({plan.switches.length ? `${plan.switches.length} ürün değişir` : 'şube sabitlenir'})
                 </Button>
               )}
