@@ -1,4 +1,4 @@
-import type { Market, MarketSearchSession, ParsedAddress } from '@/types';
+import type { Market, MarketSearchSession, ParsedAddress, SearchSettings } from '@/types';
 
 /** Koordinat karşılaştırmasında kayan nokta gürültüsünü yut. */
 const COORD_EPSILON = 1e-6;
@@ -48,4 +48,28 @@ export function hiddenKeysForPreselection(
   // hiçbir şeyi gizlemeyiz: tüm listeyi "seçili değil" göstermek kullanıcıyı seçimsiz bırakırdı.
   if (!keys.some((key) => preselected.has(key))) return new Set();
   return new Set(keys.filter((key) => !preselected.has(key)));
+}
+
+/**
+ * Kayıtlı oturumdan arama ayarlarını türetir; oturum ekrandaki seçimle uyuşmuyorsa null.
+ * null → arama yapılmaz, kullanıcı "önce adres ve market seçin" mesajını görür. Aksi halde
+ * eski konumun şubeleriyle sessizce arama yapılırdı.
+ */
+export function settingsFromSession(
+  session: MarketSearchSession | null | undefined,
+  address: ParsedAddress | null | undefined,
+  distance: number | null | undefined,
+  defaults: { pages: number; size: number },
+): SearchSettings | null {
+  if (!sessionMatchesSelection(session, address, distance)) return null;
+  const current = session!;
+  return {
+    latitude: current.selectedAddress!.latitude,
+    longitude: current.selectedAddress!.longitude,
+    distance: current.distance,
+    pages: defaults.pages,
+    size: defaults.size,
+    depots: current.selectedMarkets.map((market) => market.id),
+    selectedMarkets: current.selectedMarkets,
+  };
 }

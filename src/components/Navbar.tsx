@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Store, Search, Sparkles, MapPin, Lock } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
+import { sessionMatchesSelection } from '@/lib/locationSession';
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -12,18 +13,20 @@ export default function Navbar() {
 
   const marketSession = useAppStore((s) => s.marketSession);
   const selectedAddress = useAppStore((s) => s.selectedAddress);
+  const selectedDistance = useAppStore((s) => s.selectedDistance);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
 
-  const hasPickedLocation = Boolean(marketSession?.selectedAddress || selectedAddress);
-  const selectedMarketCount = marketSession?.selectedMarkets?.length ?? 0;
+  // Oturum ancak ekrandaki adres/mesafeyle uyuşuyorsa geçerlidir. Uyuşmuyorsa rozet eski
+  // ilçeyi ve eski market sayısını gösterip "seçimim güncellenmiyor" hissi veriyordu.
+  const sessionIsCurrent = sessionMatchesSelection(marketSession, selectedAddress, selectedDistance);
+  const selectedMarketCount = sessionIsCurrent ? marketSession!.selectedMarkets.length : 0;
   // Ürün arama ve asistan için market seçimi şart; ama adres seçildiği anda rozet bunu göstermeli
   // (oturum "Kensai ile Devam Et" ile kaydedilene kadar "konum seçilmedi" demesi kafa karıştırıyordu).
+  const hasPickedLocation = Boolean(selectedAddress);
   const hasSelectedLocation = hasPickedLocation && selectedMarketCount > 0;
 
   const activeDistrict =
-    marketSession?.selectedAddress?.district ||
     selectedAddress?.district ||
-    marketSession?.selectedAddress?.neighborhood ||
     selectedAddress?.neighborhood ||
     'Konum Seçilmedi';
 

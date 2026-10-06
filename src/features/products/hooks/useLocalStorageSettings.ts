@@ -3,45 +3,37 @@
 import { useEffect, useState } from 'react';
 import { DEFAULTS } from '@/constants';
 import { useAppStore } from '@/store/useAppStore';
-import { Market, SearchSettings } from '@/types';
+import { settingsFromSession } from '@/lib/locationSession';
+import { SearchSettings } from '@/types';
 
-function sessionToSettings(data: {
-  selectedAddress?: { latitude: number; longitude: number } | null;
-  selectedMarkets?: Market[];
-  distance?: number;
-}): SearchSettings | null {
-  if (!data.selectedAddress || !data.selectedMarkets?.length) return null;
-
-  return {
-    latitude: data.selectedAddress.latitude,
-    longitude: data.selectedAddress.longitude,
-    distance: data.distance || DEFAULTS.DISTANCE_KM,
-    pages: DEFAULTS.PAGE,
-    size: DEFAULTS.PAGE_SIZE,
-    depots: data.selectedMarkets.map((m) => m.id),
-    selectedMarkets: data.selectedMarkets,
-  };
-}
-
-/** Arama ayarları yalnızca store'daki market oturumundan türetilir (tek kaynak). */
+/**
+ * Arama ayarları yalnızca store'daki market oturumundan türetilir (tek kaynak) — ama
+ * oturum ekrandaki güncel adres/mesafeyle uyuşmuyorsa GEÇERSİZDİR: kullanıcı adresini
+ * değiştirdiyse eski şubelerle arama yapılmaz, "önce seçim yapın" denir.
+ */
 export const useLocalStorageSettings = () => {
   const marketSession = useAppStore((s) => s.marketSession);
+  const selectedAddress = useAppStore((s) => s.selectedAddress);
+  const selectedDistance = useAppStore((s) => s.selectedDistance);
   const [searchSettings, setSearchSettings] = useState<SearchSettings | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const settings = marketSession ? sessionToSettings(marketSession) : null;
+    const settings = settingsFromSession(marketSession, selectedAddress, selectedDistance, {
+      pages: DEFAULTS.PAGE,
+      size: DEFAULTS.PAGE_SIZE,
+    });
     setSearchSettings(settings);
     setError(
       settings
         ? null
         : marketSession
-          ? 'Eksik veri. Önce ana sayfadan adres ve market seçimi yapınız.'
+          ? 'Seçtiğiniz adres için market seçimi geçersiz. Önce ana sayfadan adres ve market seçiminizi güncelleyiniz.'
           : 'Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.'
     );
     setIsLoading(false);
-  }, [marketSession]);
+  }, [marketSession, selectedAddress, selectedDistance]);
 
   return {
     searchSettings,

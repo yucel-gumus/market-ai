@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hiddenKeysForPreselection, isSameLocation, sessionMatchesSelection } from './locationSession';
+import { hiddenKeysForPreselection, isSameLocation, sessionMatchesSelection, settingsFromSession } from './locationSession';
 import { marketKey } from './marketUtils';
 import type { Market, MarketSearchSession, ParsedAddress } from '@/types';
 
@@ -73,6 +73,30 @@ describe('sessionMatchesSelection', () => {
 
   it('oturum yoksa geçersizdir', () => {
     expect(sessionMatchesSelection(null, address, 5)).toBe(false);
+  });
+});
+
+describe('settingsFromSession', () => {
+  const defaults = { pages: 1, size: 20 };
+
+  it('geçerli oturumda arama ayarlarını üretir', () => {
+    const settings = settingsFromSession(session, address, 5, defaults);
+    expect(settings).toMatchObject({
+      latitude: address.latitude,
+      longitude: address.longitude,
+      distance: 5,
+      pages: 1,
+      size: 20,
+      depots: ['a', 'b'],
+    });
+  });
+
+  it('adres değiştiyse null döner: eski şubelerle arama yapılmaz', () => {
+    expect(settingsFromSession(session, otherAddress, 5, defaults)).toBeNull();
+  });
+
+  it('mesafe değiştiyse null döner', () => {
+    expect(settingsFromSession(session, address, 3, defaults)).toBeNull();
   });
 });
 

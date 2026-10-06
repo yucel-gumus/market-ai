@@ -106,3 +106,24 @@ export async function readStoreState(page: Page): Promise<Record<string, unknown
     return raw ? (JSON.parse(raw).state as Record<string, unknown>) : null;
   }, STORE_KEY);
 }
+
+/**
+ * Store'da adres ile market oturumunu BİLEREK uyumsuz bırakır: kullanıcının adresini
+ * değiştirip oturumu kaldığı için "eski şubelerle arama" durumunun reprodüksiyonu.
+ */
+export async function seedStaleSession(page: Page): Promise<void> {
+  await seedSession(page);
+  await page.addInitScript((key) => {
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    parsed.state.selectedAddress = {
+      ...parsed.state.selectedAddress,
+      neighborhood: 'Bağcılar',
+      district: 'Bağcılar',
+      latitude: 41.0392,
+      longitude: 28.8566,
+    };
+    localStorage.setItem(key, JSON.stringify(parsed));
+  }, STORE_KEY);
+}
