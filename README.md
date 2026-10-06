@@ -126,13 +126,22 @@ Tüm değişkenler **koddan** doğrulanmıştır (okuma noktaları tabloda).
 | `npm run test:ui` | `scripts/verify-shopping-ui.cjs` — Playwright ile uçtan uca arayüz doğrulaması (gerektiğinde dev sunucusunu 3016 portunda kendi başlatır; hedef `UI_TEST_BASE_URL` ile değiştirilir). |
 | `npm run test:live` | `MARKET_LIVE_TEST=1` ile canlı market API'sine karşı testler (`src/services/marketApi.live.test.ts`). |
 | `npm run test:backend` | `scripts/verify-backend-contract.cjs` — Python backend'in ürün seçim sözleşmesini doğrular (`PYTHON_API_URL` + `PYTHON_API_KEY` gerekir). |
+| `npm run test:e2e` | `playwright test` — tarayıcı regresyon paketi (`playwright.config.ts` + `e2e/`). Varsayılan hedef **canlı** üretim sitesidir; `E2E_BASE_URL=http://localhost:3000` ile yerele çevrilir. |
 
-Tarayıcı regresyon testleri için bir kez `npx playwright install chromium` çalıştırın.
+Tarayıcı testleri için bir kez `npx playwright install chromium webkit` çalıştırın.
 
-**E2E hakkında not:** Bu depoda ayrı bir `playwright.config.*` dosyası veya dosya-tabanlı
-`npx playwright test` kurgusu **yoktur**. Uçtan uca arayüz doğrulaması, Playwright'ı kullanan
-`npm run test:ui` betiğiyle yapılır; canlıya karşı çalıştırmak için `UI_TEST_BASE_URL` değişkenini
-dağıtım adresine ayarlayın. Birim testleri `vitest.config.ts` ile `src/**` altından toplanır.
+### E2E paketi (`e2e/`)
+
+Üç projede koşar: `masaustu-chromium`, `mobil-390x844` (Chromium) ve `mobil-webkit` (Safari motoru).
+
+| Spec | Neyi doğrular |
+|---|---|
+| `duman.spec.ts` | Üç sayfa (`/`, `/ai-chat`, `/product-search`) yüklenir; görünür `h1`/`h2` var; **yatay taşma yok**; konsol/`pageerror` hatası yok. Her koşuda ekran görüntüsü alır. |
+| `mobil.tarif-ekrani.spec.ts` | 390×844'te tarif/kişi sayısı ekranı ve sepet yerleşimi. |
+| `a11y-rota.spec.ts` | Rota diyaloğu açılınca odak **içine** taşınır, `Escape` kapatır; konsolda kendi `[rota]` OSRM-demo uyarımız **var**, kaldırılan `leaflet-routing-machine`'ın "production use" uyarısı **yok**. |
+
+`seedSession()` yardımcı fonksiyonu, anasayfada adres/market seçmeden açılan sayfaların gerçek
+ yerleşimini ölçebilmek için zustand persist kaydını (`market-ai-app`) localStorage'a tohumlar.
 
 ---
 
@@ -188,6 +197,20 @@ gcloud run deploy python-backend \
 - **Boş arama sonucu asla önbelleğe alınmaz.** Boş bir hatırlama sonucu geçerli cevap sayılmaz ve
   sıradaki eşleştirme katmanı denenir; "bulunamadı" durumu yalnızca tüm katmanlar tükendiğinde
   raporlanır.
+- **Konsolidasyon planları (`plans: {single, two}`) sunucuda KESİN hesaplanır.** Tek/iki şube modları,
+  sepetteki ürünlerin depo listelerine bakınca neredeyse hep "imkânsız" çıkıyordu (her ürün 1-4 şubede).
+  Backend artık aday havuzundan **alternatif ürün seçerek** k=1 ve k=2 için gerçek plan üretir
+  (`market_orchestrator.build_plans`). `delta`, plan toplamının **kullanıcının o anki sepetine** göre
+  farkıdır (konsolidasyonun kazancı/maliyeti dürüst görünsün diye); `switches` kalem bazında değişen
+  ürünlerdir. "Planı uygula" ürünleri ikame eder ve şubeleri sabitler (`setItemDepot`), böylece
+  istemci tarafındaki `buildShoppingOptions` modları gerçekten mümkün hale gelir. Uygulanabilir plan
+  yoksa mod dürüstçe "bu sepet seçili şubelerle tamamlanamıyor" der.
+- **Backend ayarları Firestore'dan gelir ve ortam değişkenlerini EZER.** `get_settings()`,
+  `FIRESTORE_CONFIG_ENABLED` açıkken `system_config/llm` dokümanındaki alanları ortam değişkenlerinin
+  üstüne yazar (`app/core/config.py`). Sonuç: `CLIENT_API_KEYS` / `ADMIN_API_KEYS` gibi değerleri
+  döndürürken **Firestore dokümanı** güncellenmelidir; Cloud Run env'ini değiştirmek tek başına
+  etkisizdir. Değişiklikten sonra `UPDATE_TS` env değişkenini güncelleyip yeni revizyon alın
+  (`@lru_cache`'li ayarlar ancak o zaman tazelenir).
 
 ---
 
