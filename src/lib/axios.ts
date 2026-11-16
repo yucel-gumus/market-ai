@@ -22,7 +22,11 @@ apiClient.interceptors.response.use(
   (error) => {
     if (axios.isCancel(error)) return Promise.reject(error);
     const errorMessage =
-      error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown error';
+      error.response?.data?.error ||
+      error.response?.data?.detail ||
+      error.response?.data?.message ||
+      error.message ||
+      'Unknown error';
     const statusCode = error.response?.status || 'No status';
 
     console.error(`❌ API Error [${statusCode}]:`, {

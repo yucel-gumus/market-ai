@@ -65,10 +65,26 @@ export interface RecipeWithCaloriesResponse {
   message?: string;
 }
 
+export type LlmOperation = 'recipe-list' | 'select-products' | 'recipe-with-calories';
+
+const PRODUCTION_VERCEL_HOSTS = new Set(['market-ai-coral.vercel.app']);
+const DIRECT_PYTHON_BACKEND_URL = 'https://python-backend-270384591051.europe-west3.run.app';
+
+export function resolveLlmEndpoint(operation: LlmOperation): string {
+  const configured = process.env.NEXT_PUBLIC_DIRECT_PYTHON_API_URL?.trim();
+  if (configured) {
+    return `${configured.replace(/\/+$/, '')}/api/market-ai/${operation}`;
+  }
+  if (typeof window !== 'undefined' && PRODUCTION_VERCEL_HOSTS.has(window.location.hostname)) {
+    return `${DIRECT_PYTHON_BACKEND_URL}/api/market-ai/${operation}`;
+  }
+  return `/ai-page/${operation}`;
+}
+
 export class LlmService {
   static async generateRecipeList(recipeName: string, signal?: AbortSignal): Promise<RecipeListResponse> {
     const { data } = await apiClient.post<RecipeListResponse>(
-      '/ai-page/recipe-list',
+      resolveLlmEndpoint('recipe-list'),
       { recipe_name: recipeName },
       { timeout: TIMEOUTS_MS.LLM_BACKEND, signal }
     );
@@ -86,7 +102,7 @@ export class LlmService {
     signal?: AbortSignal
   ): Promise<SelectProductsResponse> {
     const { data } = await apiClient.post<SelectProductsResponse>(
-      '/ai-page/select-products',
+      resolveLlmEndpoint('select-products'),
       {
         recipe_name: recipeName,
         ingredients: ingredients.join(', '),
@@ -109,7 +125,7 @@ export class LlmService {
     signal?: AbortSignal
   ): Promise<RecipeWithCaloriesResponse> {
     const { data } = await apiClient.post<RecipeWithCaloriesResponse>(
-      '/ai-page/recipe-with-calories',
+      resolveLlmEndpoint('recipe-with-calories'),
       { recipe_name: recipeName },
       { timeout: TIMEOUTS_MS.LLM_BACKEND, signal }
     );
