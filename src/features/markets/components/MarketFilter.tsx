@@ -1,10 +1,9 @@
 'use client';
 
-import Image from 'next/image';
-import { Store } from 'lucide-react';
+import { Check, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { getMarketLogo, type MarketBrand } from '@/lib/marketUtils';
+import { getStoreTheme, type MarketBrand } from '@/lib/marketUtils';
 
 interface MarketFilterProps {
   uniqueBrands: MarketBrand[];
@@ -16,15 +15,15 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
   if (uniqueBrands.length === 0) return null;
 
   return (
-    <Card className="mb-4 bg-[#FFECE8] border-[#F7A898]/70 shadow-2xs">
+    <Card className="mb-4 bg-[#EDF3EE] border-[#BCC7D2] shadow-2xs">
       <CardContent className="p-4">
-        <h3 className="font-bold text-xs font-heading text-[#2D1E12] uppercase tracking-wider mb-3">
+        <h3 className="font-bold text-xs font-heading text-[#253341] uppercase tracking-wider mb-3">
           Market Filtrele
         </h3>
         <div className="flex flex-wrap gap-2.5 items-center">
           {uniqueBrands.map((brand) => {
             const isSelected = selectedBrands.has(brand);
-            const logoPath = getMarketLogo(brand);
+            const theme = getStoreTheme(brand);
             return (
               <button
                 key={brand}
@@ -34,27 +33,33 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
                 aria-pressed={isSelected}
                 data-brand={brand}
                 className={cn(
-                  "flex items-center justify-center h-12 px-4 py-2 rounded-xl border transition-all duration-200 hover:scale-105 relative cursor-pointer min-w-[72px]",
+                  "flex items-center gap-2 h-11 px-3.5 py-2 rounded-xl border transition-all duration-200 hover:scale-[1.03] relative cursor-pointer",
                   isSelected
-                    ? "bg-[#f5d3b3] border-[#2D1E12] border-2 shadow-sm"
-                    : "bg-[#f5d3b3]/40 border-[#F7A898]/40 opacity-50 hover:opacity-90 hover:bg-[#f5d3b3]/70"
+                    ? "bg-[#DCE3EA] border-[#253341] border-2 shadow-sm text-[#253341]"
+                    : "bg-[#F5F9F5]/75 border-[#BCC7D2] text-[#3E5164] opacity-60 hover:opacity-95 hover:bg-[#DBE6DD]"
                 )}
               >
-                {logoPath ? (
-                  <div className="relative h-7 w-14 flex items-center justify-center">
-                    <Image
-                      src={logoPath}
-                      alt={brand}
-                      fill
-                      unoptimized
-                      className="object-contain"
-                    />
-                  </div>
-                ) : (
-                  <Store className="h-5 w-5 text-[#70372D]" />
-                )}
+                <span
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-lg border text-[10px] font-extrabold shrink-0"
+                  style={{
+                    backgroundColor: theme.bg,
+                    color: theme.text,
+                    borderColor: theme.border,
+                  }}
+                >
+                  {theme.shortCode ? (
+                    <span>{theme.shortCode.slice(0, 2)}</span>
+                  ) : (
+                    <Store className="h-3.5 w-3.5" aria-hidden />
+                  )}
+                </span>
+                <span className="text-xs font-bold font-heading tracking-tight whitespace-nowrap">
+                  {theme.label}
+                </span>
                 {isSelected && (
-                  <div className="w-2.5 h-2.5 bg-[#0E2C24] rounded-full animate-pulse absolute -top-1 -right-1 ring-2 ring-[#9BCEC1]" />
+                  <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#EC7D55] text-[#253341] ring-2 ring-[#EDF3EE] ml-0.5">
+                    <Check className="h-2.5 w-2.5 stroke-[3]" aria-hidden />
+                  </span>
                 )}
               </button>
             );

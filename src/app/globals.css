@@ -3,57 +3,73 @@
 
 @layer base {
   :root {
-    /* 60% Dominant Color Palette: #FFEBD3 (Warm Cream Canvas) */
-    --background: #FFEBD3;
-    --background-subtle: #FFF4E5;
-    --foreground: #2D1E12;
-    --foreground-muted: #6E5341;
-    --border-dominant: #F5D3B3;
+    /* İpek Küllü Arduvaz 60-30-10 Canonical Scale */
+    /* %60 Dominant: Açık Sis Yeşili */
+    --bg-light: #F5F9F5;
+    --bg-main: #EDF3EE;
+    --bg-dark: #DBE6DD;
 
-    /* 30% Secondary Color Palette: #FFB6A6 (Soft Coral Surfaces) */
-    --card: #FFECE8;
-    --card-foreground: #4A1E17;
-    --card-border: #F7A898;
-    --secondary: #FFB6A6;
-    --secondary-hover: #FA9E8B;
-    --secondary-foreground: #4A1E17;
-    --muted: #F8D5CE;
-    --muted-foreground: #70372D;
+    /* %30 Secondary: Küllü Arduvaz */
+    --surface-main: #DCE3EA;
+    --surface-border: #BCC7D2;
+    --ink-muted: #3E5164;
+    --ink-main: #253341;
 
-    /* 10% Accent Color Palette: #9BCEC1 (Sage Mint Teal Focal Points) */
-    --primary: #9BCEC1;
-    --primary-hover: #83BEB0;
-    --primary-foreground: #0E2C24;
-    --accent: #9BCEC1;
-    --accent-foreground: #0E2C24;
-    --ring: #9BCEC1;
+    /* %10 Accent: Kiremit-Mercan */
+    --accent-light: #F2A488;
+    --accent-main: #EC7D55;
+    --accent-dark: #AB421C;
+
+    /* Semantic Tokens mapped strictly to the 10-hex scale */
+    --background: var(--bg-main);
+    --background-subtle: var(--bg-light);
+    --background-band: var(--bg-dark);
+    --foreground: var(--ink-main);
+    --foreground-muted: var(--ink-muted);
+    --border-dominant: var(--surface-border);
+
+    --card: var(--surface-main);
+    --card-foreground: var(--ink-main);
+    --card-border: var(--surface-border);
+    --secondary: var(--bg-dark);
+    --secondary-hover: var(--surface-main);
+    --secondary-foreground: var(--ink-main);
+    --muted: var(--bg-dark);
+    --muted-foreground: var(--ink-muted);
+
+    --primary: var(--accent-main);
+    --primary-hover: var(--accent-dark);
+    --primary-foreground: var(--ink-main);
+    --accent: var(--accent-light);
+    --accent-foreground: var(--ink-main);
+    --ring: var(--accent-main);
 
     --radius: 1rem;
   }
 
   .dark {
-    /* Dark variant using contrast tones of the exact 3 palette colors */
-    --background: #23170D;
-    --background-subtle: #2E1F13;
-    --foreground: #FFEBD3;
-    --foreground-muted: #E2C7AD;
-    --border-dominant: #442F1E;
+    --background: #253341;
+    --background-subtle: #3E5164;
+    --background-band: #3E5164;
+    --foreground: #F5F9F5;
+    --foreground-muted: #DCE3EA;
+    --border-dominant: #BCC7D2;
 
-    --card: #3B1B15;
-    --card-foreground: #FFEBD3;
-    --card-border: #5E2C23;
-    --secondary: #52251D;
-    --secondary-hover: #693026;
-    --secondary-foreground: #FFECE8;
-    --muted: #421F18;
-    --muted-foreground: #FFB6A6;
+    --card: #3E5164;
+    --card-foreground: #F5F9F5;
+    --card-border: #BCC7D2;
+    --secondary: #3E5164;
+    --secondary-hover: #253341;
+    --secondary-foreground: #F5F9F5;
+    --muted: #3E5164;
+    --muted-foreground: #DCE3EA;
 
-    --primary: #9BCEC1;
-    --primary-hover: #B4DFD5;
-    --primary-foreground: #0E2C24;
-    --accent: #9BCEC1;
-    --accent-foreground: #0E2C24;
-    --ring: #9BCEC1;
+    --primary: #EC7D55;
+    --primary-hover: #AB421C;
+    --primary-foreground: #253341;
+    --accent: #F2A488;
+    --accent-foreground: #253341;
+    --ring: #EC7D55;
   }
 
   * {
@@ -61,80 +77,125 @@
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: var(--bg-main);
+    background-image: linear-gradient(
+      180deg,
+      rgba(245, 249, 245, 0.72) 0%,
+      #EDF3EE 42%,
+      rgba(219, 230, 221, 0.7) 100%
+    );
+    color: var(--ink-main);
     font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading), var(--font-sans), sans-serif;
-    color: var(--foreground);
+    color: var(--ink-main);
     letter-spacing: -0.02em;
   }
 }
 
-/* Custom Utilities for 60-30-10 Palette Styling */
-@utility bg-dominant {
-  background-color: var(--background);
+/* Custom Utilities for İpek Küllü Arduvaz 60-30-10 */
+@utility bg-mist {
+  background-color: var(--bg-main);
 }
 
-@utility bg-dominant-subtle {
-  background-color: var(--background-subtle);
+@utility bg-mist-light {
+  background-color: var(--bg-light);
 }
 
-@utility text-dominant {
-  color: var(--foreground);
+@utility bg-mist-dark {
+  background-color: var(--bg-dark);
 }
 
-@utility text-dominant-muted {
-  color: var(--foreground-muted);
+@utility bg-arduvaz-surface {
+  background-color: var(--surface-main);
 }
 
-@utility bg-surface-coral {
-  background-color: var(--card);
+@utility text-arduvaz-ink {
+  color: var(--ink-main);
 }
 
-@utility text-surface-coral {
-  color: var(--card-foreground);
+@utility text-arduvaz-muted {
+  color: var(--ink-muted);
 }
 
-@utility border-coral {
-  border-color: var(--card-border);
+@utility border-arduvaz {
+  border-color: var(--surface-border);
 }
 
-@utility bg-accent-teal {
-  background-color: var(--primary);
+@utility bg-terracotta {
+  background-color: var(--accent-main);
 }
 
-@utility bg-accent-teal-hover {
-  background-color: var(--primary-hover);
+@utility bg-terracotta-hover {
+  background-color: var(--accent-dark);
 }
 
-@utility text-accent-teal {
-  color: var(--primary-foreground);
+@utility text-terracotta {
+  color: var(--accent-dark);
 }
 
-/* Glassmorphism & Micro-animations */
-.glass-coral {
-  background: rgba(255, 182, 166, 0.25);
+/* Smooth Surface & Glassmorphism Transitions */
+.surface-transition {
+  background: linear-gradient(155deg, #EDF3EE 0%, #DBE6DD 52%, #DCE3EA 100%);
+}
+
+.glass-slate {
+  background: rgba(220, 227, 234, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 182, 166, 0.4);
+  border: 1px solid rgba(188, 199, 210, 0.85);
 }
 
-.glass-cream {
-  background: rgba(255, 235, 211, 0.85);
+.glass-mist {
+  background: rgba(237, 243, 238, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(245, 211, 179, 0.6);
+  border: 1px solid rgba(188, 199, 210, 0.7);
 }
 
-.glass-teal {
-  background: rgba(155, 206, 193, 0.2);
+.glass-terracotta {
+  background: rgba(242, 164, 136, 0.25);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(155, 206, 193, 0.4);
+  border: 1px solid rgba(236, 125, 85, 0.45);
+}
+
+/* Leaflet map chrome aligned to İpek Küllü Arduvaz */
+.leaflet-container {
+  background: #EDF3EE;
+  color: #253341;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #DCE3EA !important;
+  color: #253341 !important;
+  border: 1px solid #BCC7D2;
+  box-shadow: 0 8px 24px rgba(37, 51, 65, 0.16) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: #F5F9F5 !important;
+  color: #253341 !important;
+  border-color: #BCC7D2 !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: #DBE6DD !important;
+  color: #AB421C !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(237, 243, 238, 0.86) !important;
+  color: #3E5164 !important;
+}
+
+.leaflet-control-attribution a {
+  color: #253341 !important;
 }
 
 /* Smooth Scrolling & Custom Scrollbar */
@@ -148,14 +209,14 @@ html {
 }
 
 ::-webkit-scrollbar-track {
-  background: #FFEBD3;
+  background: #EDF3EE;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #FFB6A6;
+  background: #BCC7D2;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9BCEC1;
+  background: #3E5164;
 }

@@ -60,12 +60,23 @@ export default function DynamicMap({ selectedStore, destinations = [], showRoute
       ensureLeafletDefaultIcons();
       map = L.map(container.current, { center: [latitude, longitude], zoom: DEFAULTS.MAP_ZOOM });
       addOsmTileLayer(map);
-      const start = L.marker([latitude, longitude]).addTo(map).bindPopup(popup('Konumunuz', 'Başlangıç noktası'));
+      const start = L.marker([latitude, longitude], {
+        icon: L.divIcon({
+          html: `<div style="background:#253341;color:#F5F9F5;border:3px solid #EC7D55;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;box-shadow:0 3px 10px rgba(37,51,65,0.3)">📍</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+          className: 'custom-user-marker',
+        }),
+      }).addTo(map).bindPopup(popup('Konumunuz', 'Başlangıç noktası'));
       const store = storeKey ? JSON.parse(storeKey) : null;
       const stops = store ? [{ ...store, name: store.depotName, market: store.marketAdi }] : JSON.parse(destinationKey);
       const validStops = stops.filter(stop => coordsOf(stop));
       const markers = validStops.map((stop, index) => L.marker([stop.latitude, stop.longitude], {
-        icon: L.divIcon({ html: `<div style="background:#9BCEC1;color:#0E2C24;border:2px solid #0E2C24;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:bold">${index + 1}</div>`, iconSize: [30, 30], className: 'shopping-stop' }),
+        icon: L.divIcon({
+          html: `<div style="background:#EC7D55;color:#253341;border:2px solid #253341;border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-weight:800;box-shadow:0 3px 8px rgba(37,51,65,0.25)">${index + 1}</div>`,
+          iconSize: [30, 30],
+          className: 'shopping-stop',
+        }),
       }).addTo(map).bindPopup(popup(stop.name || 'Mağaza', stop.market || '')));
       const layers = [start, ...markers];
       if (markers.length) map.fitBounds(L.featureGroup(layers).getBounds().pad(0.15));
@@ -85,7 +96,7 @@ export default function DynamicMap({ selectedStore, destinations = [], showRoute
           const route = data?.routes?.[0];
           if (!route) throw new Error('Rota döndürülmedi.');
           if (route.geometry) {
-            layers.push(L.geoJSON(route.geometry, { style: { color: '#0E2C24', weight: 5, opacity: 0.85 } }).addTo(map));
+            layers.push(L.geoJSON(route.geometry, { style: { color: '#AB421C', weight: 5, opacity: 0.9 } }).addTo(map));
             map.fitBounds(L.featureGroup(layers).getBounds().pad(0.15));
           }
           const distance = route.distance / 1000;
@@ -112,6 +123,6 @@ export default function DynamicMap({ selectedStore, destinations = [], showRoute
 
   return <div className="relative h-full min-h-[380px] w-full">
     <div ref={container} className="h-full min-h-[380px] w-full" aria-label="Alışveriş durakları haritası" />
-    {error && <p role="status" className="absolute bottom-7 left-2 right-2 z-[1000] rounded-lg bg-[#FFEBD3] p-2 text-xs">{error}</p>}
+    {error && <p role="status" className="absolute bottom-7 left-2 right-2 z-[1000] rounded-lg border border-[#AB421C] bg-[#F2A488] p-2 text-xs font-semibold text-[#253341]">{error}</p>}
   </div>;
 }

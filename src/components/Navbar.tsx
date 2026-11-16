@@ -61,42 +61,42 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-[#FFEBD3]/90 border-b border-[#F5D3B3] shadow-xs">
+    <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-[#DCE3EA]/92 border-b border-[#BCC7D2] shadow-xs">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Brand Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="p-2 rounded-xl bg-[#9BCEC1] text-[#0E2C24] shadow-sm transition-transform duration-200 group-hover:scale-105">
+          <div className="p-2 rounded-xl bg-[#EC7D55] text-[#253341] shadow-sm transition-all duration-200 group-hover:scale-105 group-hover:bg-[#AB421C] group-hover:text-[#F5F9F5]">
             <Store className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold font-heading tracking-tight text-[#2D1E12]">
-            Market<span className="text-[#4A1E17] bg-[#FFB6A6]/60 px-1.5 py-0.5 rounded-md ml-0.5">AI</span>
+          <span className="text-xl font-bold font-heading tracking-tight text-[#253341]">
+            Market<span className="text-[#253341] bg-[#DBE6DD] border border-[#BCC7D2] px-1.5 py-0.5 rounded-md ml-0.5">AI</span>
           </span>
         </Link>
 
         {/* Location Indicator Pill */}
-        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#FFECE8] border border-[#F7A898]/60 text-xs font-bold text-[#4A1E17]">
-          <MapPin className="h-4 w-4 text-[#0E2C24] shrink-0" />
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#EDF3EE] border border-[#BCC7D2] text-xs font-bold text-[#253341]">
+          <MapPin className="h-4 w-4 text-[#AB421C] shrink-0" />
           {hasSelectedLocation ? (
             <span>
-              <span className="text-[#2D1E12]">{activeDistrict}</span>{' '}
-              <span className="bg-[#9BCEC1] text-[#0E2C24] px-1.5 py-0.5 rounded-md ml-1">
+              <span className="text-[#253341]">{activeDistrict}</span>{' '}
+              <span className="bg-[#EC7D55] text-[#253341] px-1.5 py-0.5 rounded-md ml-1">
                 {selectedMarketCount} Market
               </span>
             </span>
           ) : hasPickedLocation ? (
             <span>
-              <span className="text-[#2D1E12]">{activeDistrict}</span>{' '}
-              <span className="bg-[#FFB6A6] text-[#4A1E17] px-1.5 py-0.5 rounded-md ml-1">
+              <span className="text-[#253341]">{activeDistrict}</span>{' '}
+              <span className="bg-[#F2A488] text-[#253341] px-1.5 py-0.5 rounded-md ml-1">
                 market seçilmedi
               </span>
             </span>
           ) : (
-            <span className="text-[#70372D]">📍 Henüz Konum Seçilmedi</span>
+            <span className="text-[#3E5164]">📍 Henüz Konum Seçilmedi</span>
           )}
         </div>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-[#FFECE8] border border-[#F7A898]/50">
+        <nav className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-[#EDF3EE] border border-[#BCC7D2]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -108,17 +108,17 @@ export default function Navbar() {
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href, item.requiresLocation)}
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${isActive
-                    ? 'bg-[#9BCEC1] text-[#0E2C24] shadow-xs'
+                    ? 'bg-[#EC7D55] text-[#253341] shadow-xs hover:bg-[#AB421C] hover:text-[#F5F9F5]'
                     : isDisabled
-                      ? 'text-[#70372D]/60 hover:bg-[#FFB6A6]/20 cursor-not-allowed'
-                      : 'text-[#4A1E17] hover:bg-[#FFB6A6]/40 hover:text-[#2D1E12]'
+                      ? 'text-[#3E5164]/60 hover:bg-[#DBE6DD]/60 cursor-not-allowed'
+                      : 'text-[#3E5164] hover:bg-[#DBE6DD] hover:text-[#253341]'
                   }`}
                 title={isDisabled ? 'Önce konum ve market seçmelisiniz' : item.name}
               >
                 {isDisabled ? (
-                  <Lock className="h-3.5 w-3.5 text-[#70372D]/60" />
+                  <Lock className="h-3.5 w-3.5 opacity-70" />
                 ) : (
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-[#0E2C24]' : 'text-[#70372D]'}`} />
+                  <Icon className="h-4 w-4" />
                 )}
                 <span>{item.name}</span>
               </Link>
@@ -126,12 +126,10 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Right side CTA / Cart indicator */}
+        {/* Right side CTA / Mobile nav */}
         <div className="flex items-center gap-3">
-
-
           {/* Mobile navigation buttons */}
-          <div className="flex md:hidden items-center gap-1 bg-[#FFECE8] p-1 rounded-xl border border-[#F7A898]/50">
+          <div className="flex md:hidden items-center gap-1 bg-[#EDF3EE] p-1 rounded-xl border border-[#BCC7D2]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -142,13 +140,13 @@ export default function Navbar() {
                   key={item.href}
                   href={item.href}
                   onClick={(e) => handleNavClick(e, item.href, item.requiresLocation)}
-                  className={`p-2 rounded-lg transition-colors relative ${isActive ? 'bg-[#9BCEC1] text-[#0E2C24]' : 'text-[#70372D] hover:bg-[#FFB6A6]/40'
+                  className={`p-2 rounded-lg transition-colors relative ${isActive ? 'bg-[#EC7D55] text-[#253341]' : 'text-[#3E5164] hover:bg-[#DBE6DD] hover:text-[#253341]'
                     }`}
                   title={item.name}
                 >
                   <Icon className="h-5 w-5" />
                   {isDisabled && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#4A1E17] rounded-full border border-[#FFECE8]" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#AB421C] rounded-full border border-[#EDF3EE]" />
                   )}
                 </Link>
               );
@@ -159,7 +157,7 @@ export default function Navbar() {
 
       {/* Warning Alert Banner when user clicks without location */}
       {warningMessage && (
-        <div className="bg-[#FFECE8] border-t border-b border-[#F7A898] px-4 py-2 text-center text-xs font-bold text-[#4A1E17] animate-in fade-in slide-in-from-top-1">
+        <div className="bg-[#F2A488] border-t border-b border-[#AB421C] px-4 py-2 text-center text-xs font-bold text-[#253341] animate-in fade-in slide-in-from-top-1">
           ⚠️ {warningMessage}
         </div>
       )}

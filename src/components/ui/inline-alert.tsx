@@ -5,16 +5,16 @@ import { cn } from '@/lib/utils';
 
 type AlertVariant = 'error' | 'warning' | 'info' | 'success';
 
-// All alert variants styled strictly within the #FFEBD3, #FFB6A6, #9BCEC1 palette system
+// All alert variants styled strictly within the İpek Küllü Arduvaz 10-hex palette system
 const styles: Record<AlertVariant, string> = {
   error:
-    'border-[#F7A898] bg-[#FFECE8] text-[#4A1E17]',
+    'border-[#AB421C] bg-[#F2A488]/30 text-[#253341] [&>svg]:text-[#AB421C]',
   warning:
-    'border-[#F7A898] bg-[#FFB6A6]/30 text-[#4A1E17]',
+    'border-[#EC7D55] bg-[#F2A488]/40 text-[#253341] [&>svg]:text-[#AB421C]',
   info:
-    'border-[#7BB6A8] bg-[#9BCEC1]/25 text-[#0E2C24]',
+    'border-[#BCC7D2] bg-[#DBE6DD] text-[#253341] [&>svg]:text-[#3E5164]',
   success:
-    'border-[#7BB6A8] bg-[#9BCEC1] text-[#0E2C24]',
+    'border-[#3E5164] bg-[#DBE6DD] text-[#253341] [&>svg]:text-[#253341]',
 };
 
 const icons: Record<AlertVariant, typeof AlertCircle> = {

@@ -108,7 +108,7 @@ export function AddressSearch({
       data-address-search
     >
       <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#70372D]">
+        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#3E5164]">
           <Search className="h-5 w-5" />
         </div>
         
@@ -119,21 +119,21 @@ export function AddressSearch({
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={handleInputFocus}
           className={cn(
-            "pl-11 pr-24 h-12 rounded-2xl border-[#F7A898] bg-[#FFEBD3] text-[#2D1E12] font-medium placeholder:text-[#854B41]/60 focus-visible:border-[#9BCEC1] focus-visible:ring-2 focus-visible:ring-[#9BCEC1]/60 shadow-xs",
-            selectedAddress && "border-[#9BCEC1] bg-[#FFEBD3] ring-2 ring-[#9BCEC1]/40 font-semibold"
+            "pl-11 pr-24 h-12 rounded-2xl border-[#BCC7D2] bg-[#F5F9F5] text-[#253341] font-medium placeholder:text-[#3E5164]/65 focus-visible:border-[#EC7D55] focus-visible:ring-2 focus-visible:ring-[#EC7D55]/45 shadow-xs",
+            selectedAddress && "border-[#EC7D55] bg-[#F5F9F5] ring-2 ring-[#EC7D55]/30 font-semibold"
           )}
           disabled={isLoading}
         />
         
         <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-3">
           {selectedAddress && (
-            <div className="flex items-center gap-1.5 bg-[#9BCEC1] text-[#0E2C24] px-2 py-1 rounded-xl text-xs font-bold shadow-2xs">
+            <div className="flex items-center gap-1.5 bg-[#EC7D55] text-[#253341] px-2 py-1 rounded-xl text-xs font-bold shadow-2xs">
               <Check className="h-3.5 w-3.5 stroke-[3]" />
               <span>Seçildi</span>
               <button
                 type="button"
                 onClick={handleClear}
-                className="ml-1 p-0.5 rounded-full hover:bg-[#83BEB0] transition-colors"
+                className="ml-1 p-0.5 rounded-full hover:bg-[#AB421C] hover:text-[#F5F9F5] transition-colors"
                 aria-label="Adresi Temizle"
               >
                 <X className="h-3.5 w-3.5" />
@@ -142,13 +142,13 @@ export function AddressSearch({
           )}
           
           {showLoading && (
-            <div className="animate-spin h-4 w-4 border-2 border-[#9BCEC1] border-t-transparent rounded-full" />
+            <div className="animate-spin h-4 w-4 border-2 border-[#EC7D55] border-t-transparent rounded-full" />
           )}
           
           <ChevronDown 
             className={cn(
-              "h-5 w-5 text-[#70372D] transition-transform duration-200 cursor-pointer",
-              isOpen && "transform rotate-180 text-[#0E2C24]"
+              "h-5 w-5 text-[#3E5164] transition-transform duration-200 cursor-pointer",
+              isOpen && "transform rotate-180 text-[#AB421C]"
             )} 
             onClick={() => setIsOpen(!isOpen)}
           />
@@ -156,19 +156,19 @@ export function AddressSearch({
       </div>
 
       {shouldShowDropdown && (
-        <Card className="absolute top-full left-0 right-0 z-50 mt-2 p-1.5 bg-[#FFECE8] border-[#F7A898] shadow-xl rounded-2xl overflow-hidden">
-          <div className="max-h-64 overflow-y-auto divide-y divide-[#F7A898]/30">
+        <Card className="absolute top-full left-0 right-0 z-50 mt-2 p-1.5 bg-[#DCE3EA] border-[#BCC7D2] shadow-xl rounded-2xl overflow-hidden">
+          <div className="max-h-64 overflow-y-auto divide-y divide-[#BCC7D2]/50">
             {showLoading && (
-              <div className="p-4 text-center text-sm font-medium text-[#70372D]">
+              <div className="p-4 text-center text-sm font-medium text-[#3E5164]">
                 <div className="flex items-center justify-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-[#9BCEC1] border-t-transparent rounded-full" />
+                  <div className="animate-spin h-4 w-4 border-2 border-[#EC7D55] border-t-transparent rounded-full" />
                   Adresler aranıyor...
                 </div>
               </div>
             )}
 
             {searchError && !showLoading && (
-              <div className="p-4 text-center text-sm font-semibold text-[#4A1E17] bg-[#FFB6A6]/40 rounded-xl">
+              <div className="p-4 text-center text-sm font-semibold text-[#253341] bg-[#F2A488]/35 border border-[#AB421C] rounded-xl">
                 Adres arama sırasında bir hata oluştu
               </div>
             )}
@@ -180,19 +180,19 @@ export function AddressSearch({
                     key={`${address.latitude}-${address.longitude}-${index}`}
                     variant="ghost"
                     data-address-option
-                    className="w-full justify-start h-auto p-3 text-left rounded-xl hover:bg-[#9BCEC1] hover:text-[#0E2C24] transition-all group"
+                    className="w-full justify-start h-auto p-3 text-left rounded-xl bg-[#EDF3EE]/70 hover:bg-[#EC7D55] hover:text-[#253341] transition-all group"
                     onClick={() => handleAddressSelect(address)}
                   >
                     <div className="flex items-start gap-3 w-full">
-                      <div className="p-2 rounded-lg bg-[#FFB6A6] text-[#4A1E17] group-hover:bg-[#0E2C24] group-hover:text-[#9BCEC1] transition-colors mt-0.5">
+                      <div className="p-2 rounded-lg bg-[#DBE6DD] text-[#253341] group-hover:bg-[#253341] group-hover:text-[#F5F9F5] transition-colors mt-0.5">
                         <MapPin className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm text-[#2D1E12] group-hover:text-[#0E2C24] truncate">
+                        <div className="font-bold text-sm text-[#253341] truncate">
                           {AddressService.formatAddressForDisplay(address)}
                         </div>
                         {address.additionalInfo && (
-                          <div className="text-xs text-[#70372D] group-hover:text-[#0E2C24]/80 mt-0.5 truncate">
+                          <div className="text-xs text-[#3E5164] group-hover:text-[#253341]/90 mt-0.5 truncate">
                             {address.additionalInfo}
                           </div>
                         )}
@@ -204,16 +204,16 @@ export function AddressSearch({
             )}
 
             {searchSettled && uniqueAddresses.length === 0 && searchQuery.trim().length >= 2 && (
-              <div className="p-4 text-center text-sm font-medium text-[#70372D]">
+              <div className="p-4 text-center text-sm font-medium text-[#3E5164]">
                 <div className="flex items-center justify-center gap-2">
-                  <MapPin className="h-4 w-4 text-[#FFB6A6]" />
+                  <MapPin className="h-4 w-4 text-[#AB421C]" />
                   &ldquo;{searchQuery}&rdquo; için sonuç bulunamadı
                 </div>
               </div>
             )}
 
             {!showLoading && !searchError && searchQuery.trim().length < 2 && searchQuery.trim().length > 0 && (
-              <div className="p-4 text-center text-xs font-semibold text-[#70372D]">
+              <div className="p-4 text-center text-xs font-semibold text-[#3E5164]">
                 En az 2 karakter yazın...
               </div>
             )}

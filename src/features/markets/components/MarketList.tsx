@@ -20,12 +20,12 @@ const MarketMap = dynamic(() => import('@/components/MarketMap'), {
   ssr: false,
   loading: () => (
     <div
-      className="flex items-center justify-center bg-[#FFECE8] border border-[#F7A898] rounded-2xl"
+      className="flex items-center justify-center bg-[#EDF3EE] border border-[#BCC7D2] rounded-2xl"
       style={{ height: '400px', width: '100%' }}
       role="status"
       aria-label="Harita yükleniyor"
     >
-      <div className="text-center text-sm font-semibold text-[#70372D]">Harita yükleniyor...</div>
+      <div className="text-center text-sm font-semibold text-[#3E5164]">Harita yükleniyor...</div>
     </div>
   ),
 });
@@ -116,17 +116,17 @@ export function MarketList({
         onToggleBrand={toggleBrand}
       />
 
-      <div className="flex items-center justify-between bg-[#FFECE8] p-3 rounded-2xl border border-[#F7A898]/70 shadow-2xs">
-        <div className="flex items-center gap-2 text-sm text-[#2D1E12]">
-          <Store className="h-5 w-5 text-[#9BCEC1] stroke-[2.5]" aria-hidden />
+      <div className="flex items-center justify-between bg-[#EDF3EE] p-3 rounded-2xl border border-[#BCC7D2] shadow-2xs">
+        <div className="flex items-center gap-2 text-sm text-[#253341]">
+          <Store className="h-5 w-5 text-[#AB421C] stroke-[2.5]" aria-hidden />
           <span className="font-bold">{markets.length} Market Bulundu</span>
-          <span className="text-xs bg-[#9BCEC1] text-[#0E2C24] font-bold px-2 py-0.5 rounded-lg ml-1">
+          <span className="text-xs bg-[#DBE6DD] border border-[#BCC7D2] text-[#253341] font-bold px-2 py-0.5 rounded-lg ml-1">
             {visibleCount} seçili
           </span>
         </div>
 
         <div
-          className="flex rounded-xl bg-[#FFEBD3] p-1 border border-[#F7A898]/50"
+          className="flex rounded-xl bg-[#F5F9F5] p-1 border border-[#BCC7D2]"
           role="group"
           aria-label="Görünüm modu"
         >
@@ -137,8 +137,8 @@ export function MarketList({
             className={cn(
               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
               viewMode === 'list'
-                ? 'bg-[#9BCEC1] text-[#0E2C24] shadow-xs'
-                : 'text-[#70372D] hover:bg-[#FFB6A6]/30'
+                ? 'bg-[#EC7D55] text-[#253341] shadow-xs'
+                : 'text-[#3E5164] hover:bg-[#DBE6DD] hover:text-[#253341]'
             )}
           >
             <List className="h-4 w-4" />
@@ -151,8 +151,8 @@ export function MarketList({
             className={cn(
               'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
               viewMode === 'map'
-                ? 'bg-[#9BCEC1] text-[#0E2C24] shadow-xs'
-                : 'text-[#70372D] hover:bg-[#FFB6A6]/30'
+                ? 'bg-[#EC7D55] text-[#253341] shadow-xs'
+                : 'text-[#3E5164] hover:bg-[#DBE6DD] hover:text-[#253341]'
             )}
           >
             <Map className="h-4 w-4" />
@@ -174,7 +174,7 @@ export function MarketList({
           <Button
             type="button"
             onClick={() => handleSaveAndNavigate('/ai-chat')}
-            className="bg-[#9BCEC1] text-[#0E2C24] hover:bg-[#83BEB0] font-bold h-12 rounded-2xl shadow-sm text-sm"
+            className="bg-[#EC7D55] text-[#253341] hover:bg-[#AB421C] hover:text-[#F5F9F5] font-bold h-12 rounded-2xl shadow-sm text-sm"
           >
             <span>Kensai ile Devam Et ({visibleCount} Market)</span>
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -183,7 +183,7 @@ export function MarketList({
             type="button"
             variant="secondary"
             onClick={() => handleSaveAndNavigate('/product-search')}
-            className="bg-[#FFB6A6] text-[#4A1E17] hover:bg-[#FA9E8B] font-bold h-12 rounded-2xl shadow-2xs text-sm"
+            className="bg-[#3E5164] text-[#F5F9F5] hover:bg-[#253341] font-bold h-12 rounded-2xl shadow-2xs text-sm"
           >
             <span>Ürün Aramaya Git ({visibleCount} Market)</span>
             <ArrowRight className="h-4 w-4 ml-1" />
@@ -205,7 +205,7 @@ export function MarketList({
             hiddenMarkets={hiddenMarkets}
             onMarkerClick={handleMarkerClick}
           />
-          <p className="text-center text-xs font-semibold text-[#70372D]">
+          <p className="text-center text-xs font-semibold text-[#3E5164]">
             Haritada marker ikonlarına tıklayarak marketleri seçebilir veya filtreleyebilirsiniz
           </p>
         </div>

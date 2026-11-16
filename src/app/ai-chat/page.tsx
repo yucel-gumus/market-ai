@@ -71,9 +71,9 @@ function stepIcon(step: string, className = 'w-6 h-6') {
 function stepColor(step: string, current: string) {
   const cur = STEPS.indexOf(current as (typeof STEPS)[number]);
   const idx = STEPS.indexOf(step as (typeof STEPS)[number]);
-  if (idx < cur) return 'bg-[#FFB6A6] text-[#4A1E17] shadow-xs';
-  if (idx === cur) return 'bg-[#9BCEC1] text-[#0E2C24] ring-4 ring-[#9BCEC1]/40 shadow-sm';
-  return 'bg-[#FFECE8] text-[#70372D] border border-[#F7A898]/50';
+  if (idx < cur) return 'bg-[#DBE6DD] text-[#253341] border border-[#BCC7D2] shadow-xs';
+  if (idx === cur) return 'bg-[#EC7D55] text-[#253341] ring-4 ring-[#EC7D55]/35 shadow-sm';
+  return 'bg-[#EDF3EE] text-[#3E5164] border border-[#BCC7D2]';
 }
 
 export default function AiChatPage() {
@@ -205,14 +205,14 @@ export default function AiChatPage() {
 
   if (isSettingsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FFEBD3]">
+      <div className="flex min-h-screen items-center justify-center bg-[#EDF3EE]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-4 border-[#9BCEC1] border-t-transparent"
+            className="h-10 w-10 animate-spin rounded-full border-4 border-[#EC7D55] border-t-transparent"
             role="status"
             aria-label="Yükleniyor"
           />
-          <span className="text-sm font-bold text-[#4A1E17]">Ayarlar Yükleniyor...</span>
+          <span className="text-sm font-bold text-[#253341]">Ayarlar Yükleniyor...</span>
         </div>
       </div>
     );
@@ -220,13 +220,13 @@ export default function AiChatPage() {
 
   if (settingsError) {
     return (
-      <div className="min-h-screen bg-[#FFEBD3] p-4">
+      <div className="min-h-screen bg-[#EDF3EE] p-4">
         <div className="container mx-auto max-w-2xl pt-16">
           <Button
             variant="outline"
             size="sm"
             onClick={() => router.push('/')}
-            className="mb-6 flex items-center gap-2 bg-[#FFECE8] text-[#4A1E17] border-[#F7A898]"
+            className="mb-6 flex items-center gap-2"
           >
             <Home className="h-4 w-4" />
             Ana Sayfa
@@ -238,25 +238,25 @@ export default function AiChatPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFEBD3] text-[#2D1E12] py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#EDF3EE] via-[#DBE6DD]/50 to-[#DCE3EA]/40 text-[#253341] py-8 px-4">
       <div className="container mx-auto max-w-4xl space-y-6">
 
         {/* Hero Header */}
         <div className="text-center space-y-2 pt-1 sm:pt-2">
-          <div className="inline-flex items-center justify-center p-2 sm:p-3 rounded-3xl bg-[#FFECE8] border border-[#F7A898] text-[#4A1E17] shadow-2xs mb-1 sm:mb-2">
-            <ChefHat className="h-8 w-8 sm:h-10 sm:w-10 text-[#0E2C24] stroke-[2.2]" aria-hidden />
+          <div className="inline-flex items-center justify-center p-2 sm:p-3 rounded-3xl bg-[#DCE3EA] border border-[#BCC7D2] text-[#253341] shadow-2xs mb-1 sm:mb-2">
+            <ChefHat className="h-8 w-8 sm:h-10 sm:w-10 text-[#AB421C] stroke-[2.2]" aria-hidden />
           </div>
-          <h1 className="text-2xl font-extrabold font-heading text-[#2D1E12] sm:text-4xl tracking-tight">
+          <h1 className="text-2xl font-extrabold font-heading text-[#253341] sm:text-4xl tracking-tight">
             Yemek Tarifi ve Malzeme Asistanı
           </h1>
-          <p className="text-sm sm:text-base font-medium text-[#70372D] max-w-lg mx-auto">
+          <p className="text-sm sm:text-base font-medium text-[#3E5164] max-w-lg mx-auto">
             Hangi yemeği yapmak istediğinizi yazın; malzeme listesini hazırlayıp en yakın ve uygun market fiyatlarını çıkaralım.
           </p>
         </div>
 
         {/* Stepper Navigation */}
         <nav
-          className="flex items-center justify-center gap-2 p-2 bg-[#FFECE8] border border-[#F7A898]/60 rounded-2xl shadow-2xs overflow-x-auto"
+          className="flex items-center justify-center gap-2 p-2 bg-[#DCE3EA] border border-[#BCC7D2] rounded-2xl shadow-2xs overflow-x-auto"
           aria-label="İlerleme adımları"
         >
           {STEPS.map((step, index) => (
@@ -268,7 +268,7 @@ export default function AiChatPage() {
                 {stepIcon(step)}
               </div>
               {index < STEPS.length - 1 && (
-                <ArrowRight className="h-4 w-4 text-[#F7A898]" aria-hidden />
+                <ArrowRight className="h-4 w-4 text-[#3E5164]" aria-hidden />
               )}
             </div>
           ))}
@@ -286,64 +286,64 @@ export default function AiChatPage() {
         )}
 
         {/* Main Process Card */}
-        <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl p-4 sm:p-6">
+        <Card className="bg-[#DCE3EA] border-[#BCC7D2] shadow-md rounded-3xl p-4 sm:p-6">
           <CardContent className="pt-2">
             {/* Modal for Recipe Details & Calories */}
             {showRecipeModal && recipeData && (
               <div
                 ref={recipeDialogRef}
                 tabIndex={-1}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-[#2D1E12]/60 p-4 backdrop-blur-md outline-none"
+                className="fixed inset-0 z-50 flex items-center justify-center bg-[#253341]/60 p-4 backdrop-blur-md outline-none"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="recipe-modal-title"
               >
-                <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-[#FFEBD3] border border-[#F7A898] shadow-2xl">
-                  <div className="relative bg-[#FFECE8] p-6 border-b border-[#F7A898]/60 text-[#2D1E12]">
+                <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-[#EDF3EE] border border-[#BCC7D2] shadow-2xl">
+                  <div className="relative bg-[#DCE3EA] p-6 border-b border-[#BCC7D2] text-[#253341]">
                     <button
                       type="button"
                       onClick={() => setShowRecipeModal(false)}
-                      className="absolute right-4 top-4 rounded-full bg-[#FFEBD3] p-2 text-[#4A1E17] hover:bg-[#FFB6A6]/40 transition-colors"
+                      className="absolute right-4 top-4 rounded-full bg-[#EDF3EE] p-2 text-[#253341] hover:bg-[#DBE6DD] border border-[#BCC7D2] transition-colors"
                       aria-label="Kapat"
                     >
                       <X className="h-5 w-5" />
                     </button>
                     <div className="mb-4 flex items-center gap-3">
-                      <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24]">
+                      <div className="p-2.5 rounded-2xl bg-[#EC7D55] text-[#253341]">
                         <ChefHat className="h-8 w-8 stroke-[2.5]" aria-hidden />
                       </div>
                       <div>
-                        <h2 id="recipe-modal-title" className="text-2xl font-bold font-heading text-[#2D1E12]">
+                        <h2 id="recipe-modal-title" className="text-2xl font-bold font-heading text-[#253341]">
                           {recipeData.name}
                         </h2>
-                        <p className="mt-0.5 text-xs font-semibold text-[#70372D]">
+                        <p className="mt-0.5 text-xs font-semibold text-[#3E5164]">
                           {recipeData.description}
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[#FFEBD3] p-3.5 border border-[#F7A898]/50">
+                    <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[#EDF3EE] p-3.5 border border-[#BCC7D2]">
                       <div className="flex items-center gap-2.5">
-                        <Flame className="h-5 w-5 text-[#4A1E17]" aria-hidden />
+                        <Flame className="h-5 w-5 text-[#AB421C]" aria-hidden />
                         <div>
-                          <div className="text-lg font-bold font-heading text-[#2D1E12]">{recipeData.calories}</div>
-                          <div className="text-[11px] font-semibold text-[#70372D]">kcal/porsiyon</div>
+                          <div className="text-lg font-bold font-heading text-[#253341]">{recipeData.calories}</div>
+                          <div className="text-[11px] font-semibold text-[#3E5164]">kcal/porsiyon</div>
                         </div>
                       </div>
-                      <div className="h-6 w-px bg-[#F7A898]/40" />
+                      <div className="h-6 w-px bg-[#BCC7D2]" />
                       <div className="flex items-center gap-2.5">
-                        <Users className="h-5 w-5 text-[#0E2C24]" aria-hidden />
+                        <Users className="h-5 w-5 text-[#253341]" aria-hidden />
                         <div>
                           {/* Sonucun üretildiği kişi sayısı gösterilir, ekrandaki güncel girdi değil. */}
-                          <div className="text-base font-bold text-[#2D1E12]">{recipeResult?.servings ?? pipeline.servings} Kişilik</div>
-                          <div className="text-[11px] font-semibold text-[#70372D]">Standart porsiyon</div>
+                          <div className="text-base font-bold text-[#253341]">{recipeResult?.servings ?? pipeline.servings} Kişilik</div>
+                          <div className="text-[11px] font-semibold text-[#3E5164]">Standart porsiyon</div>
                         </div>
                       </div>
-                      <div className="h-6 w-px bg-[#F7A898]/40" />
+                      <div className="h-6 w-px bg-[#BCC7D2]" />
                       <div className="flex items-center gap-2.5">
-                        <ClockIcon className="h-5 w-5 text-[#0E2C24]" aria-hidden />
+                        <ClockIcon className="h-5 w-5 text-[#253341]" aria-hidden />
                         <div>
-                          <div className="text-base font-bold text-[#2D1E12]">~30 Dakika</div>
-                          <div className="text-[11px] font-semibold text-[#70372D]">Hazırlık süresi</div>
+                          <div className="text-base font-bold text-[#253341]">~30 Dakika</div>
+                          <div className="text-[11px] font-semibold text-[#3E5164]">Hazırlık süresi</div>
                         </div>
                       </div>
                     </div>
@@ -351,34 +351,34 @@ export default function AiChatPage() {
 
                   <div className="max-h-[calc(90vh-220px)] overflow-y-auto p-6 space-y-6">
                     <div className="grid gap-6 md:grid-cols-2">
-                      <div className="rounded-2xl border border-[#F7A898]/60 bg-[#FFECE8] p-5 space-y-3">
-                        <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#2D1E12]">
-                          <Package className="h-5 w-5 text-[#9BCEC1] stroke-[2.5]" /> Gerekli Malzemeler
+                      <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
+                        <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#253341]">
+                          <Package className="h-5 w-5 text-[#AB421C] stroke-[2.5]" /> Gerekli Malzemeler
                         </h3>
                         <ul className="space-y-2">
                           {recipeData.ingredients?.map((item: string, idx: number) => (
                             <li
                               key={idx}
-                              className="rounded-xl bg-[#FFEBD3] p-3 text-sm font-semibold text-[#2D1E12] border border-[#F7A898]/40 flex items-center gap-2"
+                              className="rounded-xl bg-[#EDF3EE] p-3 text-sm font-semibold text-[#253341] border border-[#BCC7D2] flex items-center gap-2"
                             >
-                              <span className="w-2 h-2 rounded-full bg-[#9BCEC1]" />
+                              <span className="w-2 h-2 rounded-full bg-[#EC7D55]" />
                               {item}
                             </li>
                           ))}
                         </ul>
                       </div>
 
-                      <div className="rounded-2xl border border-[#F7A898]/60 bg-[#FFECE8] p-5 space-y-3">
-                        <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#2D1E12]">
-                          <Utensils className="h-5 w-5 text-[#9BCEC1] stroke-[2.5]" /> Hazırlanışı
+                      <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
+                        <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#253341]">
+                          <Utensils className="h-5 w-5 text-[#AB421C] stroke-[2.5]" /> Hazırlanışı
                         </h3>
                         <ol className="space-y-3">
                           {recipeData.steps?.map((step: string, idx: number) => (
                             <li
                               key={idx}
-                              className="flex gap-3 rounded-xl bg-[#FFEBD3] p-3 text-sm font-medium text-[#2D1E12] border border-[#F7A898]/40"
+                              className="flex gap-3 rounded-xl bg-[#EDF3EE] p-3 text-sm font-medium text-[#253341] border border-[#BCC7D2]"
                             >
-                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#9BCEC1] text-xs font-bold text-[#0E2C24]">
+                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#EC7D55] text-xs font-bold text-[#253341]">
                                 {idx + 1}
                               </span>
                               <span>{step}</span>
@@ -389,8 +389,8 @@ export default function AiChatPage() {
                     </div>
 
                     {recipeData.nutrition && (
-                      <div className="rounded-2xl border border-[#F7A898]/60 bg-[#FFECE8] p-5 space-y-3">
-                        <h3 className="text-lg font-bold font-heading text-[#2D1E12]">
+                      <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
+                        <h3 className="text-lg font-bold font-heading text-[#253341]">
                           Besin Değerleri ve Diyetisyen Değerlendirmesi
                         </h3>
                         {typeof recipeData.nutrition === 'object' && recipeData.nutrition !== null ? (
@@ -401,12 +401,12 @@ export default function AiChatPage() {
                                 .map(([key, val]) => (
                                   <div
                                     key={key}
-                                    className="rounded-xl bg-[#FFEBD3] p-3 border border-[#F7A898]/40"
+                                    className="rounded-xl bg-[#EDF3EE] p-3 border border-[#BCC7D2]"
                                   >
-                                    <span className="text-xs font-bold text-[#70372D] block mb-1">
+                                    <span className="text-xs font-bold text-[#3E5164] block mb-1">
                                       {nutritionLabel(key)}
                                     </span>
-                                    <span className="text-xs font-medium text-[#2D1E12] leading-snug block">
+                                    <span className="text-xs font-medium text-[#253341] leading-snug block">
                                       {formatNutritionValue(val)}
                                     </span>
                                   </div>
@@ -415,18 +415,18 @@ export default function AiChatPage() {
                             {Object.entries(recipeData.nutrition as Record<string, unknown>)
                               .filter(([key]) => isNutritionNote(key))
                               .map(([key, val]) => (
-                                <div key={key} className="rounded-xl bg-white/70 p-3.5 border border-[#F7A898]/40">
-                                  <span className="text-xs font-bold text-[#0E2C24] block mb-1">
+                                <div key={key} className="rounded-xl bg-[#F5F9F5] p-3.5 border border-[#BCC7D2]">
+                                  <span className="text-xs font-bold text-[#253341] block mb-1">
                                     💡 Beslenme ve Diyet Notu:
                                   </span>
-                                  <p className="text-xs font-medium leading-relaxed text-[#2D1E12]">
+                                  <p className="text-xs font-medium leading-relaxed text-[#3E5164]">
                                     {formatNutritionValue(val)}
                                   </p>
                                 </div>
                               ))}
                           </div>
                         ) : (
-                          <p className="text-sm font-medium leading-relaxed text-[#70372D]">
+                          <p className="text-sm font-medium leading-relaxed text-[#3E5164]">
                             {formatNutritionValue(recipeData.nutrition)}
                           </p>
                         )}
@@ -472,8 +472,8 @@ export default function AiChatPage() {
 
             {/* Adım 2 ve sonrası: tarif/kalori aksiyonu kaybolmasın, her adımda erişilebilir kalsın */}
             {pipeline.currentStep !== 'input' && (
-              <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-[#F7A898]/60 bg-[#FFEBD3] p-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs font-semibold text-[#70372D]">
+              <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-[#BCC7D2] bg-[#EDF3EE] p-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-semibold text-[#3E5164]">
                   {recipeResult
                     ? `${recipeIsStale ? 'Önceki tarif' : 'Tarif hazır'}: ${recipeResult.foodName} (${recipeResult.servings} kişilik)`
                     : 'Bu yemek için tarif ve kalori bilgisini de alabilirsiniz.'}
@@ -484,7 +484,7 @@ export default function AiChatPage() {
                     variant="secondary"
                     onClick={handleGetRecipeAndCalorie}
                     disabled={isCalorieLoading || !pipeline.foodName.trim()}
-                    className="h-9 rounded-xl bg-[#FFB6A6] text-[#4A1E17] hover:bg-[#FA9E8B] text-xs font-bold"
+                    className="h-9 rounded-xl bg-[#3E5164] text-[#F5F9F5] hover:bg-[#253341] text-xs font-bold"
                   >
                     {isCalorieLoading ? 'Tarif Hazırlanıyor...' : recipeResult ? 'Tarifi Yenile' : 'Tarif ve Kalori Detayı Al'}
                   </Button>
@@ -493,7 +493,7 @@ export default function AiChatPage() {
                       type="button"
                       variant="outline"
                       onClick={() => setShowRecipeModal(true)}
-                      className="h-9 rounded-xl bg-[#FFEBD3] text-[#2D1E12] border-[#F7A898] text-xs font-bold"
+                      className="h-9 rounded-xl text-xs font-bold"
                     >
                       {recipeIsStale ? 'Önceki Tarifi Gör' : 'Tarifi Görüntüle'}
                     </Button>
@@ -505,14 +505,14 @@ export default function AiChatPage() {
             {/* STEP 1: INPUT */}
             {pipeline.currentStep === 'input' && (
               <div className="text-center space-y-6 py-1 sm:py-4">
-                <div className="mx-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-[#FFEBD3] border border-[#F7A898] flex items-center justify-center text-[#4A1E17] shadow-2xs">
-                  <ChefHat className="h-7 w-7 sm:h-10 sm:w-10 text-[#0E2C24] stroke-[2.2]" aria-hidden />
+                <div className="mx-auto w-14 h-14 sm:w-20 sm:h-20 rounded-full bg-[#EDF3EE] border border-[#BCC7D2] flex items-center justify-center text-[#253341] shadow-2xs">
+                  <ChefHat className="h-7 w-7 sm:h-10 sm:w-10 text-[#AB421C] stroke-[2.2]" aria-hidden />
                 </div>
                 <div className="space-y-1.5 max-w-md mx-auto">
-                  <h2 className="text-xl sm:text-2xl font-bold font-heading text-[#2D1E12]">
+                  <h2 className="text-xl sm:text-2xl font-bold font-heading text-[#253341]">
                     Hangi yemeği hazırlamak istiyorsunuz?
                   </h2>
-                  <p className="text-xs font-semibold text-[#70372D]">
+                  <p className="text-xs font-semibold text-[#3E5164]">
                     Yemek adını yazın; malzeme listesini çıkaralım ve çevrenizdeki marketlerden fiyat araştırması yapalım.
                   </p>
                 </div>
@@ -527,20 +527,20 @@ export default function AiChatPage() {
                       placeholder="Örn: Mercimek Çorbası, Tavuk Sote, Lazanya"
                       disabled={pipeline.isLoading}
                       onKeyDown={(e) => e.key === 'Enter' && pipeline.handleSubmit()}
-                      className="w-full rounded-2xl border-2 border-[#F7A898] bg-[#FFEBD3] px-4 py-3.5 text-base font-semibold text-[#2D1E12] placeholder:text-[#854B41]/60 focus:border-[#9BCEC1] focus:outline-none shadow-xs"
+                      className="w-full rounded-2xl border-2 border-[#BCC7D2] bg-[#F5F9F5] px-4 py-3.5 text-base font-semibold text-[#253341] placeholder:text-[#3E5164]/65 focus:border-[#EC7D55] focus:outline-none shadow-xs"
                     />
-                    <Search className="absolute right-4 top-4 h-5 w-5 text-[#70372D]" aria-hidden />
+                    <Search className="absolute right-4 top-4 h-5 w-5 text-[#3E5164]" aria-hidden />
                   </div>
 
                   <div className="grid gap-3">
-                    <label className="flex items-center gap-3 text-sm font-bold">Kişi sayısı
-                      <input aria-label="Kişi sayısı" type="number" min={1} max={20} value={pipeline.servings} onChange={e => { const value = Number(e.target.value); if (Number.isInteger(value) && value >= 1 && value <= 20) pipeline.setServings(value); }} className="w-20 rounded-xl border border-[#F7A898] bg-[#FFEBD3] p-2" />
+                    <label className="flex items-center gap-3 text-sm font-bold text-[#253341]">Kişi sayısı
+                      <input aria-label="Kişi sayısı" type="number" min={1} max={20} value={pipeline.servings} onChange={e => { const value = Number(e.target.value); if (Number.isInteger(value) && value >= 1 && value <= 20) pipeline.setServings(value); }} className="w-20 rounded-xl border border-[#BCC7D2] bg-[#F5F9F5] text-[#253341] p-2" />
                     </label>
                     <Button
                       type="button"
                       onClick={() => pipeline.handleSubmit()}
                       disabled={pipeline.isLoading || !pipeline.foodName.trim()}
-                      className="w-full h-12 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] hover:bg-[#83BEB0] text-base font-bold shadow-sm"
+                      className="w-full h-12 rounded-2xl bg-[#EC7D55] text-[#253341] hover:bg-[#AB421C] hover:text-[#F5F9F5] text-base font-bold shadow-sm"
                     >
                       {pipeline.isLoading ? 'Malzemeler Aranıyor...' : '1. Malzeme Listesini Bul'}
                     </Button>
@@ -550,7 +550,7 @@ export default function AiChatPage() {
                       variant="secondary"
                       onClick={handleGetRecipeAndCalorie}
                       disabled={isCalorieLoading || !pipeline.foodName.trim()}
-                      className="w-full h-12 rounded-2xl bg-[#FFB6A6] text-[#4A1E17] hover:bg-[#FA9E8B] text-sm font-bold shadow-2xs"
+                      className="w-full h-12 rounded-2xl bg-[#3E5164] text-[#F5F9F5] hover:bg-[#253341] text-sm font-bold shadow-2xs"
                     >
                       {isCalorieLoading
                         ? 'Tarif & Kalori Hazırlanıyor...'
@@ -563,9 +563,9 @@ export default function AiChatPage() {
                   )}
 
                   {recipeResult && (
-                    <div className="space-y-2 rounded-2xl border border-[#F7A898]/60 bg-[#FFEBD3] p-3">
+                    <div className="space-y-2 rounded-2xl border border-[#BCC7D2] bg-[#EDF3EE] p-3">
                       {recipeIsStale && (
-                        <p role="status" className="text-xs font-semibold text-[#4A1E17]">
+                        <p role="status" className="text-xs font-semibold text-[#AB421C]">
                           Girdiğiniz bilgiler bu tariften sonra değişti. Aşağıdaki tarif
                           &quot;{recipeResult.foodName} ({recipeResult.servings} kişilik)&quot; için üretildi;
                           yeni kişi sayısı veya yemek adıyla yeniden oluşturun.
@@ -573,10 +573,11 @@ export default function AiChatPage() {
                       )}
                       <Button
                         type="button"
+                        variant="outline"
                         onClick={() => setShowRecipeModal(true)}
-                        className="w-full h-11 rounded-2xl bg-[#FFEBD3] text-[#2D1E12] border border-[#F7A898] hover:bg-[#FFECE8] font-bold text-sm"
+                        className="w-full h-11 rounded-2xl font-bold text-sm"
                       >
-                        <ChefHat className="mr-2 h-4 w-4 text-[#0E2C24]" />
+                        <ChefHat className="mr-2 h-4 w-4 text-[#AB421C]" />
                         {recipeIsStale
                           ? `Önceki Tarifi Görüntüle (${recipeResult.foodName} · ${recipeResult.servings} kişilik)`
                           : 'Hazırlanan Tarifi Görüntüle'}
@@ -591,11 +592,11 @@ export default function AiChatPage() {
             {pipeline.currentStep === 'ingredients' && (
               <div className="space-y-6">
                 <div className="text-center space-y-1.5">
-                  <div className="p-3 rounded-full bg-[#FFEBD3] border border-[#F7A898] w-14 h-14 mx-auto flex items-center justify-center text-[#0E2C24] mb-2">
+                  <div className="p-3 rounded-full bg-[#EDF3EE] border border-[#BCC7D2] w-14 h-14 mx-auto flex items-center justify-center text-[#AB421C] mb-2">
                     <Package className="h-7 w-7 stroke-[2.5]" />
                   </div>
-                  <h2 className="text-2xl font-bold font-heading text-[#2D1E12]">Tespit Edilen Malzemeler</h2>
-                  <p className="text-xs font-semibold text-[#70372D]">
+                  <h2 className="text-2xl font-bold font-heading text-[#253341]">Tespit Edilen Malzemeler</h2>
+                  <p className="text-xs font-semibold text-[#3E5164]">
                     Evinizde olan veya almak istemediğiniz malzemeleri listeden çıkarabilirsiniz
                   </p>
                 </div>
@@ -604,15 +605,15 @@ export default function AiChatPage() {
                   {pipeline.ingredients.map((ingredient) => (
                     <li
                       key={ingredient}
-                      className="flex items-center justify-between rounded-2xl border border-[#F7A898]/60 bg-[#FFEBD3] p-3.5 shadow-2xs"
+                      className="flex items-center justify-between rounded-2xl border border-[#BCC7D2] bg-[#EDF3EE] p-3.5 shadow-2xs"
                     >
-                      <span className="text-sm font-bold capitalize text-[#2D1E12]">{ingredient}</span>
+                      <span className="text-sm font-bold capitalize text-[#253341]">{ingredient}</span>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
                         onClick={() => pipeline.removeIngredient(ingredient)}
-                        className="h-8 px-3 rounded-xl bg-[#FFB6A6]/40 text-[#4A1E17] hover:bg-[#FFB6A6] text-xs font-bold"
+                        className="h-8 px-3 rounded-xl bg-[#F2A488]/45 text-[#253341] hover:bg-[#AB421C] hover:text-[#F5F9F5] text-xs font-bold"
                       >
                         <X size={14} className="mr-1" /> Çıkar
                       </Button>
@@ -625,7 +626,7 @@ export default function AiChatPage() {
                     type="button"
                     onClick={pipeline.confirmIngredients}
                     disabled={pipeline.isLoading || pipeline.ingredients.length === 0}
-                    className="flex-1 h-12 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] hover:bg-[#83BEB0] font-bold text-sm shadow-sm"
+                    className="flex-1 h-12 rounded-2xl bg-[#EC7D55] text-[#253341] hover:bg-[#AB421C] hover:text-[#F5F9F5] font-bold text-sm shadow-sm"
                   >
                     {pipeline.isLoading ? 'Fiyatlar Aranıyor...' : 'Malzemeleri Onayla & Marketleri Tara'}
                   </Button>
@@ -633,16 +634,16 @@ export default function AiChatPage() {
                     type="button"
                     variant="outline"
                     onClick={pipeline.resetForm}
-                    className="h-12 rounded-2xl bg-[#FFEBD3] text-[#4A1E17] border-[#F7A898] font-bold text-sm"
+                    className="h-12 rounded-2xl font-bold text-sm"
                   >
                     <RotateCcw className="mr-2 h-4 w-4" /> Yeniden Başla
                   </Button>
                 </div>
 
                 {/* Extra Product Search */}
-                <Card className="border border-[#F7A898]/70 bg-[#FFEBD3] rounded-2xl mt-4">
+                <Card className="border border-[#BCC7D2] bg-[#EDF3EE] rounded-2xl mt-4">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-bold font-heading text-[#2D1E12]">
+                    <CardTitle className="text-sm font-bold font-heading text-[#253341]">
                       Ekstra Ürün Veya İçecek Ekle
                     </CardTitle>
                   </CardHeader>
@@ -698,15 +699,15 @@ export default function AiChatPage() {
             {pipeline.currentStep === 'processing' && (
               <div className="text-center space-y-4 py-8" role="status" aria-live="polite">
                 <div className="relative mx-auto h-20 w-20 flex items-center justify-center">
-                  <div className="absolute inset-0 rounded-full border-4 border-[#F7A898]" />
-                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-[#9BCEC1] border-t-transparent" />
-                  <Clock className="h-8 w-8 text-[#0E2C24]" />
+                  <div className="absolute inset-0 rounded-full border-4 border-[#BCC7D2]" />
+                  <div className="absolute inset-0 animate-spin rounded-full border-4 border-[#EC7D55] border-t-transparent" />
+                  <Clock className="h-8 w-8 text-[#253341]" />
                 </div>
                 <div className="space-y-1">
-                  <h2 className="text-2xl font-bold font-heading text-[#2D1E12]">
+                  <h2 className="text-2xl font-bold font-heading text-[#253341]">
                     En Uygun Fiyatlar Hesaplanıyor...
                   </h2>
-                  <p className="text-xs font-semibold text-[#70372D]">
+                  <p className="text-xs font-semibold text-[#3E5164]">
                     Seçili şubelerde ürün ve fiyat kayıtları aranıyor
                   </p>
                 </div>
@@ -717,26 +718,26 @@ export default function AiChatPage() {
             {pipeline.currentStep === 'complete' && (
               <div className="space-y-6">
                 <div className="text-center space-y-1">
-                  <div className="p-3 rounded-full bg-[#9BCEC1] text-[#0E2C24] w-14 h-14 mx-auto flex items-center justify-center mb-2 shadow-xs">
+                  <div className="p-3 rounded-full bg-[#EC7D55] text-[#253341] w-14 h-14 mx-auto flex items-center justify-center mb-2 shadow-xs">
                     <CheckCircle className="h-8 w-8 stroke-[2.5]" />
                   </div>
-                  <h2 className="text-2xl font-bold font-heading text-[#2D1E12]">Analiz Tamamlandı</h2>
-                  <p className="text-xs font-semibold text-[#70372D]">
+                  <h2 className="text-2xl font-bold font-heading text-[#253341]">Analiz Tamamlandı</h2>
+                  <p className="text-xs font-semibold text-[#3E5164]">
                     Doğrulanan ürünler sepete eklendi. Eksik malzemeleri kontrol edin.
                   </p>
                 </div>
 
                 {pipeline.results.missingProducts.length > 0 && (
-                  <div className="rounded-2xl border border-[#F7A898] bg-[#FFEBD3] p-4 space-y-4">
-                    <h3 className="font-bold" role="status">Tamamlanması gereken malzemeler ({pipeline.results.missingProducts.length})</h3>
-                    <p className="text-xs">Bu malzemeler için doğrulanmış ürün seçilemedi. Adayların yemeğe uygunluğunu kontrol ederek bir ürün seçin.</p>
+                  <div className="rounded-2xl border border-[#AB421C] bg-[#F2A488]/25 p-4 space-y-4">
+                    <h3 className="font-bold text-[#253341]" role="status">Tamamlanması gereken malzemeler ({pipeline.results.missingProducts.length})</h3>
+                    <p className="text-xs text-[#3E5164]">Bu malzemeler için doğrulanmış ürün seçilemedi. Adayların yemeğe uygunluğunu kontrol ederek bir ürün seçin.</p>
                     {pipeline.matches.filter(match => !match.product && !pipeline.removedIngredients.includes(match.ingredient)).map(match => (
                       <div key={match.ingredient} className="space-y-2">
-                        <p className="font-bold text-sm">{match.ingredient}</p>
-                        {match.candidates.length ? <select aria-label={`${match.ingredient} için ürün seç`} defaultValue="" onChange={e => pipeline.chooseProduct(match.ingredient, e.target.value)} className="w-full min-w-0 rounded-xl border border-[#F7A898] bg-[#FFECE8] p-2 text-sm">
+                        <p className="font-bold text-sm text-[#253341]">{match.ingredient}</p>
+                        {match.candidates.length ? <select aria-label={`${match.ingredient} için ürün seç`} defaultValue="" onChange={e => pipeline.chooseProduct(match.ingredient, e.target.value)} className="w-full min-w-0 rounded-xl border border-[#BCC7D2] bg-[#F5F9F5] text-[#253341] p-2 text-sm">
                           <option value="" disabled>Ürün seçin</option>
                           {match.candidates.map(product => <option key={product.id} value={product.id}>{product.title}</option>)}
-                        </select> : <p className="text-xs">Ürün bulunamadı veya arama tamamlanamadı. Ürün aramasından kendiniz ekleyebilirsiniz.</p>}
+                        </select> : <p className="text-xs text-[#3E5164]">Ürün bulunamadı veya arama tamamlanamadı. Ürün aramasından kendiniz ekleyebilirsiniz.</p>}
                       </div>
                     ))}
                     <Button variant="outline" onClick={() => router.push('/product-search')}>Ürün aramasını aç</Button>
@@ -744,12 +745,12 @@ export default function AiChatPage() {
                 )}
 
                 {pipeline.removedIngredients.length > 0 && (
-                  <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFECE8] p-4 space-y-3">
-                    <h3 className="font-bold" role="status">Sepetten çıkardığınız malzemeler ({pipeline.removedIngredients.length})</h3>
-                    <p className="text-xs">Bunları bilinçli olarak çıkardınız; isterseniz tekrar ekleyebilirsiniz.</p>
+                  <div className="rounded-2xl border border-[#BCC7D2] bg-[#EDF3EE] p-4 space-y-3">
+                    <h3 className="font-bold text-[#253341]" role="status">Sepetten çıkardığınız malzemeler ({pipeline.removedIngredients.length})</h3>
+                    <p className="text-xs text-[#3E5164]">Bunları bilinçli olarak çıkardınız; isterseniz tekrar ekleyebilirsiniz.</p>
                     {pipeline.matches.filter(match => pipeline.removedIngredients.includes(match.ingredient)).map(match => (
                       <div key={match.ingredient} className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-sm font-bold">{match.ingredient}</span>
+                        <span className="text-sm font-bold text-[#253341]">{match.ingredient}</span>
                         {match.candidates.length > 0 && (
                           <Button
                             variant="outline"
@@ -785,14 +786,14 @@ export default function AiChatPage() {
                 )}
 
                 {pipeline.matches.some(match => match.product) && (
-                  <div className="rounded-2xl border border-[#F7A898]/70 bg-[#FFEBD3] p-4 space-y-3">
-                    <h3 className="font-bold">Malzeme ve ürün eşleşmeleri</h3>
+                  <div className="rounded-2xl border border-[#BCC7D2] bg-[#EDF3EE] p-4 space-y-3">
+                    <h3 className="font-bold text-[#253341]">Malzeme ve ürün eşleşmeleri</h3>
                     <ul className="space-y-3">
                       {pipeline.matches.filter(match => match.product).map(match => (
-                        <li key={match.ingredient} className="rounded-xl bg-[#FFECE8] p-3 text-sm space-y-1">
+                        <li key={match.ingredient} className="rounded-xl bg-[#F5F9F5] border border-[#BCC7D2] p-3 text-sm space-y-1 text-[#253341]">
                           <p className="font-bold">{match.ingredient}: {match.product?.title}</p>
-                          {match.requiredAmount && <p className="text-xs">Tarif tahmini: {match.requiredAmount.amount} {match.requiredAmount.unit} · {match.packageQuantity ? `${match.packageQuantity} paket` : 'Paket miktarını ve adedi kontrol edin'}</p>}
-                          <p className="text-xs text-[#70372D]">{match.source === 'manual' ? 'Sizin seçiminiz' : match.source === 'plan' ? 'Tek mağaza planı' : 'Kensai önerisi'}{match.reasoning ? ` · ${match.reasoning}` : ''}</p>
+                          {match.requiredAmount && <p className="text-xs text-[#3E5164]">Tarif tahmini: {match.requiredAmount.amount} {match.requiredAmount.unit} · {match.packageQuantity ? `${match.packageQuantity} paket` : 'Paket miktarını ve adedi kontrol edin'}</p>}
+                          <p className="text-xs text-[#3E5164]">{match.source === 'manual' ? 'Sizin seçiminiz' : match.source === 'plan' ? 'Tek mağaza planı' : 'Kensai önerisi'}{match.reasoning ? ` · ${match.reasoning}` : ''}</p>
                         </li>
                       ))}
                     </ul>
@@ -802,7 +803,7 @@ export default function AiChatPage() {
                 <Button
                   type="button"
                   onClick={pipeline.resetForm}
-                  className="w-full h-12 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] hover:bg-[#83BEB0] font-bold text-sm shadow-sm"
+                  className="w-full h-12 rounded-2xl bg-[#EC7D55] text-[#253341] hover:bg-[#AB421C] hover:text-[#F5F9F5] font-bold text-sm shadow-sm"
                 >
                   <Search className="mr-2 h-4 w-4 stroke-[2.5]" />
                   Yeni Yemek Tarifi veya Malzeme Ara

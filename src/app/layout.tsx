@@ -36,15 +36,15 @@ export default function RootLayout({
   return (
     <html lang="tr" suppressHydrationWarning>
       <body
-        className={`${dmSans.variable} ${spaceGrotesk.variable} antialiased bg-[#FFEBD3] text-[#2D1E12] min-h-screen flex flex-col`}
+        className={`${dmSans.variable} ${spaceGrotesk.variable} antialiased bg-[#EDF3EE] text-[#253341] min-h-screen flex flex-col`}
       >
         <QueryProvider>
           <Navbar />
           <main className="flex-1">
             {children}
           </main>
-          <footer className="w-full py-3 text-center text-xs text-gray-500 border-t border-gray-200/20">
-            <p>Geliştirici: <a href="https://www.yucelgumus.dev/" target="_blank" rel="noopener noreferrer" className="font-semibold underline hover:text-gray-700 transition-colors">Yücel Gümüş</a></p>
+          <footer className="w-full py-3 text-center text-xs text-[#3E5164] bg-[#DBE6DD]/60 border-t border-[#BCC7D2]">
+            <p>Geliştirici: <a href="https://www.yucelgumus.dev/" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#253341] underline hover:text-[#AB421C] transition-colors">Yücel Gümüş</a></p>
           </footer>
         </QueryProvider>
       </body>

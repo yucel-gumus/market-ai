@@ -5,4 +5,4 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export { getMarketLogo, detectMarketBrand } from './marketUtils';
+export { getMarketLogo, detectMarketBrand, getStoreTheme, type StoreTheme } from './marketUtils';

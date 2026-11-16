@@ -63,9 +63,6 @@ export default function ProductSearchPage() {
     setRealRouteLegs(undefined);
   }, [optimization]);
 
-
-
-
   const {
     data: products = [],
     isLoading: isProductsLoading,
@@ -135,14 +132,14 @@ export default function ProductSearchPage() {
 
   if (isSettingsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FFEBD3]">
+      <div className="flex min-h-screen items-center justify-center bg-[#EDF3EE]">
         <div className="flex flex-col items-center gap-3">
           <div
-            className="h-10 w-10 animate-spin rounded-full border-4 border-[#9BCEC1] border-t-transparent"
+            className="h-10 w-10 animate-spin rounded-full border-4 border-[#EC7D55] border-t-transparent"
             role="status"
             aria-label="Yükleniyor"
           />
-          <span className="text-sm font-bold text-[#4A1E17]">Ayarlar Yükleniyor...</span>
+          <span className="text-sm font-bold text-[#253341]">Ayarlar Yükleniyor...</span>
         </div>
       </div>
     );
@@ -150,14 +147,14 @@ export default function ProductSearchPage() {
 
   if (settingsError) {
     return (
-      <div className="min-h-screen bg-[#FFEBD3] p-4">
+      <div className="min-h-screen bg-[#EDF3EE] p-4">
         <div className="container mx-auto max-w-2xl pt-16">
           <div className="mb-6 flex items-center gap-4">
             <Button
               variant="outline"
               size="sm"
               onClick={() => router.push('/')}
-              className="flex items-center gap-2 bg-[#FFECE8] text-[#4A1E17] border-[#F7A898]"
+              className="flex items-center gap-2"
             >
               <Home className="h-4 w-4" />
               Ana Sayfa
@@ -170,7 +167,7 @@ export default function ProductSearchPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFEBD3] text-[#2D1E12] py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#EDF3EE] via-[#DBE6DD]/50 to-[#DCE3EA]/40 text-[#253341] py-8 px-4">
       <div className="container mx-auto max-w-4xl space-y-6">
 
         {uiError && (
@@ -182,15 +179,15 @@ export default function ProductSearchPage() {
         )}
 
         {/* Live Search Section */}
-        <Card className="bg-[#FFECE8] border-[#F7A898] shadow-md rounded-3xl overflow-visible">
-          <CardHeader className="pb-4 border-b border-[#F7A898]/40">
-            <h1 className="flex items-center gap-3 leading-snug font-bold font-heading text-lg text-[#2D1E12]">
-              <div className="p-2.5 rounded-2xl bg-[#9BCEC1] text-[#0E2C24] shadow-2xs">
+        <Card className="bg-[#DCE3EA] border-[#BCC7D2] shadow-md rounded-3xl overflow-visible">
+          <CardHeader className="pb-4 border-b border-[#BCC7D2]/80">
+            <h1 className="flex items-center gap-3 leading-snug font-bold font-heading text-lg text-[#253341]">
+              <div className="p-2.5 rounded-2xl bg-[#EC7D55] text-[#253341] shadow-2xs">
                 <Search className="h-5 w-5 stroke-[2.5]" />
               </div>
               Canlı Ürün Fiyat Arama
             </h1>
-            <p className="text-xs font-semibold text-[#70372D]">
+            <p className="text-xs font-semibold text-[#3E5164]">
               Ürün adını yazın. Seçili şubelerdeki tüm sonuçlar sayfa sayfa yüklenir.
             </p>
           </CardHeader>

@@ -34,7 +34,7 @@ export function SearchInput({
 
   return (
     <div className={cn("relative w-full", className)}>
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#70372D]">
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#3E5164]">
         <Search className="h-5 w-5" />
       </div>
       
@@ -45,13 +45,13 @@ export function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="pl-12 pr-12 h-12 rounded-2xl bg-[#FFEBD3] border-[#F7A898] text-[#2D1E12] font-medium placeholder:text-[#854B41]/60 focus-visible:border-[#9BCEC1] focus-visible:ring-2 focus-visible:ring-[#9BCEC1]/60 shadow-xs"
+        className="pl-12 pr-12 h-12 rounded-2xl bg-[#F5F9F5] border-[#BCC7D2] text-[#253341] font-medium placeholder:text-[#3E5164]/65 focus-visible:border-[#EC7D55] focus-visible:ring-2 focus-visible:ring-[#EC7D55]/45 shadow-xs"
         autoComplete="off"
       />
       
       <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
         {isLoading && (
-          <Loader2 className="h-5 w-5 animate-spin text-[#9BCEC1]" />
+          <Loader2 className="h-5 w-5 animate-spin text-[#EC7D55]" />
         )}
         {value && !isLoading && (
           <Button 
@@ -59,7 +59,7 @@ export function SearchInput({
             onClick={handleClear}
             variant="ghost"
             size="sm"
-            className="h-7 w-7 p-0 rounded-full hover:bg-[#FFB6A6]/40 text-[#4A1E17]"
+            className="h-7 w-7 p-0 rounded-full hover:bg-[#DBE6DD] text-[#253341]"
           >
             <X className="h-4 w-4" />
           </Button>

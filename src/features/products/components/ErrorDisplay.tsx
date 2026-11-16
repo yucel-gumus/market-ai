@@ -12,24 +12,24 @@ interface ErrorDisplayProps {
 
 export function ErrorDisplay({ error, onRetry, onGoHome }: ErrorDisplayProps) {
   return (
-    <Card className="border-[#F7A898] bg-[#FFECE8] rounded-2xl shadow-sm">
+    <Card className="border-[#AB421C] bg-[#F2A488]/25 rounded-2xl shadow-sm">
       <CardHeader>
-        <CardTitle className="text-[#4A1E17] font-bold font-heading flex items-center gap-2">
-          <AlertCircle className="h-5 w-5 text-[#4A1E17]" />
+        <CardTitle className="text-[#253341] font-bold font-heading flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-[#AB421C]" />
           Bir Hata Oluştu
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-[#70372D] text-sm font-medium mb-4">{error}</p>
+        <p className="text-[#3E5164] text-sm font-medium mb-4">{error}</p>
         <div className="flex gap-2">
           {onRetry && (
-            <Button onClick={onRetry} variant="outline" size="sm" className="bg-[#FFEBD3] text-[#4A1E17] border-[#F7A898] font-bold">
+            <Button onClick={onRetry} variant="outline" size="sm" className="font-bold">
               <RotateCcw className="h-4 w-4 mr-2" />
               Tekrar Dene
             </Button>
           )}
           {onGoHome && (
-            <Button onClick={onGoHome} variant="default" size="sm" className="bg-[#9BCEC1] text-[#0E2C24] font-bold">
+            <Button onClick={onGoHome} variant="default" size="sm" className="font-bold">
               <Home className="h-4 w-4 mr-2" />
               Ana Sayfaya Dön
             </Button>
@@ -46,8 +46,8 @@ interface SearchErrorDisplayProps {
 
 export function SearchErrorDisplay({ error }: SearchErrorDisplayProps) {
   return (
-    <div className="flex items-center gap-2 p-3 mt-2 bg-[#FFECE8] border border-[#F7A898] rounded-xl text-[#4A1E17] text-xs font-semibold">
-      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+    <div className="flex items-center gap-2 p-3 mt-2 bg-[#F2A488]/30 border border-[#AB421C] rounded-xl text-[#253341] text-xs font-semibold">
+      <AlertCircle className="h-4 w-4 shrink-0 text-[#AB421C]" />
       <span>{error}</span>
     </div>
   );
