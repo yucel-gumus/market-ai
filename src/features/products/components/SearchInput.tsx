@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ export function SearchInput({
   className
 }: SearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
 
   const handleClear = () => {
     onClear();
@@ -34,11 +35,15 @@ export function SearchInput({
 
   return (
     <div className={cn("relative w-full", className)}>
-      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#3E5164]">
-        <Search className="h-5 w-5" />
+      <label htmlFor={inputId} className="sr-only">
+        Ürün ara
+      </label>
+      <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#3E5164] pointer-events-none">
+        <Search className="h-5 w-5" aria-hidden />
       </div>
       
       <Input
+        id={inputId}
         ref={inputRef}
         type="text"
         onFocus={onFocus}
@@ -51,7 +56,7 @@ export function SearchInput({
       
       <div className="absolute right-3.5 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
         {isLoading && (
-          <Loader2 className="h-5 w-5 animate-spin text-[#EC7D55]" />
+          <Loader2 className="h-5 w-5 animate-spin text-[#EC7D55]" aria-hidden />
         )}
         {value && !isLoading && (
           <Button 
@@ -59,9 +64,10 @@ export function SearchInput({
             onClick={handleClear}
             variant="ghost"
             size="sm"
+            aria-label="Aramayı temizle"
             className="h-7 w-7 p-0 rounded-full hover:bg-[#DBE6DD] text-[#253341]"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden />
           </Button>
         )}
       </div>

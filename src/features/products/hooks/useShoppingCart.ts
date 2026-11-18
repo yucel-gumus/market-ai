@@ -97,7 +97,7 @@ export function useShoppingCart(settings?: SearchSettings | null) {
       const updates = new Map(results.filter(p => findOptimalDepot(p, [])).map(p => [p.id, p]));
       setCartItems(prev => prev.map(item => {
         const product = updates.get(item.product.id);
-        return product ? { ...item, product, selectedDepot: findOptimalDepot(product, [])! } : item;
+        return product ? { ...item, product, selectedDepot: pickDepot(product, item.selectedDepot.depotId, [])! } : item;
       }));
       const failed = cartItems.filter(item => !updates.has(item.product.id)).length;
       setRefreshMessage(failed
@@ -110,7 +110,6 @@ export function useShoppingCart(settings?: SearchSettings | null) {
     cartItems, optimization, mode, setMode, isHydrated, addToCart, addManyToCart, removeFromCart,
     updateQuantity, clearCart, generateRoute, refreshPrices, isRefreshing, refreshMessage, setItemDepot,
     isProductInCart: (id: string) => cartItems.some(item => item.product.id === id),
-    getCartItemByProductId: (id: string) => cartItems.find(item => item.product.id === id),
     marketCount: optimization?.marketCount ?? 0, totalCost: optimization?.totalCost ?? 0,
     totalSavings: optimization?.totalSavings,
   };

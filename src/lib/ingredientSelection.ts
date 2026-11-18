@@ -44,18 +44,21 @@ export function buildIngredientMatches(
   ingredients: string[],
   selections: SelectProductsSelection[]
 ): IngredientMatch[] {
+  const usedIds = new Set<string>();
   return ingredients.map(ingredient => {
     const key = normalizeString(ingredient);
     const answer = selections.find(s => normalizeString(s?.searchedIngredient ?? '') === key);
     const candidates = (answer?.alternatives ?? []).map(toProduct).filter((p): p is Product => p !== null);
-    const product =
+    const rawProduct =
       answer?.success === true && answer.matchType === 'direct' ? toProduct(answer.product) : null;
+    const product = rawProduct && !usedIds.has(rawProduct.id) ? rawProduct : null;
+    if (product) usedIds.add(product.id);
     // Seçilen ürün aday listesinde yoksa kullanıcı onu yine de görebilsin.
     if (product && !candidates.some(candidate => candidate.id === product.id)) {
       candidates.unshift(product);
     }
     return product
       ? { ingredient, product, candidates, source: 'ai' as const, reasoning: answer?.reasoning || undefined }
-      : { ingredient, candidates };
+      : { ingredient, candidates: candidates.filter(c => !usedIds.has(c.id)) };
   });
 }

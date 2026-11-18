@@ -160,7 +160,7 @@ function ProductDropdownItem({ product, onAddToCart, onProductAdded, isInCart }:
             <span className="text-xs text-[#3E5164] font-semibold shrink-0">
               En uygun:
             </span>
-            <StoreBadge name={cheapestDepot.marketAdi} size="xs" />
+            <StoreBadge name={cheapestDepot.marketAdi} size="xs" lowPriority />
           </div>
         )}
       </div>

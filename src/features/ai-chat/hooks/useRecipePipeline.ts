@@ -7,6 +7,7 @@ import { buildIngredientMatches, type IngredientMatch } from '@/lib/ingredientSe
 import { branchForProduct } from '@/lib/branchSelection';
 import { planCartChanges } from '@/lib/applyConsolidation';
 import { recipePackageQuantity, type IngredientRequirement } from '@/lib/recipeQuantity';
+import { sessionMatchesSelection } from '@/lib/locationSession';
 import { normalizeString } from '@/lib/stringUtils';
 import { useAppStore } from '@/store/useAppStore';
 import type { ConsolidationPlan, ConsolidationPlans, Product } from '@/types';
@@ -45,6 +46,7 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
   const selectedMarkets = useAppStore(state => state.marketSession?.selectedMarkets);
   const marketSession = useAppStore(state => state.marketSession);
   const saveMarketSelection = useAppStore(state => state.saveMarketSelection);
+  const validSession = sessionMatchesSelection(marketSession, selectedAddress, selectedDistance);
   const location = useMemo(
     () =>
       selectedAddress
@@ -52,12 +54,12 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
             latitude: selectedAddress.latitude,
             longitude: selectedAddress.longitude,
             distance: selectedDistance,
-            // Yalnızca kullanıcının seçtiği şubeler aransın; aksi halde seçili olmayan
-            // marketlerden ürün gelir ve fiyat/rota karşılaştırması kilitlenir.
-            depots: selectedMarkets?.length ? selectedMarkets.map(m => m.id) : undefined,
+            // Yalnızca kullanıcının seçtiği geçerli oturum şubeleri aransın; aksi halde
+            // eski/uyumsuz marketlerden ürün gelir ve fiyat/rota karşılaştırması kilitlenir.
+            depots: validSession && selectedMarkets?.length ? selectedMarkets.map(m => m.id) : undefined,
           }
         : undefined,
-    [selectedAddress, selectedDistance, selectedMarkets]
+    [selectedAddress, selectedDistance, selectedMarkets, validSession]
   );
 
   const resetForm = useCallback(() => {
@@ -84,8 +86,18 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
       const list = data.ingredients.filter(i => typeof i === 'string' && i.trim())
         .map(i => i.trim()).filter(i => { const key = normalizeString(i); if (seen.has(key)) return false; seen.add(key); return true; });
       if (!list.length) throw new Error('Malzeme bulunamadı.');
+      const normalizedList = new Set(list.map(normalizeString));
       setIngredients(list);
-      setRequirements((data.ingredientDetails ?? []).filter(d => list.includes(d.name) && Number.isFinite(d.amount) && d.amount > 0 && ['g', 'ml', 'adet'].includes(d.unit)));
+      setRequirements(
+        (data.ingredientDetails ?? []).filter(
+          d =>
+            typeof d?.name === 'string' &&
+            normalizedList.has(normalizeString(d.name)) &&
+            Number.isFinite(d.amount) &&
+            d.amount > 0 &&
+            ['g', 'ml', 'adet'].includes(d.unit)
+        )
+      );
       setCurrentStep('ingredients');
     } catch (err) {
       // Katalogda karşılığı olmayan/yanlış yazılmış yemek adı en sık hata: kullanıcıyı yönlendir.
@@ -109,7 +121,7 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
     try {
       // Malzeme onayından sonrası tamamen sunucuda: arama + seçim + doğrulama.
       // İstemci yalnızca tarif, malzeme ve konum gönderir; aday ürün göndermez.
-      const response = await LlmService.selectProducts(ingredients, recipeRequest, location, controller.signal);
+      const response = await LlmService.selectProducts(ingredients, recipeRequest, location, controller.signal, requirements);
       if (run !== runRef.current) return;
       if (!response.success || !Array.isArray(response.selections)) throw new Error('Ürün seçimi alınamadı.');
       // Sözleşme nöbeti: başarılı denip kimliksiz ürün dönerse sessizce devam etme.
@@ -117,7 +129,8 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
         throw new Error('AI backend ürün kimliği döndürmedi; sunucu sözleşmesi güncel değil.');
       }
       const resolved = buildIngredientMatches(ingredients, response.selections).map(match => {
-        const requiredAmount = requirements.find(r => r.name === match.ingredient);
+        const key = normalizeString(match.ingredient);
+        const requiredAmount = requirements.find(r => normalizeString(r.name) === key);
         return {
           ...match,
           requiredAmount,
@@ -130,7 +143,7 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
         resolved.flatMap(match => match.product ? [match.product] : []),
         Object.fromEntries(resolved.filter(m => m.product && m.packageQuantity).map(m => [m.product!.id, m.packageQuantity!]))
       );
-      setRecipeAddedIds(resolved.flatMap(match => match.product ? [match.product.id] : []));
+      setRecipeAddedIds([...new Set(resolved.flatMap(match => match.product ? [match.product.id] : []))]);
       const noProduct = resolved.filter(m => !m.product);
       // Ayrım önemli: "başka şubede var" bir çıkmaz sokak değil, tek dokunuşluk seçim;
       // "hiç bulunamadı" ise gerçek katalog boşluğu.
@@ -171,7 +184,8 @@ export function useRecipePipeline({ addManyToCart, removeFromCart, setItemDepot 
         totalMarkets: marketSession.totalMarkets ?? marketSession.selectedMarkets.length + 1,
       });
     }
-    const requiredAmount = requirements.find(r => r.name === ingredient);
+    const normalizedIngredient = normalizeString(ingredient);
+    const requiredAmount = requirements.find(r => normalizeString(r.name) === normalizedIngredient);
     const packageQuantity = recipePackageQuantity(product, requiredAmount);
     addManyToCart([product], packageQuantity ? { [product.id]: packageQuantity } : undefined);
     setMatches(prev => prev.map(m => m.ingredient === ingredient ? { ...m, product, source: 'manual', requiredAmount, packageQuantity } : m));

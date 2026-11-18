@@ -38,11 +38,14 @@ bilgisi **yalnızca üst kaynak API'den** gelir; uygulama kendi fiyat verisini �
                                  Google Gemini + ürün seçim orkestrasyonu
 ```
 
-- **Next.js App Router + Vercel proxy rotaları → FastAPI/Cloud Run.** Tarayıcı, `marketfiyati.org.tr`
-  API'sine ve Python backend'e **doğrudan** gitmez. Tüm çağrılar Next.js sunucu rotalarından geçer
-  (`src/app/api/**`), böylece API anahtarları istemci paketine sızmaz.
+- **Next.js App Router + hibrit proxy/Cloud Run yönlendirmesi.** Market ve adres aramaları her zaman
+  Next.js sunucu rotalarından (`src/app/api/**`) geçer; tarayıcı `marketfiyati.org.tr` API'sine
+  doğrudan bağlanmaz. LLM çağrılarında `resolveLlmEndpoint` (`src/services/llmService.ts`): yerel/önizleme
+  ortamında `/api/ai-page/*` → `src/lib/backendProxy.ts` (`X-API-Key`) üzerinden gider; canlıda
+  (`market-ai-coral.vercel.app` veya `NEXT_PUBLIC_DIRECT_PYTHON_API_URL` ayarlıyken) Vercel zaman aşımı
+  sınırına takılmamak için doğrudan Cloud Run (`python-backend`) servisine istek atar.
   - Market/adres proxy'leri: `src/lib/marketApiProxy.ts`
-  - LLM proxy'leri: `src/lib/backendProxy.ts` (backend'e `X-API-Key` başlığıyla gider)
+  - LLM proxy'leri: `src/lib/backendProxy.ts` (doğrulamalı `X-API-Key` iletimi)
   - İstemciye bakan ürün arama/sayfalama: `src/services/productService.ts`
 - **Sunucu-taraflı ürün seçimi.** Ürün arama, sayfalama ve aday seçimi istemcide değil sunucuda
   yürür; istemci yalnızca doğrulanmış sonuçları gösterir.
@@ -101,6 +104,7 @@ Tüm değişkenler **koddan** doğrulanmıştır (okuma noktaları tabloda).
 | `NEXT_PUBLIC_MARKET_API_URL` | Hayır | `src/lib/env.ts` (fallback) | Geriye dönük uyumluluk alias'ı; yalnızca `MARKET_API_URL` tanımsızsa kullanılır. |
 | `NEXT_PUBLIC_ADDRESS_API_URL` | Hayır | `src/lib/env.ts` (fallback) | Geriye dönük uyumluluk alias'ı; yalnızca `ADDRESS_API_URL` tanımsızsa kullanılır. |
 | `NEXT_PUBLIC_PYTHON_API_URL` | Hayır | `src/lib/env.ts` (fallback) | Geriye dönük uyumluluk alias'ı; yalnızca `PYTHON_API_URL` tanımsızsa kullanılır. İstemci paketine gömülür (URL; anahtar değil). |
+| `NEXT_PUBLIC_DIRECT_PYTHON_API_URL` | Hayır | `src/services/llmService.ts` (`resolveLlmEndpoint`) | Ayarlandığında tarayıcıdaki LLM isteklerini (`/api/ai-page/*` yerine) doğrudan belirtilen FastAPI/Cloud Run taban adresine yönlendirir; üretim alan adı `market-ai-coral.vercel.app` için yerleşik Cloud Run adresi varsayılandır. |
 | `MARKET_LIVE_TEST` | Hayır | `src/services/marketApi.live.test.ts` | `1` yapıldığında canlı market API'sine karşı testleri açar (`npm run test:live`). |
 | `MARKET_LIVE_BASE_URL` | Hayır | `src/services/marketApi.live.test.ts` | Canlı testlerin hedef taban URL'ini geçersiz kılar. |
 | `UI_TEST_BASE_URL` | Hayır | `scripts/verify-shopping-ui.cjs` | UI doğrulama betiğinin hedef adresini geçersiz kılar (varsayılan `http://localhost:3016`; canlıya karşı çalıştırmak için dağıtım adresine ayarlayın). |

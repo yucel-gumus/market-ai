@@ -6,12 +6,12 @@ vi.mock('@/lib/env', () => ({ getMarketApiUrl: () => 'https://api.marketfiyati.o
 const geo = { latitude: 41, longitude: 29, distance: 1, depots: ['a101-a'] };
 afterEach(() => { vi.unstubAllGlobals(); });
 describe('official API contract forwarding', () => {
-  it('uses the V3 root and forwards category arrays and order without requiring a keyword', async () => {
+  it('forwards search keywords, category filters, and order to V2 search', async () => {
     const fetch = vi.fn().mockResolvedValue(Response.json({ content: [], numberOfFound: 0 })); vi.stubGlobal('fetch', fetch);
-    const body = { ...geo, pages: 0, size: 24, main_category: ['Süt'], sub_category: ['UHT Süt'], order: { name: 'offer_unit_price', type: 'asc' } };
-    const response = await handleMarketProductSearchRoute(new NextRequest('http://localhost/api/search-by-categories', { method: 'POST', body: JSON.stringify(body) }), MARKET_API_PATHS.SEARCH_BY_CATEGORIES);
+    const body = { ...geo, keywords: 'süt', pages: 0, size: 24, main_category: ['Süt'], sub_category: ['UHT Süt'], order: { name: 'offer_unit_price', type: 'asc' } };
+    const response = await handleMarketProductSearchRoute(new NextRequest('http://localhost/api/search-products', { method: 'POST', body: JSON.stringify(body) }), MARKET_API_PATHS.SEARCH);
     expect(response.status).toBe(200);
-    expect(fetch.mock.calls[0][0]).toBe('https://api.marketfiyati.org.tr/api/v3/searchByCategories');
+    expect(fetch.mock.calls[0][0]).toBe('https://api.marketfiyati.org.tr/api/v2/search');
     expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual(body);
   });
   it('forwards exact product identities to V1 while rejecting invalid pagination and filters', async () => {

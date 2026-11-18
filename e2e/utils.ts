@@ -1,4 +1,4 @@
-import type { Page } from 'playwright/test';
+import type { Page } from '@playwright/test';
 
 export const SCREENSHOT_DIR = '/Users/hayabusa/.hermes/cache/scratch/dogfood-marketai/mobil';
 

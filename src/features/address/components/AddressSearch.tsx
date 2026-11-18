@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { useDebounce } from 'use-debounce';
+import { useState, useEffect, useId, useMemo } from 'react';
 import { Check, ChevronDown, MapPin, Search, X } from 'lucide-react';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,9 +26,10 @@ export function AddressSearch({
   placeholder = "Adres ara (Örn: Kızılcaşar Mahallesi, Gölbaşı, Ankara)...",
   className 
 }: AddressSearchProps) {
+  const inputId = useId();
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [debouncedQuery] = useDebounce(searchQuery, 300);
+  const debouncedQuery = useDebouncedValue(searchQuery, 300);
   
   const { 
     data: addresses = [], 
@@ -108,11 +109,15 @@ export function AddressSearch({
       data-address-search
     >
       <div className="relative">
+        <label htmlFor={inputId} className="sr-only">
+          Adres ara
+        </label>
         <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#3E5164]">
-          <Search className="h-5 w-5" />
+          <Search className="h-5 w-5" aria-hidden />
         </div>
         
         <Input
+          id={inputId}
           type="text"
           placeholder={placeholder}
           value={searchQuery}
@@ -128,7 +133,7 @@ export function AddressSearch({
         <div className="absolute inset-y-0 right-0 flex items-center gap-1.5 pr-3">
           {selectedAddress && (
             <div className="flex items-center gap-1.5 bg-[#EC7D55] text-[#253341] px-2 py-1 rounded-xl text-xs font-bold shadow-2xs">
-              <Check className="h-3.5 w-3.5 stroke-[3]" />
+              <Check className="h-3.5 w-3.5 stroke-[3]" aria-hidden />
               <span>Seçildi</span>
               <button
                 type="button"
@@ -136,22 +141,30 @@ export function AddressSearch({
                 className="ml-1 p-0.5 rounded-full hover:bg-[#AB421C] hover:text-[#F5F9F5] transition-colors"
                 aria-label="Adresi Temizle"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3.5 w-3.5" aria-hidden />
               </button>
             </div>
           )}
           
           {showLoading && (
-            <div className="animate-spin h-4 w-4 border-2 border-[#EC7D55] border-t-transparent rounded-full" />
+            <div className="animate-spin h-4 w-4 border-2 border-[#EC7D55] border-t-transparent rounded-full" aria-hidden />
           )}
           
-          <ChevronDown 
-            className={cn(
-              "h-5 w-5 text-[#3E5164] transition-transform duration-200 cursor-pointer",
-              isOpen && "transform rotate-180 text-[#AB421C]"
-            )} 
+          <button
+            type="button"
             onClick={() => setIsOpen(!isOpen)}
-          />
+            aria-expanded={isOpen}
+            aria-label={isOpen ? 'Adres önerilerini gizle' : 'Adres önerilerini göster'}
+            className="p-0.5 rounded-md text-[#3E5164] hover:text-[#253341] transition-colors cursor-pointer"
+          >
+            <ChevronDown
+              className={cn(
+                "h-5 w-5 transition-transform duration-200",
+                isOpen && "rotate-180 text-[#AB421C]"
+              )}
+              aria-hidden
+            />
+          </button>
         </div>
       </div>
 

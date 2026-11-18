@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Home, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,31 +11,24 @@ import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDi
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
 import { RouteModal } from '@/features/products/components/RouteModal';
-import { MultiStoreRouteModal, type RouteLeg } from '@/features/products/components/MultiStoreRouteModal';
+import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
 import { ErrorDisplay, SearchErrorDisplay } from '@/features/products/components/ErrorDisplay';
 import { SearchTips } from '@/features/products/components/SearchTips';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
+import { useRouteModals } from '@/features/products/hooks/useRouteModals';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
-import { useDebounce } from 'use-debounce';
 import { SEARCH } from '@/constants';
-import { coordsOf } from '@/lib/shoppingUtils';
-import { ProductDepotInfo, RouteInfo, SearchStats } from '@/types';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
+import { SearchStats } from '@/types';
 
 export default function ProductSearchPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showSingleMap, setShowSingleMap] = useState(false);
-  const [showMultiMap, setShowMultiMap] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<ProductDepotInfo | null>(null);
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>(undefined);
-  const [realRouteTime, setRealRouteTime] = useState<number | undefined>(undefined);
-  const [realRouteLegs, setRealRouteLegs] = useState<RouteLeg[] | undefined>(undefined);
   const [uiError, setUiError] = useState<string | null>(null);
 
-  const [debouncedQuery] = useDebounce(searchQuery, 450);
+  const debouncedQuery = useDebouncedValue(searchQuery, 450);
 
   const {
     searchSettings,
@@ -54,14 +47,20 @@ export default function ProductSearchPage() {
     marketCount,
   } = useShoppingCart(searchSettings);
 
-  useEffect(() => {
-    setShowSingleMap(false);
-    setShowMultiMap(false);
-    setSelectedStore(null);
-    setRealRouteDistance(undefined);
-    setRealRouteTime(undefined);
-    setRealRouteLegs(undefined);
-  }, [optimization]);
+  const {
+    showSingleMap,
+    showMultiMap,
+    selectedStore,
+    routeInfo,
+    realRouteDistance,
+    realRouteTime,
+    realRouteLegs,
+    openSingleRoute,
+    openMultiRoute,
+    closeMaps,
+    handleRouteFound,
+    handleMultiRouteFound,
+  } = useRouteModals(optimization, setUiError);
 
   const {
     data: products = [],
@@ -82,53 +81,13 @@ export default function ProductSearchPage() {
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    setIsDropdownOpen(value.length >= SEARCH.MIN_QUERY_LENGTH);
+    setIsDropdownOpen(value.trim().length >= SEARCH.MIN_QUERY_LENGTH);
   };
 
   const handleClearSearch = () => {
     setSearchQuery('');
     setIsDropdownOpen(false);
   };
-
-  const handleShowRoute = (depot: ProductDepotInfo) => {
-    if (!coordsOf(depot)) {
-      setUiError('Mağaza konumu bulunamadı.');
-      return;
-    }
-    setSelectedStore(depot);
-    setShowSingleMap(true);
-    setRouteInfo(null);
-  };
-
-  const handleCloseMap = () => {
-    setShowSingleMap(false);
-    setShowMultiMap(false);
-    setSelectedStore(null);
-    setRouteInfo(null);
-    setRealRouteDistance(undefined);
-    setRealRouteTime(undefined);
-  };
-
-  const handleMultiRouteFound = (routeData: { distance: number; time: number; legs?: RouteLeg[] }) => {
-    setRealRouteDistance(routeData.distance);
-    setRealRouteTime(routeData.time);
-    setRealRouteLegs(routeData.legs);
-  };
-
-  const handleViewMultiRoute = () => setShowMultiMap(true);
-
-  const handleRouteFound = useCallback((info: RouteInfo) => {
-    setRouteInfo((prevInfo) => {
-      if (
-        !prevInfo ||
-        prevInfo.distance !== info.distance ||
-        prevInfo.time !== info.time
-      ) {
-        return info;
-      }
-      return prevInfo;
-    });
-  }, []);
 
   if (isSettingsLoading) {
     return (
@@ -195,7 +154,7 @@ export default function ProductSearchPage() {
             <div className="relative">
               <SearchInput
                 value={searchQuery}
-                onFocus={() => setIsDropdownOpen(searchQuery.length >= SEARCH.MIN_QUERY_LENGTH)}
+                onFocus={() => setIsDropdownOpen(searchQuery.trim().length >= SEARCH.MIN_QUERY_LENGTH)}
                 onChange={handleSearchChange}
                 onClear={handleClearSearch}
                 isLoading={isSearchBusy}
@@ -237,8 +196,8 @@ export default function ProductSearchPage() {
             onRefreshPrices={refreshPrices}
             isRefreshing={isRefreshing}
             refreshMessage={refreshMessage}
-            onViewRoute={handleViewMultiRoute}
-            onViewSingleRoute={handleShowRoute}
+            onViewRoute={openMultiRoute}
+            onViewSingleRoute={openSingleRoute}
             onClearCart={clearCart}
             onRemoveItem={removeFromCart}
           />
@@ -255,7 +214,7 @@ export default function ProductSearchPage() {
             totalCost={optimization?.totalCost}
             routeInfo={routeInfo}
             searchSettings={searchSettings}
-            onClose={handleCloseMap}
+            onClose={closeMaps}
             onRouteFound={handleRouteFound}
           />
         )}
@@ -263,7 +222,7 @@ export default function ProductSearchPage() {
         {searchSettings && optimization && marketCount > 1 && (
           <MultiStoreRouteModal
             isOpen={showMultiMap}
-            onClose={handleCloseMap}
+            onClose={closeMaps}
             routeSteps={generateRoute(
               searchSettings.latitude,
               searchSettings.longitude

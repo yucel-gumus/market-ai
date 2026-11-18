@@ -144,7 +144,7 @@ function SingleRouteStepCard({ selectedStore, routeInfo }: SingleRouteStepCardPr
           <div className="w-7 h-7 bg-[#EC7D55] text-[#253341] text-xs rounded-xl flex items-center justify-center font-bold shadow-2xs shrink-0">
             1
           </div>
-          <StoreBadge name={selectedStore.marketAdi || selectedStore.depotName} size="sm" />
+          <StoreBadge name={selectedStore.marketAdi || selectedStore.depotName} size="sm" lowPriority />
           <div className="min-w-0 flex-1">
             <div className="font-bold text-sm text-[#253341] font-heading truncate">
               {selectedStore.depotName}

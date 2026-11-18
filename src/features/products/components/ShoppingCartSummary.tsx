@@ -38,7 +38,12 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
   const count = optimization.totalQuantity ?? marketGroups.reduce((sum, group) => sum + group.items.reduce((n, item) => n + itemQuantity(item), 0), 0);
   // Uygulanan planın kartı ekranda kalmaz: aksi hâlde "4 ürün değişir" yazısı,
   // karışık sepetlerde (mod hâlâ mümkün görünmediği için) uygulandıktan sonra da kalıyordu.
+  const [trackedPlans, setTrackedPlans] = useState(plans);
   const [appliedPlanModes, setAppliedPlanModes] = useState<Record<string, boolean>>({});
+  if (trackedPlans !== plans) {
+    setTrackedPlans(plans);
+    setAppliedPlanModes({});
+  }
   const planModes = (['single', 'two'] as const).filter(planMode => plans?.[planMode]
     && !options.find(option => option.mode === planMode)?.feasible
     && !appliedPlanModes[planMode]);
@@ -120,7 +125,7 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
                 </ul>
               )}
               {onApplyPlan && (
-                <Button type="button" size="sm" onClick={() => { setAppliedPlanModes(prev => ({ ...prev, [planMode]: true })); onApplyPlan(plan); }}>
+                <Button type="button" size="sm" onClick={() => { setAppliedPlanModes(prev => ({ ...prev, [planMode]: true })); onApplyPlan(plan); onModeChange(planMode); }}>
                   Planı uygula ({plan.switches.length ? `${plan.switches.length} ürün değişir` : 'şube sabitlenir'})
                 </Button>
               )}
@@ -139,7 +144,7 @@ export function ShoppingCartSummary({ optimization, mode, onModeChange, onQuanti
           <Button type="button" variant="outline" size="sm" onClick={onRefreshPrices} disabled={isRefreshing}>{isRefreshing ? 'Fiyatlar kontrol ediliyor…' : 'Fiyatları yeniden kontrol et'}</Button>
           {refreshMessage && <p role="status" className="text-xs text-[#253341]">{refreshMessage}</p>}
         </div>
-        <p className="text-xs text-[#3E5164]">Adet, satın alınacak paket veya ürün sayısıdır. Tarifin gramajından gereken paket sayısı otomatik hesaplanmaz.</p>
+        <p className="text-xs text-[#3E5164]">Adet, satın alınacak paket veya ürün sayısıdır. Paket gramajı veya hacmi biliniyorsa tarif miktarına göre yaklaşık paket adedi önerilir; alışverişten önce kontrol edin.</p>
         <div className="space-y-3">{marketGroups.map(group => <MarketGroupCard key={group.depotKey} group={group} onRemoveItem={onRemoveItem} onQuantityChange={onQuantityChange} />)}</div>
         {!routeAvailable && <p role="status" className="text-sm text-[#3E5164]">{unavailableProducts.length ? 'Tüm ürünlerin seçili şubelerdeki fiyatları doğrulanana kadar rota gösterilemiyor.' : 'Bazı şubelerin konumu bulunamadı. Tüm duraklar doğrulanana kadar alışveriş rotası gösterilemiyor.'}</p>}
         <Button disabled={!routeAvailable || (marketCount === 1 && !onViewSingleRoute)} onClick={() => marketCount === 1 ? onViewSingleRoute?.(marketGroups[0].depotInfo) : onViewRoute()} className="w-full bg-[#EC7D55] text-[#253341] hover:bg-[#AB421C] hover:text-[#F5F9F5] rounded-xl font-bold">

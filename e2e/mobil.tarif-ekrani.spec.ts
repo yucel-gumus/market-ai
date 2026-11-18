@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright/test';
+import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import { SCREENSHOT_DIR, selectFirstAddress } from './utils';
 

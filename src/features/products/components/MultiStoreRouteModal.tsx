@@ -176,7 +176,7 @@ function RouteStepCard({ step, leg, hideEstimate }: RouteStepCardProps) {
           <div className="w-7 h-7 bg-[#EC7D55] text-[#253341] text-xs rounded-xl flex items-center justify-center font-bold shadow-2xs shrink-0">
             {step.stepNumber}
           </div>
-          <StoreBadge name={step.marketName} size="sm" />
+          <StoreBadge name={step.marketName} size="sm" lowPriority />
           <div className="min-w-0 flex-1">
             <div className="font-bold text-sm text-[#253341] font-heading truncate">
               {formatBranchName(step.depot.depotName)}

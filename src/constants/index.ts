@@ -24,8 +24,6 @@ export const SEARCH = {
   ADDRESS_RESULT_LIMIT: 10,
   /** Canlı arama: tek sayfa (hızlı UX) */
   LIVE_PAGE_SIZE: 24,
-  /** Ürün başlığı eşlemede minimum skor (0–1) */
-  TITLE_MATCH_THRESHOLD: 0.45,
 } as const;
 
 export const DISTANCE = {
@@ -85,10 +83,8 @@ export const LEAFLET = {
 
 export const MARKET_API_PATHS = {
   SEARCH: 'v2/search',
-  SEARCH_BY_CATEGORIES: 'v3/searchByCategories',
   NEAREST: 'v2/nearest',
   LIST_SYNC: 'v1/list/sync',
-  CATEGORIES: 'v3/info/categories',
 } as const;
 
 /** Upstream hata detayının client'a yansıma üst sınırı (prod'da kapalı) */

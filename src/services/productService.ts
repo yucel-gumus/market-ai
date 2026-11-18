@@ -2,7 +2,7 @@ import { DEFAULTS } from '@/constants';
 import apiClient from '@/lib/axios';
 import type { ProductSearchRequest, ProductSearchResponse, Product } from '@/types';
 
-export type ProductEndpoint = '/search-products' | '/search-by-categories' | '/sync-products';
+export type ProductEndpoint = '/search-products' | '/sync-products';
 export type ProductQuery = Omit<ProductSearchRequest, 'pages'>;
 
 /** A duplicate ID can carry additional branch offers on another page. */

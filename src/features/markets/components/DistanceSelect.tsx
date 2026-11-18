@@ -2,8 +2,8 @@
 
 import { Ruler } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DISTANCE } from '@/constants';
 import { cn } from '@/lib/utils';
-import { useDistanceOptions } from '../hooks/useMarketSearch';
 
 interface DistanceSelectProps {
   value: number;
@@ -18,8 +18,6 @@ export function DistanceSelect({
   disabled = false, 
   className 
 }: DistanceSelectProps) {
-  const distanceOptions = useDistanceOptions();
-
   const handleValueChange = (stringValue: string) => {
     const numericValue = parseInt(stringValue, 10);
     if (!isNaN(numericValue)) {
@@ -48,7 +46,7 @@ export function DistanceSelect({
         </SelectTrigger>
         
         <SelectContent align="start" className="w-full bg-[#DCE3EA] border-[#BCC7D2] rounded-2xl shadow-xl">
-          {distanceOptions.map((option) => (
+          {DISTANCE.OPTIONS.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value.toString()}

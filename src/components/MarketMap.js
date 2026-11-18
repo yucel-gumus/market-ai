@@ -4,19 +4,25 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { DEFAULTS } from '@/constants';
 import { addOsmTileLayer, ensureLeafletDefaultIcons } from '@/lib/leafletSetup';
-import { injectMapMarkerStyles } from '@/lib/mapMarkers';
-import { getStoreTheme, marketKey } from '@/lib/marketUtils';
+import { getMarketLogo, getStoreTheme, marketKey } from '@/lib/marketUtils';
 
 let mapInstanceCounter = 0;
 
+const HTML_ESCAPE_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' };
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => HTML_ESCAPE_MAP[ch]);
+}
+
 if (typeof window !== 'undefined') {
   ensureLeafletDefaultIcons();
-  injectMapMarkerStyles();
 }
 
 const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarkerClick }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
+  const onMarkerClickRef = useRef(onMarkerClick);
+  onMarkerClickRef.current = onMarkerClick;
   const instanceId = useRef(++mapInstanceCounter);
 
   useEffect(() => {
@@ -69,7 +75,7 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
           <div style="text-align: center; padding: 8px; background: #DCE3EA; border-radius: 12px; font-family: sans-serif;">
             <div style="font-size: 16px; margin-bottom: 4px;">📍</div>
             <div style="font-weight: bold; color: #253341; margin-bottom: 2px;">Konumunuz</div>
-            <div style="font-size: 12px; color: #3E5164; font-weight: 500;">${userLocation.fullAddress || 'Seçilen konum'}</div>
+            <div style="font-size: 12px; color: #3E5164; font-weight: 500;">${escapeHtml(userLocation.fullAddress || 'Seçilen konum')}</div>
           </div>
         `);
     }
@@ -77,7 +83,8 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
     mapInstanceRef.current = {
       map,
       userMarker,
-      markers: new Map()
+      markers: new Map(),
+      lastMarketSetSignature: null,
     };
 
     map.on('error', (e) => console.warn('Map error:', e));
@@ -110,11 +117,18 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
     if (!mapInstanceRef.current || !markets) return;
     const { map, markers } = mapInstanceRef.current;
 
-    if (markers) {
-      markers.forEach(marker => {
-        if (map.hasLayer(marker)) map.removeLayer(marker);
-      });
-      markers.clear();
+    const activeKeys = new Set();
+    markets.forEach((market) => {
+      if (market.latitude && market.longitude) {
+        activeKeys.add(marketKey(market));
+      }
+    });
+
+    for (const [key, existingMarker] of markers.entries()) {
+      if (!activeKeys.has(key)) {
+        if (map.hasLayer(existingMarker)) map.removeLayer(existingMarker);
+        markers.delete(key);
+      }
     }
 
     markets.forEach((market) => {
@@ -123,14 +137,31 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       const marketKeyValue = marketKey(market);
       const isHidden = hiddenMarkets.has(marketKeyValue);
       const theme = getStoreTheme(market.brand || market.name);
+      const rawLogo =
+        typeof market.logo === 'string' &&
+        (market.logo.startsWith('https://marketfiyati.org.tr/') ||
+          market.logo.startsWith('https://cdn.marketfiyati.org.tr/'))
+          ? market.logo
+          : getMarketLogo(market.brand || market.name);
+
+      const pinBg = rawLogo ? (isHidden ? '#DCE3EA' : '#F5F9F5') : (isHidden ? '#DCE3EA' : theme.bg);
+      const pinColor = rawLogo ? '#253341' : (isHidden ? '#3E5164' : theme.text);
+      const pinBorder = isHidden
+        ? '#BCC7D2'
+        : rawLogo
+          ? '#3E5164'
+          : (theme.border === theme.bg ? '#EC7D55' : theme.border);
+      const pinContent = rawLogo
+        ? `<img src="${escapeHtml(rawLogo)}" alt="${escapeHtml(theme.label)}" width="28" height="28" style="width: 28px; height: 28px; object-fit: contain; border-radius: 4px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none;">${escapeHtml(theme.shortCode)}</span>`
+        : escapeHtml(theme.shortCode);
 
       const icon = L.divIcon({
         html: `
           <div style="
             width: 44px; height: 44px;
-            background: ${isHidden ? '#DCE3EA' : theme.bg};
-            color: ${isHidden ? '#3E5164' : theme.text};
-            border: 3px solid ${isHidden ? '#BCC7D2' : (theme.border === theme.bg ? '#EC7D55' : theme.border)};
+            background: ${pinBg};
+            color: ${pinColor};
+            border: 3px solid ${pinBorder};
             border-radius: 50%; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 10px rgba(37, 51, 65, 0.22);
             opacity: ${isHidden ? '0.6' : '1'};
@@ -138,7 +169,7 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
             font-size: 11px; font-weight: 800; letter-spacing: -0.02em;
             transition: all 0.2s ease; cursor: pointer;
           ">
-            ${theme.shortCode}
+            ${pinContent}
           </div>
         `,
         className: 'custom-market-marker',
@@ -147,34 +178,44 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
         popupAnchor: [0, -22]
       });
 
-      const marker = L.marker([market.latitude, market.longitude], { icon, opacity: isHidden ? 0.6 : 1.0 }).addTo(map);
+      const popupBrandHtml = rawLogo
+        ? `<div style="display: inline-flex; align-items: center; justify-content: center; padding: 5px 12px; border-radius: 10px; background: #F5F9F5; border: 1px solid #BCC7D2; margin-bottom: 6px;"><img src="${escapeHtml(rawLogo)}" alt="${escapeHtml(theme.label)}" width="56" height="24" style="width: 56px; height: 24px; object-fit: contain;" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';" /><span style="display: none; color: #253341; font-weight: 800; font-size: 12px;">${escapeHtml(theme.label)}</span></div>`
+        : `<div style="display: inline-block; padding: 4px 10px; border-radius: 10px; background: ${theme.bg}; color: ${theme.text}; border: 1px solid ${theme.border}; font-weight: 800; font-size: 12px; margin-bottom: 6px;">${escapeHtml(theme.label)}</div>`;
 
-      marker.bindPopup(`
+      const popupHtml = `
         <div style="text-align: center; min-width: 200px; padding: 10px; background: #EDF3EE; border-radius: 14px; font-family: sans-serif;">
-          <div style="
-            display: inline-block; padding: 4px 10px; border-radius: 10px;
-            background: ${theme.bg}; color: ${theme.text}; border: 1px solid ${theme.border};
-            font-weight: 800; font-size: 12px; margin-bottom: 6px;
-          ">${theme.label}</div>
-          <div style="margin-bottom: 4px; font-size: 13px; color: #253341; font-weight: 700;">${market.name}</div>
-          <div style="margin-bottom: 8px; font-size: 11px; color: #3E5164; line-height: 1.3;">${market.address}</div>
+          ${popupBrandHtml}
+          <div style="margin-bottom: 4px; font-size: 13px; color: #253341; font-weight: 700;">${escapeHtml(market.name)}</div>
+          <div style="margin-bottom: 8px; font-size: 11px; color: #3E5164; line-height: 1.3;">${escapeHtml(market.address)}</div>
           <div style="
             background: #DBE6DD; border: 1px solid #BCC7D2;
             color: #253341; padding: 5px 12px; border-radius: 12px;
             font-weight: bold; font-size: 11px; display: inline-block;
             margin-bottom: 6px; box-shadow: 0 2px 4px rgba(37, 51, 65, 0.12);
-          ">📍 ${market.distance} km uzaklıkta</div>
+          ">📍 ${escapeHtml(market.distance)} km uzaklıkta</div>
           ${isHidden ? '<div style="margin-top: 6px; font-size: 10px; color: #253341; font-weight: 700; background: #F2A488; padding: 3px 8px; border-radius: 10px; display: inline-block;">Filtrelenmiş</div>'
           : '<div style="margin-top: 6px; font-size: 10px; color: #253341; font-weight: 700; background: #EC7D55; padding: 3px 8px; border-radius: 10px; display: inline-block;">Seçilmiş</div>'}
         </div>
-      `);
+      `;
 
-      if (onMarkerClick) marker.on('click', () => onMarkerClick(market));
-
-      markers.set(marketKeyValue, marker);
+      const existing = markers.get(marketKeyValue);
+      if (existing) {
+        existing._marketData = market;
+        existing.setLatLng([market.latitude, market.longitude]);
+        existing.setIcon(icon);
+        existing.setOpacity(isHidden ? 0.6 : 1.0);
+        existing.setPopupContent(popupHtml);
+      } else {
+        const marker = L.marker([market.latitude, market.longitude], { icon, opacity: isHidden ? 0.6 : 1.0 }).addTo(map);
+        marker._marketData = market;
+        marker.bindPopup(popupHtml);
+        marker.on('click', () => onMarkerClickRef.current?.(marker._marketData));
+        markers.set(marketKeyValue, marker);
+      }
     });
 
-    if (!mapInstanceRef.current.hasFitted) {
+    const marketSetSignature = [...activeKeys].join('|');
+    if (mapInstanceRef.current.lastMarketSetSignature !== marketSetSignature) {
       const visibleMarkers = [];
       if (userLocation) visibleMarkers.push([userLocation.latitude, userLocation.longitude]);
       markets.forEach(market => {
@@ -185,14 +226,13 @@ const MapWrapper = ({ userLocation, markets, hiddenMarkets = new Set(), onMarker
       });
       if (visibleMarkers.length > 1) {
         try {
-          const group = new L.featureGroup(visibleMarkers.map(coord => L.marker(coord)));
-          map.fitBounds(group.getBounds().pad(0.1));
+          map.fitBounds(L.latLngBounds(visibleMarkers).pad(0.1));
         } catch (error) { console.warn('Error fitting bounds:', error); }
       }
-      mapInstanceRef.current.hasFitted = true;
+      mapInstanceRef.current.lastMarketSetSignature = marketSetSignature;
     }
 
-  }, [markets, hiddenMarkets, onMarkerClick, userLocation]);
+  }, [markets, hiddenMarkets, userLocation]);
 
   return (
     <div 

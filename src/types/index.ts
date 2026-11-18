@@ -117,13 +117,6 @@ export interface ProductSearchResponse {
   size?: number;
 }
 
-export interface MarketCategory {
-  id: number;
-  parentId: number | null;
-  name: string;
-  children: MarketCategory[];
-}
-
 export interface CartItem {
   product: Product;
   selectedDepot: ProductDepotInfo;

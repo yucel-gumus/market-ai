@@ -66,4 +66,13 @@ describe('buildIngredientMatches (sunucu-taraflı seçim)', () => {
     const matches = buildIngredientMatches(['süt'], [answer('süt', product('s1', 'Süt 1 l'), {}, [product('s2', 'Süt 2 l')])]);
     expect(matches[0].candidates.map(c => c.id)).toEqual(['s1', 's2']);
   });
+  it('prevents assigning the same product id to multiple ingredients', () => {
+    const matches = buildIngredientMatches(['kuvertür', 'bitter'], [
+      answer('kuvertür', product('dup-1', 'Bitter Çikolata'), {}, [product('dup-1', 'Bitter Çikolata')]),
+      answer('bitter', product('dup-1', 'Bitter Çikolata'), {}, [product('dup-1', 'Bitter Çikolata'), product('alt-2', 'Ülker Bitter')]),
+    ]);
+    expect(matches[0].product?.id).toBe('dup-1');
+    expect(matches[1].product).toBeUndefined();
+    expect(matches[1].candidates.map(c => c.id)).toEqual(['alt-2']);
+  });
 });

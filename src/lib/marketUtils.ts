@@ -10,7 +10,6 @@ export interface StoreTheme {
   bg: string;
   text: string;
   border: string;
-  accentDot: string;
 }
 
 const STORE_THEMES: Record<string, StoreTheme> = {
@@ -21,7 +20,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#EC7D55',
     text: '#253341',
     border: '#AB421C',
-    accentDot: '#253341',
   },
   bim: {
     id: 'bim',
@@ -30,7 +28,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#253341',
     text: '#F5F9F5',
     border: '#3E5164',
-    accentDot: '#EC7D55',
   },
   a101: {
     id: 'a101',
@@ -39,7 +36,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#3E5164',
     text: '#F5F9F5',
     border: '#253341',
-    accentDot: '#F2A488',
   },
   sok: {
     id: 'sok',
@@ -48,7 +44,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#F2A488',
     text: '#253341',
     border: '#EC7D55',
-    accentDot: '#AB421C',
   },
   carrefour: {
     id: 'carrefour',
@@ -57,7 +52,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#DCE3EA',
     text: '#253341',
     border: '#3E5164',
-    accentDot: '#EC7D55',
   },
   tarim_kredi: {
     id: 'tarim_kredi',
@@ -66,7 +60,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#DBE6DD',
     text: '#253341',
     border: '#3E5164',
-    accentDot: '#AB421C',
   },
   hakmar: {
     id: 'hakmar',
@@ -75,7 +68,6 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#AB421C',
     text: '#F5F9F5',
     border: '#253341',
-    accentDot: '#F2A488',
   },
   file: {
     id: 'file',
@@ -84,23 +76,29 @@ const STORE_THEMES: Record<string, StoreTheme> = {
     bg: '#F5F9F5',
     text: '#253341',
     border: '#3E5164',
-    accentDot: '#EC7D55',
   },
 };
 
-const FALLBACK_SHADES: ReadonlyArray<Pick<StoreTheme, 'bg' | 'text' | 'border' | 'accentDot'>> = [
-  { bg: '#DCE3EA', text: '#253341', border: '#BCC7D2', accentDot: '#3E5164' },
-  { bg: '#DBE6DD', text: '#253341', border: '#3E5164', accentDot: '#EC7D55' },
-  { bg: '#3E5164', text: '#F5F9F5', border: '#253341', accentDot: '#F2A488' },
-  { bg: '#F2A488', text: '#253341', border: '#AB421C', accentDot: '#253341' },
+const FALLBACK_SHADES: ReadonlyArray<Pick<StoreTheme, 'bg' | 'text' | 'border'>> = [
+  { bg: '#DCE3EA', text: '#253341', border: '#BCC7D2' },
+  { bg: '#DBE6DD', text: '#253341', border: '#3E5164' },
+  { bg: '#3E5164', text: '#F5F9F5', border: '#253341' },
+  { bg: '#F2A488', text: '#253341', border: '#AB421C' },
 ];
 
 function matchBrandKey(normalized: string): string | null {
   if (!normalized) return null;
   if (normalized.includes('migros')) return 'migros';
   if (normalized === 'bim' || normalized.startsWith('bim ')) return 'bim';
-  if (normalized.includes('a101')) return 'a101';
-  if (normalized === 'sok' || normalized.startsWith('sok ') || normalized.includes('sokmarket')) return 'sok';
+  if (normalized.includes('a101') || normalized.includes('a 101')) return 'a101';
+  if (
+    normalized === 'sok' ||
+    normalized.startsWith('sok ') ||
+    normalized.includes('sokmarket') ||
+    normalized.includes('sok market')
+  ) {
+    return 'sok';
+  }
   if (normalized.includes('carrefour')) return 'carrefour';
   if (normalized.includes('tarim') && normalized.includes('kredi')) return 'tarim_kredi';
   if (normalized.includes('hakmar')) return 'hakmar';
@@ -127,15 +125,29 @@ export function marketKey(market: Market): string {
 }
 
 /**
- * API'den gelen market adını (bim, a101, sok, migros, carrefour, hakmar, tarim_kredi, file vb.)
- * doğrudan Upstream CDN SVG logosuna dönüştürür.
- * https://marketfiyati.org.tr/assets/images/marketim/logos/{marketName}.svg
+ * API'den gelen market adını (migros, bim, a101, sok, carrefour, tarim_kredi, hakmar)
+ * veya Türkçe şube/görünen adını Upstream CDN SVG logosuna dönüştürür.
+ * `file` için upstream HTML SPA fallback döndüğünden `null` döner.
  */
 export function getMarketLogo(marketName?: string | null): string | null {
   if (!marketName || typeof marketName !== 'string') return null;
-  const cleanName = marketName.toLowerCase().trim().replace(/[^a-z0-9_]/g, '');
-  if (!cleanName) return null;
-  return `https://marketfiyati.org.tr/assets/images/marketim/logos/${cleanName}.svg`;
+  const raw = marketName.trim();
+  if (!raw) return null;
+
+  const normalized = normalizeString(raw).replace(/_/g, ' ');
+  const matched = matchBrandKey(normalized);
+  if (matched) {
+    return matched === 'file'
+      ? null
+      : `https://marketfiyati.org.tr/assets/images/marketim/logos/${matched}.svg`;
+  }
+
+  const slug = raw.toLowerCase();
+  if (/^[a-z0-9_]+$/.test(slug) && slug !== 'other' && slug !== 'file') {
+    return `https://marketfiyati.org.tr/assets/images/marketim/logos/${slug}.svg`;
+  }
+
+  return null;
 }
 
 export function detectMarketBrand(marketName?: string | null): string {

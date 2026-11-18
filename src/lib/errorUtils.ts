@@ -44,6 +44,10 @@ export function getErrorMessage(error: Error): string {
 
 export function toErrorMessage(err: unknown, fallback = 'Bir hata oluştu'): string {
   if (err instanceof Error) return err.message || fallback;
-  if (typeof err === 'string') return err;
+  if (typeof err === 'object' && err !== null && 'message' in err) {
+    const msg = (err as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg.trim()) return msg;
+  }
+  if (typeof err === 'string' && err.trim()) return err;
   return fallback;
 }

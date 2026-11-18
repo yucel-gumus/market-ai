@@ -5,9 +5,13 @@ import {
   isPlainObject,
   validateLatLngDistance,
 } from '@/lib/marketApiProxy';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { Market, MarketSearchRequest } from '@/types';
 
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, 'search-markets', 60);
+  if (limited) return limited;
+
   try {
     let raw: unknown;
 

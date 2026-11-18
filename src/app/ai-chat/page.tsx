@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDebounce } from 'use-debounce';
 import {
   ChefHat,
   Search,
@@ -12,46 +11,30 @@ import {
   RotateCcw,
   ArrowRight,
   X,
-  Utensils,
-  Flame,
-  Clock as ClockIcon,
-  Users,
   Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { InlineAlert } from '@/components/ui/inline-alert';
 import { SEARCH } from '@/constants';
-import { coordsOf } from '@/lib/shoppingUtils';
+import { RecipeCalorieModal, type RecipeResult } from '@/features/ai-chat/components/RecipeCalorieModal';
 import { useRecipePipeline } from '@/features/ai-chat/hooks/useRecipePipeline';
 import { ProductDropdown } from '@/features/products/components/ProductDropdown';
 import { SearchInput } from '@/features/products/components/SearchInput';
 import { SearchStatsDisplay } from '@/features/products/components/SearchStatsDisplay';
 import { ShoppingCartSummary } from '@/features/products/components/ShoppingCartSummary';
-import { MultiStoreRouteModal, type RouteLeg } from '@/features/products/components/MultiStoreRouteModal';
+import { MultiStoreRouteModal } from '@/features/products/components/MultiStoreRouteModal';
 import { RouteModal } from '@/features/products/components/RouteModal';
 import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStorageSettings';
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
+import { useRouteModals } from '@/features/products/hooks/useRouteModals';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
-import { formatNutritionValue, isNutritionNote, nutritionLabel } from '@/lib/nutritionLabels';
-import { useModalDialog } from '@/lib/useModalDialog';
+import { useDebouncedValue } from '@/lib/useDebouncedValue';
 import { toErrorMessage } from '@/lib/errorUtils';
-import { LlmService, type RecipeWithCaloriesResponse } from '@/services/llmService';
-import type { Product, ProductDepotInfo, RouteInfo } from '@/types';
+import { LlmService } from '@/services/llmService';
+import type { Product } from '@/types';
 
 const STEPS = ['input', 'ingredients', 'processing', 'complete'] as const;
-
-/**
- * Tarif/kalori sonucu, ÜRETİLDİĞİ yemek adı ve kişi sayısıyla birlikte saklanır.
- * Aksi halde kullanıcı kişi sayısını değiştirdiğinde ekrandaki tarif eski kalır ama
- * başlık yeni sayıyı gösterir (ölçü ve porsiyon çelişkisi).
- */
-interface RecipeResult {
-  data: RecipeWithCaloriesResponse;
-  foodName: string;
-  servings: number;
-  request: string;
-}
 
 function stepIcon(step: string, className = 'w-6 h-6') {
   switch (step) {
@@ -93,6 +76,7 @@ export default function AiChatPage() {
     setItemDepot,
     clearCart,
     generateRoute,
+    isProductInCart,
     marketCount,
   } = useShoppingCart(searchSettings);
 
@@ -104,36 +88,27 @@ export default function AiChatPage() {
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [uiError, setUiError] = useState<string | null>(null);
 
-  const [showSingleMap, setShowSingleMap] = useState(false);
-  const [showMultiMap, setShowMultiMap] = useState(false);
-  const [selectedStore, setSelectedStore] = useState<ProductDepotInfo | null>(null);
-  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  const [realRouteDistance, setRealRouteDistance] = useState<number | undefined>();
-  const [realRouteTime, setRealRouteTime] = useState<number | undefined>();
-  const [realRouteLegs, setRealRouteLegs] = useState<RouteLeg[] | undefined>();
+  const {
+    showSingleMap,
+    showMultiMap,
+    selectedStore,
+    routeInfo,
+    realRouteDistance,
+    realRouteTime,
+    realRouteLegs,
+    openSingleRoute,
+    openMultiRoute,
+    closeMaps,
+    handleRouteFound,
+    handleMultiRouteFound,
+  } = useRouteModals(optimization, setUiError);
 
-  const recipeData = recipeResult?.data ?? null;
-  const recipeDialogRef = useRef<HTMLDialogElement>(null);
   const closeRecipeModal = useCallback(() => setShowRecipeModal(false), []);
-  const closeRecipeDialog = useModalDialog(
-    recipeDialogRef,
-    Boolean(showRecipeModal && recipeData),
-    closeRecipeModal,
-  );
   // Girdi, tarifin üretildiği andan farklıysa sonuç "önceki tarif" olarak işaretlenir.
   const recipeIsStale = Boolean(recipeResult && recipeResult.request !== pipeline.recipeRequest);
 
-  useEffect(() => {
-    setShowSingleMap(false);
-    setShowMultiMap(false);
-    setSelectedStore(null);
-    setRealRouteDistance(undefined);
-    setRealRouteTime(undefined);
-    setRealRouteLegs(undefined);
-  }, [optimization]);
-
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery] = useDebounce(searchQuery, 450);
+  const debouncedQuery = useDebouncedValue(searchQuery, 450);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const {
@@ -151,8 +126,14 @@ export default function AiChatPage() {
   const isQueryPending = searchQuery.trim() !== debouncedQuery.trim();
   const isSearchBusy = isQueryPending || isProductsLoading || isSearchFetching;
 
+  const calorieAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => () => calorieAbortRef.current?.abort(), []);
+
   const handleGetRecipeAndCalorie = async () => {
     if (!pipeline.foodName.trim()) return;
+    calorieAbortRef.current?.abort();
+    const controller = new AbortController();
+    calorieAbortRef.current = controller;
     // Girdinin O ANKİ hali sonuçla birlikte saklanır; sonradan değişirse sonuç "önceki tarif" olur.
     const request = pipeline.recipeRequest;
     const foodName = pipeline.foodName.trim();
@@ -160,7 +141,8 @@ export default function AiChatPage() {
     setIsCalorieLoading(true);
     setCalorieError(null);
     try {
-      const data = await LlmService.generateRecipeAndCalorie(request);
+      const data = await LlmService.generateRecipeAndCalorie(request, controller.signal);
+      if (controller.signal.aborted) return;
       if (data.success) {
         setRecipeResult({ data, foodName, servings, request });
         setShowRecipeModal(true);
@@ -168,45 +150,17 @@ export default function AiChatPage() {
         setCalorieError(data.message || 'Tarif veya kalori bilgisi bulunamadı.');
       }
     } catch (err) {
+      if (controller.signal.aborted) return;
       setCalorieError(toErrorMessage(err));
     } finally {
-      setIsCalorieLoading(false);
-    }
-  };
-
-  const handleShowRoute = (depot: ProductDepotInfo) => {
-    if (!coordsOf(depot)) {
-      setUiError('Mağaza konumu bulunamadı.');
-      return;
-    }
-    setSelectedStore(depot);
-    setShowSingleMap(true);
-    setRouteInfo(null);
-  };
-
-  const handleCloseMap = () => {
-    setShowSingleMap(false);
-    setShowMultiMap(false);
-    setSelectedStore(null);
-    setRouteInfo(null);
-    setRealRouteDistance(undefined);
-    setRealRouteTime(undefined);
-  };
-
-  const handleRouteFound = useCallback((info: RouteInfo) => {
-    setRouteInfo((prev) => {
-      if (!prev || prev.distance !== info.distance || prev.time !== info.time) {
-        return info;
+      if (calorieAbortRef.current === controller) {
+        setIsCalorieLoading(false);
       }
-      return prev;
-    });
-  }, []);
+    }
+  };
 
   const handleAddExtraProduct = (product: Product) => {
     addToCart(product);
-    if (!pipeline.ingredients.includes(product.title)) {
-      pipeline.setIngredients((prev) => [...prev, product.title]);
-    }
   };
 
   if (isSettingsLoading) {
@@ -295,151 +249,12 @@ export default function AiChatPage() {
         <Card className="bg-[#DCE3EA] border-[#BCC7D2] shadow-md rounded-3xl p-4 sm:p-6">
           <CardContent className="pt-2">
             {/* Modal for Recipe Details & Calories */}
-            <dialog
-              ref={recipeDialogRef}
-              aria-labelledby="recipe-modal-title"
-              {...({ closedby: 'any' } as Record<string, string>)}
-              className="mwg-dialog mwg-dialog-scale m-auto w-[calc(100%-2rem)] max-w-5xl rounded-3xl shadow-2xl"
-            >
-              {showRecipeModal && recipeData ? (
-                <div className="max-h-[90vh] w-full overflow-hidden rounded-3xl bg-[#EDF3EE] border border-[#BCC7D2]">
-                  <div className="relative bg-[#DCE3EA] p-6 border-b border-[#BCC7D2] text-[#253341]">
-                    <button
-                      type="button"
-                      onClick={closeRecipeDialog}
-                      className="absolute right-4 top-4 rounded-full bg-[#EDF3EE] p-2 text-[#253341] hover:bg-[#DBE6DD] border border-[#BCC7D2] transition-colors"
-                      aria-label="Kapat"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                    <div className="mb-4 flex items-center gap-3">
-                      <div className="p-2.5 rounded-2xl bg-[#EC7D55] text-[#253341]">
-                        <ChefHat className="h-8 w-8 stroke-[2.5]" aria-hidden />
-                      </div>
-                      <div>
-                        <h2 id="recipe-modal-title" className="text-2xl font-bold font-heading text-[#253341]">
-                          {recipeData.name}
-                        </h2>
-                        <p className="mt-0.5 text-xs font-semibold text-[#3E5164]">
-                          {recipeData.description}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 rounded-2xl bg-[#EDF3EE] p-3.5 border border-[#BCC7D2]">
-                      <div className="flex items-center gap-2.5">
-                        <Flame className="h-5 w-5 text-[#AB421C]" aria-hidden />
-                        <div>
-                          <div className="text-lg font-bold font-heading text-[#253341]">{recipeData.calories}</div>
-                          <div className="text-[11px] font-semibold text-[#3E5164]">kcal/porsiyon</div>
-                        </div>
-                      </div>
-                      <div className="h-6 w-px bg-[#BCC7D2]" />
-                      <div className="flex items-center gap-2.5">
-                        <Users className="h-5 w-5 text-[#253341]" aria-hidden />
-                        <div>
-                          {/* Sonucun üretildiği kişi sayısı gösterilir, ekrandaki güncel girdi değil. */}
-                          <div className="text-base font-bold text-[#253341]">{recipeResult?.servings ?? pipeline.servings} Kişilik</div>
-                          <div className="text-[11px] font-semibold text-[#3E5164]">Standart porsiyon</div>
-                        </div>
-                      </div>
-                      <div className="h-6 w-px bg-[#BCC7D2]" />
-                      <div className="flex items-center gap-2.5">
-                        <ClockIcon className="h-5 w-5 text-[#253341]" aria-hidden />
-                        <div>
-                          <div className="text-base font-bold text-[#253341]">~30 Dakika</div>
-                          <div className="text-[11px] font-semibold text-[#3E5164]">Hazırlık süresi</div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="max-h-[calc(90vh-220px)] overflow-y-auto overscroll-contain custom-scrollbar p-6 space-y-6">
-                    <div className="grid gap-6 md:grid-cols-2">
-                      <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
-                        <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#253341]">
-                          <Package className="h-5 w-5 text-[#AB421C] stroke-[2.5]" /> Gerekli Malzemeler
-                        </h3>
-                        <ul className="space-y-2">
-                          {recipeData.ingredients?.map((item: string, idx: number) => (
-                            <li
-                              key={idx}
-                              className="rounded-xl bg-[#EDF3EE] p-3 text-sm font-semibold text-[#253341] border border-[#BCC7D2] flex items-center gap-2"
-                            >
-                              <span className="w-2 h-2 rounded-full bg-[#EC7D55]" />
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
-                        <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#253341]">
-                          <Utensils className="h-5 w-5 text-[#AB421C] stroke-[2.5]" /> Hazırlanışı
-                        </h3>
-                        <ol className="space-y-3">
-                          {recipeData.steps?.map((step: string, idx: number) => (
-                            <li
-                              key={idx}
-                              className="flex gap-3 rounded-xl bg-[#EDF3EE] p-3 text-sm font-medium text-[#253341] border border-[#BCC7D2]"
-                            >
-                              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#EC7D55] text-xs font-bold text-[#253341]">
-                                {idx + 1}
-                              </span>
-                              <span>{step}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    </div>
-
-                    {recipeData.nutrition && (
-                      <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
-                        <h3 className="text-lg font-bold font-heading text-[#253341]">
-                          Besin Değerleri ve Diyetisyen Değerlendirmesi
-                        </h3>
-                        {typeof recipeData.nutrition === 'object' && recipeData.nutrition !== null ? (
-                          <div className="space-y-3">
-                            <div className="grid gap-2 sm:grid-cols-3">
-                              {Object.entries(recipeData.nutrition as Record<string, unknown>)
-                                .filter(([key]) => !isNutritionNote(key))
-                                .map(([key, val]) => (
-                                  <div
-                                    key={key}
-                                    className="rounded-xl bg-[#EDF3EE] p-3 border border-[#BCC7D2]"
-                                  >
-                                    <span className="text-xs font-bold text-[#3E5164] block mb-1">
-                                      {nutritionLabel(key)}
-                                    </span>
-                                    <span className="text-xs font-medium text-[#253341] leading-snug block">
-                                      {formatNutritionValue(val)}
-                                    </span>
-                                  </div>
-                                ))}
-                            </div>
-                            {Object.entries(recipeData.nutrition as Record<string, unknown>)
-                              .filter(([key]) => isNutritionNote(key))
-                              .map(([key, val]) => (
-                                <div key={key} className="rounded-xl bg-[#F5F9F5] p-3.5 border border-[#BCC7D2]">
-                                  <span className="text-xs font-bold text-[#253341] block mb-1">
-                                    💡 Beslenme ve Diyet Notu:
-                                  </span>
-                                  <p className="text-xs font-medium leading-relaxed text-[#3E5164]">
-                                    {formatNutritionValue(val)}
-                                  </p>
-                                </div>
-                              ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm font-medium leading-relaxed text-[#3E5164]">
-                            {formatNutritionValue(recipeData.nutrition)}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </dialog>
+            <RecipeCalorieModal
+              isOpen={showRecipeModal}
+              recipeResult={recipeResult}
+              fallbackServings={pipeline.servings}
+              onClose={closeRecipeModal}
+            />
 
             {/* Modals for Routes */}
             {searchSettings && (
@@ -449,7 +264,7 @@ export default function AiChatPage() {
                 totalCost={optimization?.totalCost}
                 routeInfo={routeInfo}
                 searchSettings={searchSettings}
-                onClose={handleCloseMap}
+                onClose={closeMaps}
                 onRouteFound={handleRouteFound}
               />
             )}
@@ -457,7 +272,7 @@ export default function AiChatPage() {
             {searchSettings && optimization && marketCount > 1 && (
               <MultiStoreRouteModal
                 isOpen={showMultiMap}
-                onClose={handleCloseMap}
+                onClose={closeMaps}
                 routeSteps={generateRoute(
                   searchSettings.latitude,
                   searchSettings.longitude
@@ -466,11 +281,7 @@ export default function AiChatPage() {
                 realRouteDistance={realRouteDistance}
                 realRouteTime={realRouteTime}
                 realRouteLegs={realRouteLegs}
-                onMultiRouteFound={(d) => {
-                  setRealRouteDistance(d.distance);
-                  setRealRouteTime(d.time);
-                  setRealRouteLegs(d.legs);
-                }}
+                onMultiRouteFound={handleMultiRouteFound}
               />
             )}
 
@@ -666,7 +477,7 @@ export default function AiChatPage() {
                         value={searchQuery}
                         onChange={(v) => {
                           setSearchQuery(v);
-                          setIsDropdownOpen(v.length >= SEARCH.MIN_QUERY_LENGTH);
+                          setIsDropdownOpen(v.trim().length >= SEARCH.MIN_QUERY_LENGTH);
                         }}
                         onClear={() => {
                           setSearchQuery('');
@@ -692,15 +503,7 @@ export default function AiChatPage() {
                           setSearchQuery('');
                           setIsDropdownOpen(false);
                         }}
-                        isProductInCart={(id) =>
-                          products.some(
-                            (p) =>
-                              p.id === id &&
-                              pipeline.ingredients.some(
-                                (ing) => p.title.toLowerCase() === ing.toLowerCase()
-                              )
-                          )
-                        }
+                        isProductInCart={isProductInCart}
                       />
                     </div>
                   </CardContent>
@@ -788,8 +591,8 @@ export default function AiChatPage() {
                     onRefreshPrices={refreshPrices}
                     isRefreshing={isRefreshing}
                     refreshMessage={refreshMessage}
-                    onViewRoute={() => setShowMultiMap(true)}
-                    onViewSingleRoute={handleShowRoute}
+                    onViewRoute={openMultiRoute}
+                    onViewSingleRoute={openSingleRoute}
                     onClearCart={() => { clearCart(); pipeline.clearSelections(); }}
                     onRemoveItem={id => { removeFromCart(id); pipeline.forgetProduct(id); }}
                     recipeProductIds={pipeline.recipeAddedIds}

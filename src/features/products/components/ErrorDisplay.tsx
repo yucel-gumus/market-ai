@@ -1,16 +1,15 @@
 'use client';
 
-import { AlertCircle, RotateCcw, Home } from 'lucide-react';
+import { AlertCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ErrorDisplayProps {
   error: string;
-  onRetry?: () => void;
   onGoHome?: () => void;
 }
 
-export function ErrorDisplay({ error, onRetry, onGoHome }: ErrorDisplayProps) {
+export function ErrorDisplay({ error, onGoHome }: ErrorDisplayProps) {
   return (
     <Card className="border-[#AB421C] bg-[#F2A488]/25 rounded-2xl shadow-sm">
       <CardHeader>
@@ -22,12 +21,6 @@ export function ErrorDisplay({ error, onRetry, onGoHome }: ErrorDisplayProps) {
       <CardContent>
         <p className="text-[#3E5164] text-sm font-medium mb-4">{error}</p>
         <div className="flex gap-2">
-          {onRetry && (
-            <Button onClick={onRetry} variant="outline" size="sm" className="font-bold">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Tekrar Dene
-            </Button>
-          )}
           {onGoHome && (
             <Button onClick={onGoHome} variant="default" size="sm" className="font-bold">
               <Home className="h-4 w-4 mr-2" />

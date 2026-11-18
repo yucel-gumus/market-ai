@@ -36,7 +36,3 @@ export const useMarketSearch = (request: MarketSearchRequest | null) => {
     }
   });
 };
-
-export const useDistanceOptions = () => {
-  return MarketService.getDistanceOptions();
-};

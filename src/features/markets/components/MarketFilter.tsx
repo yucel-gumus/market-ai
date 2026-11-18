@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+import Image from 'next/image';
 import { Check, Store } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { getStoreTheme, type MarketBrand } from '@/lib/marketUtils';
+import { getMarketLogo, getStoreTheme, type MarketBrand } from '@/lib/marketUtils';
 
 interface MarketFilterProps {
   uniqueBrands: MarketBrand[];
@@ -12,6 +14,8 @@ interface MarketFilterProps {
 }
 
 export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: MarketFilterProps) {
+  const [failedUrls, setFailedUrls] = useState<Record<string, true>>({});
+
   if (uniqueBrands.length === 0) return null;
 
   return (
@@ -24,6 +28,8 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
           {uniqueBrands.map((brand) => {
             const isSelected = selectedBrands.has(brand);
             const theme = getStoreTheme(brand);
+            const logoPath = getMarketLogo(brand);
+            const showLogo = Boolean(logoPath && !failedUrls[logoPath]);
             return (
               <button
                 key={brand}
@@ -35,27 +41,42 @@ export function MarketFilter({ uniqueBrands, selectedBrands, onToggleBrand }: Ma
                 className={cn(
                   "flex items-center gap-2 h-11 px-3.5 py-2 rounded-xl border transition-all duration-200 hover:scale-[1.03] relative cursor-pointer",
                   isSelected
-                    ? "bg-[#DCE3EA] border-[#253341] border-2 shadow-sm text-[#253341]"
-                    : "bg-[#F5F9F5]/75 border-[#BCC7D2] text-[#3E5164] opacity-60 hover:opacity-95 hover:bg-[#DBE6DD]"
+                    ? "bg-[#F5F9F5] border-[#253341] border-2 shadow-sm text-[#253341]"
+                    : "bg-[#F5F9F5]/80 border-[#BCC7D2] text-[#3E5164] opacity-60 hover:opacity-95 hover:bg-[#F5F9F5]"
                 )}
               >
-                <span
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-lg border text-[10px] font-extrabold shrink-0"
-                  style={{
-                    backgroundColor: theme.bg,
-                    color: theme.text,
-                    borderColor: theme.border,
-                  }}
-                >
-                  {theme.shortCode ? (
-                    <span>{theme.shortCode.slice(0, 2)}</span>
-                  ) : (
-                    <Store className="h-3.5 w-3.5" aria-hidden />
-                  )}
-                </span>
-                <span className="text-xs font-bold font-heading tracking-tight whitespace-nowrap">
-                  {theme.label}
-                </span>
+                {showLogo && logoPath ? (
+                  <span className="relative h-7 w-14 flex items-center justify-center shrink-0">
+                    <Image
+                      src={logoPath}
+                      alt={theme.label}
+                      fill
+                      unoptimized
+                      onError={() => setFailedUrls((prev) => ({ ...prev, [logoPath]: true }))}
+                      className="object-contain"
+                    />
+                  </span>
+                ) : (
+                  <>
+                    <span
+                      className="inline-flex h-6 w-6 items-center justify-center rounded-lg border text-[10px] font-extrabold shrink-0"
+                      style={{
+                        backgroundColor: theme.bg,
+                        color: theme.text,
+                        borderColor: theme.border,
+                      }}
+                    >
+                      {theme.shortCode ? (
+                        <span>{theme.shortCode.slice(0, 2)}</span>
+                      ) : (
+                        <Store className="h-3.5 w-3.5" aria-hidden />
+                      )}
+                    </span>
+                    <span className="text-xs font-bold font-heading tracking-tight whitespace-nowrap">
+                      {theme.label}
+                    </span>
+                  </>
+                )}
                 {isSelected && (
                   <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#EC7D55] text-[#253341] ring-2 ring-[#EDF3EE] ml-0.5">
                     <Check className="h-2.5 w-2.5 stroke-[3]" aria-hidden />

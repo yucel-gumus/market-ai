@@ -1,4 +1,4 @@
-const { chromium } = require('playwright');
+const { chromium } = require('@playwright/test');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const fs = require('node:fs/promises');
@@ -28,7 +28,7 @@ const cart = products.map(product => ({ product, selectedDepot: product.productD
     await context.addInitScript(({ session, cart }) => {
       if (localStorage.getItem('qa-seeded')) return;
       localStorage.setItem('marketSearchData', JSON.stringify(session));
-      localStorage.setItem('market-ai-app', JSON.stringify({ state: { marketSession: session, selectedAddress: session.selectedAddress }, version: 0 }));
+      localStorage.setItem('market-ai-app', JSON.stringify({ state: { marketSession: session, selectedAddress: session.selectedAddress, selectedDistance: session.distance }, version: 0 }));
       localStorage.setItem('shopping-cart', JSON.stringify(cart));
       localStorage.setItem('qa-seeded', 'true');
     }, { session, cart });
@@ -40,15 +40,22 @@ const cart = products.map(product => ({ product, selectedDepot: product.productD
     await context.route('**/api/**', async route => {
       const path = new URL(route.request().url()).pathname;
       const body = route.request().postDataJSON() ?? {};
-      if (path.includes('market-categories')) return route.fulfill({ json: { content: [{ id: 1, parentId: null, name: 'Meyve ve Sebze', children: [{ id: 2, parentId: 1, name: 'Sebze', children: [] }] }, { id: 3, parentId: null, name: 'Süt Ürünleri ve Kahvaltılık', children: [{ id: 4, parentId: 3, name: 'Süt', children: [{ id: 5, parentId: 4, name: 'UHT Süt', children: [] }] }] }] } });
       if (path.includes('recipe-list')) {
         assert.ok(body.recipe_name.includes(expectedServings));
         return route.fulfill({ json: { success: true, ingredients: ['domates', 'süt'] } });
       }
       if (path.includes('select-products')) return aiFails
-        ? route.fulfill({ status: 502, json: { success: false, error: 'Test AI failure' } })
-        : route.fulfill({ json: { success: true, selections: [{ success: true, searchedIngredient: 'domates', product: { title: 'Domates 1 kg', price: 10 }, reasoning: 'Test' }] } });
-      if (path.includes('ingredient-categories')) return route.fulfill({ json: { success: true, categories: [] } });
+        ? route.fulfill({
+            json: {
+              success: true,
+              message: 'Test AI failure: otomatik ürün seçilemedi.',
+              selections: [
+                { success: false, searchedIngredient: 'domates', matchType: 'none', reasoning: 'Test AI failure', product: null, alternatives: [products[0]] },
+                { success: false, searchedIngredient: 'süt', matchType: 'none', reasoning: 'Test AI failure', product: null, alternatives: [products[1]] },
+              ],
+            },
+          })
+        : route.fulfill({ json: { success: true, selections: [{ success: true, searchedIngredient: 'domates', matchType: 'direct', product: products[0], reasoning: 'Test' }] } });
       if (path.includes('search-products') && body.keywords === 'sayfalama') {
         paginationRequests.push(body.pages);
         if (body.pages === 1 && pageFailure) { pageFailure = false; return route.fulfill({ status: 503, json: { success: false, error: 'Geçici sayfa hatası' } }); }
@@ -68,9 +75,7 @@ const cart = products.map(product => ({ product, selectedDepot: product.productD
     await context.route('**/router.project-osrm.org/**', async route => {
       routeRequests++;
       const coordinates = new URL(route.request().url()).pathname.split('/').pop().split(';').map(pair => pair.split(',').map(Number));
-      let geometry = ''; let lastLat = 0; let lastLng = 0;
-      const encode = delta => { let value = delta < 0 ? ~(delta << 1) : delta << 1; let result = ''; while (value >= 32) { result += String.fromCharCode((32 | (value & 31)) + 63); value >>= 5; } return result + String.fromCharCode(value + 63); };
-      for (const [lng, lat] of coordinates) { const a = Math.round(lat * 100000); const b = Math.round(lng * 100000); geometry += encode(a - lastLat) + encode(b - lastLng); lastLat = a; lastLng = b; }
+      const geometry = { type: 'LineString', coordinates };
       await route.fulfill({ json: { code: 'Ok', waypoints: coordinates.map(location => ({ location, name: 'Test' })), routes: [{ geometry, distance: 3000, duration: 600, legs: coordinates.slice(1).map(() => ({ distance: 1000, duration: 200, summary: '', steps: [] })) }] } });
     });
     await context.route('**/*.tile.openstreetmap.org/**', route => route.abort());
@@ -114,7 +119,7 @@ const cart = products.map(product => ({ product, selectedDepot: product.productD
     await page.screenshot({ path: 'test-results/cart-mobile.png', fullPage: true, animations: 'disabled' });
     console.log('Cart, persistence, refresh and mobile checks passed');
     await page.getByRole('button', { name: 'Alışveriş rotasını gör', exact: true }).click();
-    await page.getByText('Gösterilen süre araç rotasına aittir.', { exact: false }).waitFor();
+    await page.getByText('Mesafe ve süreler araç rotasına (OSRM) göre hesaplanmıştır', { exact: false }).waitFor();
     assert.equal(routeRequests, 1, 'Route callback recreated the map');
     await page.getByRole('button', { name: 'Rotayı kapat', exact: true }).click();
     console.log('Checking progressive pagination and retry after a later-page failure');
@@ -147,7 +152,7 @@ const cart = products.map(product => ({ product, selectedDepot: product.productD
       const session = JSON.parse(localStorage.getItem('marketSearchData'));
       session.selectedMarkets = [{ id: 'Z', name: 'Yeni şube', latitude: 42, longitude: 30, distance: 1 }];
       localStorage.setItem('marketSearchData', JSON.stringify(session));
-      localStorage.setItem('market-ai-app', JSON.stringify({ state: { marketSession: session }, version: 0 }));
+      localStorage.setItem('market-ai-app', JSON.stringify({ state: { marketSession: session, selectedAddress: session.selectedAddress, selectedDistance: session.distance }, version: 0 }));
     });
     await page.goto(`${base}/product-search`);
     await page.getByText('Bu ürünlerin seçili şubelerde geçerli fiyatı yok.', { exact: false }).waitFor();

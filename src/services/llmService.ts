@@ -58,6 +58,7 @@ export interface RecipeWithCaloriesResponse {
   success: boolean;
   name?: string;
   description?: string;
+  prepTime?: string;
   ingredients: string[];
   steps: string[];
   calories?: number;
@@ -99,13 +100,15 @@ export class LlmService {
     ingredients: string[],
     recipeName: string,
     location?: { latitude: number; longitude: number; distance?: number; depots?: string[] },
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    ingredientDetails?: import('@/lib/recipeQuantity').IngredientRequirement[]
   ): Promise<SelectProductsResponse> {
     const { data } = await apiClient.post<SelectProductsResponse>(
       resolveLlmEndpoint('select-products'),
       {
         recipe_name: recipeName,
         ingredients: ingredients.join(', '),
+        ...(ingredientDetails?.length ? { ingredient_details: ingredientDetails } : {}),
         ...(location
           ? {
               latitude: location.latitude,

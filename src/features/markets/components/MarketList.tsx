@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Store, Map, List, ArrowRight } from 'lucide-react';
@@ -67,9 +67,9 @@ export function MarketList({
     visibleCount,
   } = useMarketFiltering(markets, preselectedMarketKeys);
 
-  const handleMarkerClick = (market: Market) => {
+  const handleMarkerClick = useCallback((market: Market) => {
     toggleMarket(market);
-  };
+  }, [toggleMarket]);
 
   const getSelectedMarkets = (): Market[] =>
     filteredMarkets.filter((market) => !hiddenMarkets.has(marketKey(market)));

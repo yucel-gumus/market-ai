@@ -1,4 +1,4 @@
-import { findOptimalDepot, itemQuantity, validPrice } from '@/lib/shoppingUtils';
+import { itemQuantity, pickDepot, validPrice } from '@/lib/shoppingUtils';
 import type { CartItem, Product, ProductDepotInfo } from '@/types';
 
 function validDepot(value: unknown): value is ProductDepotInfo {
@@ -18,7 +18,8 @@ export function restoreCart(value: unknown): CartItem[] {
     if (!product || typeof product.id !== 'string' || !product.id || typeof product.title !== 'string'
       || !Array.isArray(product.productDepotInfoList)) continue;
     const cleanProduct = { ...product, productDepotInfoList: product.productDepotInfoList.filter(validDepot) };
-    const depot = findOptimalDepot(cleanProduct, items);
+    const preferredId = validDepot(raw.selectedDepot) ? raw.selectedDepot.depotId : undefined;
+    const depot = pickDepot(cleanProduct, preferredId, items);
     if (!depot) continue;
     const date = new Date(raw.addedAt);
     const item: CartItem = { product: cleanProduct, selectedDepot: depot,

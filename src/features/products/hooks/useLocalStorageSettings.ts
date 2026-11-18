@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DEFAULTS } from '@/constants';
 import { useAppStore } from '@/store/useAppStore';
 import { settingsFromSession } from '@/lib/locationSession';
-import { SearchSettings } from '@/types';
 
 /**
  * Arama ayarları yalnızca store'daki market oturumundan türetilir (tek kaynak) — ama
@@ -15,29 +14,34 @@ export const useLocalStorageSettings = () => {
   const marketSession = useAppStore((s) => s.marketSession);
   const selectedAddress = useAppStore((s) => s.selectedAddress);
   const selectedDistance = useAppStore((s) => s.selectedDistance);
-  const [searchSettings, setSearchSettings] = useState<SearchSettings | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
-    const settings = settingsFromSession(marketSession, selectedAddress, selectedDistance, {
+    if (useAppStore.persist.hasHydrated()) {
+      setIsHydrated(true);
+      return;
+    }
+    return useAppStore.persist.onFinishHydration(() => setIsHydrated(true));
+  }, []);
+
+  const searchSettings = useMemo(() => {
+    if (!isHydrated) return null;
+    return settingsFromSession(marketSession, selectedAddress, selectedDistance, {
       pages: DEFAULTS.PAGE,
       size: DEFAULTS.PAGE_SIZE,
     });
-    setSearchSettings(settings);
-    setError(
-      settings
-        ? null
-        : marketSession
-          ? 'Seçtiğiniz adres için market seçimi geçersiz. Önce ana sayfadan adres ve market seçiminizi güncelleyiniz.'
-          : 'Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.'
-    );
-    setIsLoading(false);
-  }, [marketSession, selectedAddress, selectedDistance]);
+  }, [isHydrated, marketSession, selectedAddress, selectedDistance]);
+
+  const error = useMemo(() => {
+    if (!isHydrated || searchSettings) return null;
+    return marketSession
+      ? 'Seçtiğiniz adres için market seçimi geçersiz. Önce ana sayfadan adres ve market seçiminizi güncelleyiniz.'
+      : 'Market verileri bulunamadı. Önce ana sayfadan adres ve market seçimi yapınız.';
+  }, [isHydrated, searchSettings, marketSession]);
 
   return {
     searchSettings,
-    isLoading,
+    isLoading: !isHydrated,
     error,
   };
 };

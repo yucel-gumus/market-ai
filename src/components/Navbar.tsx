@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Store, Search, Sparkles, MapPin, Lock } from 'lucide-react';
@@ -15,6 +15,11 @@ export default function Navbar() {
   const selectedAddress = useAppStore((s) => s.selectedAddress);
   const selectedDistance = useAppStore((s) => s.selectedDistance);
   const [warningMessage, setWarningMessage] = useState<string | null>(null);
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+  }, []);
 
   // Oturum ancak ekrandaki adres/mesafeyle uyuşuyorsa geçerlidir. Uyuşmuyorsa rozet eski
   // ilçeyi ve eski market sayısını gösterip "seçimim güncellenmiyor" hissi veriyordu.
@@ -35,7 +40,8 @@ export default function Navbar() {
       e.preventDefault();
       setWarningMessage('Ürün aramak ve AI asistanını kullanmak için önce bir konum ve market seçmelisiniz.');
       router.push('/');
-      setTimeout(() => setWarningMessage(null), 4000);
+      if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+      warningTimerRef.current = setTimeout(() => setWarningMessage(null), 4000);
     }
   };
 
@@ -96,7 +102,7 @@ export default function Navbar() {
         </div>
 
         {/* Navigation Links */}
-        <nav className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-[#EDF3EE] border border-[#BCC7D2]">
+        <nav aria-label="Ana menü" className="hidden md:flex items-center gap-1.5 p-1 rounded-2xl bg-[#EDF3EE] border border-[#BCC7D2]">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -129,7 +135,7 @@ export default function Navbar() {
         {/* Right side CTA / Mobile nav */}
         <div className="flex items-center gap-3">
           {/* Mobile navigation buttons */}
-          <div className="flex md:hidden items-center gap-1 bg-[#EDF3EE] p-1 rounded-xl border border-[#BCC7D2]">
+          <nav aria-label="Mobil menü" className="flex md:hidden items-center gap-1 bg-[#EDF3EE] p-1 rounded-xl border border-[#BCC7D2]">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -144,20 +150,20 @@ export default function Navbar() {
                     }`}
                   title={item.name}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-5 w-5" aria-hidden />
                   {isDisabled && (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[#AB421C] rounded-full border border-[#EDF3EE]" />
                   )}
                 </Link>
               );
             })}
-          </div>
+          </nav>
         </div>
       </div>
 
       {/* Warning Alert Banner when user clicks without location */}
       {warningMessage && (
-        <div className="bg-[#F2A488] border-t border-b border-[#AB421C] px-4 py-2 text-center text-xs font-bold text-[#253341] animate-in fade-in slide-in-from-top-1">
+        <div role="status" className="bg-[#F2A488] border-t border-b border-[#AB421C] px-4 py-2 text-center text-xs font-bold text-[#253341] animate-in fade-in slide-in-from-top-1">
           ⚠️ {warningMessage}
         </div>
       )}

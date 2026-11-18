@@ -2,12 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ACCEPT_LANGUAGE, CACHE_HEADERS, MARKET_ORIGIN, MARKET_REFERER, SEARCH, TIMEOUTS_MS, USER_AGENT } from '@/constants';
 import { getAddressApiUrl } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { checkRateLimit } from '@/lib/rateLimit';
 import { AddressSearchResult } from '@/types';
 
 export async function GET(request: NextRequest) {
+  const limited = checkRateLimit(request, 'search-addresses', 90);
+  if (limited) return limited;
+
   try {
     const { searchParams } = new URL(request.url);
-    const words = searchParams.get('words');
+    const words = searchParams.get('words')?.trim() ?? '';
 
     if (!words) {
       return NextResponse.json(
@@ -16,11 +20,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (words.length < SEARCH.MIN_QUERY_LENGTH) {
+    if (words.length < SEARCH.MIN_QUERY_LENGTH || words.length > 200) {
       return NextResponse.json(
         {
           success: false,
-          error: `Arama sorgusu en az ${SEARCH.MIN_QUERY_LENGTH} karakter olmalıdır`,
+          error: `Arama sorgusu ${SEARCH.MIN_QUERY_LENGTH} ile 200 karakter arasında olmalıdır`,
         },
         { status: 400 }
       );

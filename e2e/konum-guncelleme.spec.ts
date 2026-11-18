@@ -1,4 +1,4 @@
-import { expect, test } from 'playwright/test';
+import { expect, test } from '@playwright/test';
 import { readStoreState, replaceAddress, seedSession, seedStaleSession, selectFirstAddress } from './utils';
 
 const ADDRESS_PLACEHOLDER = 'Örn: Kızılcaşar Mahallesi, Gölbaşı, Ankara';

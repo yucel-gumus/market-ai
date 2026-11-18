@@ -12,4 +12,26 @@ describe('cart migration', () => {
     expect(restoreCart({})).toEqual([]);
     expect(restoreCart([null, {}, { product: { ...product, productDepotInfoList: [{ price: -1 }] } }])).toEqual([]);
   });
+  it('preserves a valid pinned selectedDepot and falls back when pinned price is invalid', () => {
+    const multiDepotProduct = {
+      id: 'p2',
+      title: 'Zeytin',
+      productDepotInfoList: [
+        { depotId: 'a', depotName: 'A', marketAdi: 'A', price: 10, unitPrice: '10' },
+        { depotId: 'b', depotName: 'B', marketAdi: 'B', price: 30, unitPrice: '30' },
+      ],
+    };
+    const [pinnedItem] = restoreCart([
+      { product: multiDepotProduct, selectedDepot: multiDepotProduct.productDepotInfoList[1], quantity: 2 },
+    ]);
+    expect(pinnedItem.selectedDepot.depotId).toBe('b');
+
+    const [fallbackItem] = restoreCart([
+      {
+        product: multiDepotProduct,
+        selectedDepot: { depotId: 'b', depotName: 'B', marketAdi: 'B', price: -5, unitPrice: '0' },
+      },
+    ]);
+    expect(fallbackItem.selectedDepot.depotId).toBe('a');
+  });
 });

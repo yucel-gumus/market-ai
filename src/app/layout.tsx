@@ -6,13 +6,13 @@ import "./globals.css";
 
 const dmSans = DM_Sans({
   variable: "--font-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["400", "500", "700"],
 });
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-heading",
-  subsets: ["latin"],
+  subsets: ["latin", "latin-ext"],
   weight: ["500", "600", "700"],
 });
 

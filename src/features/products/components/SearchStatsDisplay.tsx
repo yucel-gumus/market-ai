@@ -1,5 +1,6 @@
 'use client';
 
+import { SEARCH } from '@/constants';
 import { SearchStats } from '@/types';
 import { BarChart3 } from 'lucide-react';
 
@@ -16,7 +17,7 @@ export function SearchStatsDisplay({
   isLoading = false,
   error
 }: SearchStatsDisplayProps) {
-  if (query.length < 2 || isLoading) {
+  if (query.trim().length < SEARCH.MIN_QUERY_LENGTH || isLoading) {
     return null;
   }
   return (

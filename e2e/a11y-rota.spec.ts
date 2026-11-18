@@ -1,4 +1,4 @@
-import { test, expect } from 'playwright/test';
+import { test, expect } from '@playwright/test';
 import { selectFirstAddress } from './utils';
 
 /**
@@ -62,7 +62,7 @@ test('a11y: rota diyaloğu odak/Escape + konsol uyarıları', async ({ page }, t
 
   await rotaBtn.click();
 
-  const dialog = page.locator('[role="dialog"][aria-label="Alışveriş rotası"]').first();
+  const dialog = page.getByRole('dialog').first();
   await expect(dialog).toBeVisible({ timeout: 20_000 });
   await page.waitForTimeout(800); // odak yerleşsin
 

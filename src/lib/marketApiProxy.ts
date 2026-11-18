@@ -13,6 +13,7 @@ import {
 } from '@/constants';
 import { getMarketApiUrl, isProduction } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { checkRateLimit } from '@/lib/rateLimit';
 
 export type MarketProductSearchBody = Partial<import('@/types').ProductSearchRequest> & { identities?: string[]; identityType?: string };
 export type MarketApiPath = typeof MARKET_API_PATHS[keyof typeof MARKET_API_PATHS];
@@ -168,11 +169,14 @@ export async function proxyMarketApiPost(
   return res;
 }
 
-/** search-products ve search-by-categories için ortak POST handler */
+/** search-products ve sync-products için ortak POST handler */
 export async function handleMarketProductSearchRoute(
   request: NextRequest,
-  path: typeof MARKET_API_PATHS.SEARCH | typeof MARKET_API_PATHS.SEARCH_BY_CATEGORIES | typeof MARKET_API_PATHS.LIST_SYNC
+  path: typeof MARKET_API_PATHS.SEARCH | typeof MARKET_API_PATHS.LIST_SYNC
 ): Promise<NextResponse> {
+  const limited = checkRateLimit(request, `market:${path}`, 90);
+  if (limited) return limited;
+
   try {
     let raw: unknown;
 
@@ -195,13 +199,12 @@ export async function handleMarketProductSearchRoute(
     const body = raw as unknown as MarketProductSearchBody;
 
     const hasKeywords = typeof body.keywords === 'string' && body.keywords.trim().length > 0 && body.keywords.length <= 500;
-    const hasCategories = ['menu_category', 'main_category', 'sub_category'].some(field => Array.isArray(raw[field]) && (raw[field] as unknown[]).length > 0);
     if (path === MARKET_API_PATHS.LIST_SYNC) {
       if (body.identityType !== 'id' || !Array.isArray(body.identities) || !body.identities.length || body.identities.length > 100 || body.identities.some(id => typeof id !== 'string' || !id.trim() || id.length > 100)) {
         return NextResponse.json({ success: false, error: 'Geçerli ürün kimlikleri gerekli' }, { status: 400 });
       }
-    } else if ((path === MARKET_API_PATHS.SEARCH && !hasKeywords) || (path === MARKET_API_PATHS.SEARCH_BY_CATEGORIES && !hasCategories)) {
-      return NextResponse.json({ success: false, error: 'Geçerli arama kelimesi veya kategori gerekli' }, { status: 400 });
+    } else if (!hasKeywords) {
+      return NextResponse.json({ success: false, error: 'Geçerli arama kelimesi gerekli' }, { status: 400 });
     }
 
     const validationError = validateMarketProductSearchBody(body);

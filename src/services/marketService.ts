@@ -25,7 +25,7 @@ export class MarketService {
     } catch (error: unknown) {
       logger.error('marketService', 'Market arama başarısız', error);
       
-      if (error && typeof error === 'object' && 'isNetworkError' in error) {
+      if (error && typeof error === 'object' && 'isNetworkError' in error && Boolean((error as { isNetworkError?: unknown }).isNetworkError)) {
         throw new Error('Market arama sırasında ağ hatası oluştu');
       }
       
@@ -126,9 +126,5 @@ export class MarketService {
     if (distance < 0.1) return `${Math.round(distance * 1000)}m`;
     if (distance < 1) return `${Math.round(distance * 100) / 100}km`;
     return `${Math.round(distance * 10) / 10}km`;
-  }
-
-  static getDistanceOptions() {
-    return [...DISTANCE.OPTIONS];
   }
 }

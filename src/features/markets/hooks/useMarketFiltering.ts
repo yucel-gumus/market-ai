@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Market } from '@/types';
 import { detectMarketBrand, marketKey, type MarketBrand } from '@/lib/marketUtils';
 import { brandsFromPreselectedMarkets, hiddenKeysForPreselection } from '@/lib/locationSession';
@@ -80,7 +80,7 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
     }
   };
 
-  const toggleMarket = (market: Market) => {
+  const toggleMarket = useCallback((market: Market) => {
     const key = marketKey(market);
     setHiddenMarkets(prev => {
       const next = new Set(prev);
@@ -91,25 +91,7 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
       }
       return next;
     });
-  };
-
-  const hideMarket = (marketId: string) => {
-    setHiddenMarkets(prev => new Set([...prev, marketId]));
-  };
-
-  const showMarket = (marketId: string) => {
-    setHiddenMarkets(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(marketId);
-      return newSet;
-    });
-  };
-
-  const resetFilters = () => {
-    setSelectedBrands(new Set(uniqueBrands));
-    setHiddenMarkets(new Set());
-    appliedSeedRef.current = null;
-  };
+  }, []);
 
   return {
     markets: filteredMarkets,
@@ -118,12 +100,6 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
     hiddenMarkets,
     toggleBrand,
     toggleMarket,
-    hideMarket,
-    showMarket,
-    resetFilters,
-    hiddenMarketsCount: hiddenMarkets.size,
-    totalFilteredCount: filteredMarkets.length,
     visibleCount: visibleMarkets.length,
-    originalCount: markets.length,
   };
 }

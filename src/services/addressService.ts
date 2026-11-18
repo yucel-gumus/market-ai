@@ -6,7 +6,8 @@ import { AddressSearchResult, ParsedAddress, ApiResponse } from '@/types';
 
 export class AddressService {
   static async searchAddresses(query: string): Promise<ParsedAddress[]> {
-    if (!query || query.length < SEARCH.MIN_QUERY_LENGTH) {
+    const trimmed = query?.trim() ?? '';
+    if (trimmed.length < SEARCH.MIN_QUERY_LENGTH) {
       return [];
     }
 
@@ -14,7 +15,7 @@ export class AddressService {
       const response = await apiClient.get<ApiResponse<AddressSearchResult[]>>(
         '/search-addresses',
         {
-          params: { words: query },
+          params: { words: trimmed },
         }
       );
 
@@ -26,7 +27,7 @@ export class AddressService {
     } catch (error: unknown) {
       logger.error('addressService', 'Adres arama başarısız', error);
 
-      if (error && typeof error === 'object' && 'isNetworkError' in error) {
+      if (error && typeof error === 'object' && 'isNetworkError' in error && Boolean((error as { isNetworkError?: unknown }).isNetworkError)) {
         throw new Error('Adres arama sırasında ağ hatası oluştu');
       }
 

@@ -5,10 +5,11 @@ import { ParsedAddress } from '@/types';
 import { isApiError, getErrorMessage } from '@/lib/errorUtils';
 
 export const useAddressSearch = (query: string) => {
+  const trimmed = query.trim();
   return useQuery<ParsedAddress[], Error>({
-    queryKey: ['addresses', query],
-    queryFn: () => AddressService.searchAddresses(query),
-    enabled: query.length >= SEARCH.MIN_QUERY_LENGTH,
+    queryKey: ['addresses', trimmed],
+    queryFn: () => AddressService.searchAddresses(trimmed),
+    enabled: trimmed.length >= SEARCH.MIN_QUERY_LENGTH,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: (failureCount, error) => {

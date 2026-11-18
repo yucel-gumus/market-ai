@@ -50,34 +50,6 @@
     --radius: 1rem;
   }
 
-  .dark {
-    --background: #253341;
-    --background-subtle: #3E5164;
-    --background-band: #3E5164;
-    --foreground: #F5F9F5;
-    --foreground-muted: #DCE3EA;
-    --border-dominant: #BCC7D2;
-
-    --card: #3E5164;
-    --card-foreground: #F5F9F5;
-    --card-border: #BCC7D2;
-    --secondary: #3E5164;
-    --secondary-hover: #253341;
-    --secondary-foreground: #F5F9F5;
-    --muted: #3E5164;
-    --muted-foreground: #DCE3EA;
-
-    --primary: #EC7D55;
-    --primary-hover: #AB421C;
-    --primary-foreground: #253341;
-    --accent: #F2A488;
-    --accent-foreground: #253341;
-    --ring: #EC7D55;
-
-    --scrollbar-thumb: #BCC7D2;
-    --scrollbar-track: #253341;
-  }
-
   * {
     border-color: var(--border-dominant);
   }
@@ -102,106 +74,20 @@
   }
 }
 
-/* Custom Utilities for İpek Küllü Arduvaz 60-30-10 */
-@utility bg-mist {
-  background-color: var(--bg-main);
-}
-
-@utility bg-mist-light {
-  background-color: var(--bg-light);
-}
-
-@utility bg-mist-dark {
-  background-color: var(--bg-dark);
-}
-
-@utility bg-arduvaz-surface {
-  background-color: var(--surface-main);
-}
-
-@utility text-arduvaz-ink {
-  color: var(--ink-main);
-}
-
-@utility text-arduvaz-muted {
-  color: var(--ink-muted);
-}
-
-@utility border-arduvaz {
-  border-color: var(--surface-border);
-}
-
-@utility bg-terracotta {
-  background-color: var(--accent-main);
-}
-
-@utility bg-terracotta-hover {
-  background-color: var(--accent-dark);
-}
-
-@utility text-terracotta {
-  color: var(--accent-dark);
-}
-
-/* Smooth Surface & Glassmorphism Transitions */
-.surface-transition {
-  background: linear-gradient(155deg, #EDF3EE 0%, #DBE6DD 52%, #DCE3EA 100%);
-}
-
-.glass-slate {
-  background: rgba(220, 227, 234, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(188, 199, 210, 0.85);
-}
-
-.glass-mist {
-  background: rgba(237, 243, 238, 0.88);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(188, 199, 210, 0.7);
-}
-
-.glass-terracotta {
-  background: rgba(242, 164, 136, 0.25);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(236, 125, 85, 0.45);
-}
-
-/* Leaflet map chrome aligned to İpek Küllü Arduvaz */
-.leaflet-container {
-  background: #EDF3EE;
-  color: #253341;
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-}
-
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-  background: #DCE3EA !important;
-  color: #253341 !important;
-  border: 1px solid #BCC7D2;
-  box-shadow: 0 8px 24px rgba(37, 51, 65, 0.16) !important;
-}
-
-.leaflet-control-zoom a {
-  background-color: #F5F9F5 !important;
-  color: #253341 !important;
-  border-color: #BCC7D2 !important;
-}
-
-.leaflet-control-zoom a:hover {
-  background-color: #DBE6DD !important;
-  color: #AB421C !important;
-}
-
-.leaflet-control-attribution {
-  background: rgba(237, 243, 238, 0.86) !important;
-  color: #3E5164 !important;
-}
-
 .leaflet-control-attribution a {
   color: #253341 !important;
+}
+
+.custom-market-marker,
+.custom-user-marker,
+.custom-route-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.custom-market-marker:hover div,
+.custom-user-marker:hover div {
+  transform: scale(1.1) !important;
 }
 
 /* Smooth Scrolling & Standard Scrollbar */
