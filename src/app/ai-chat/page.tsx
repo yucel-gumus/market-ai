@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDebounce } from 'use-debounce';
 import {
@@ -34,7 +34,7 @@ import { useLocalStorageSettings } from '@/features/products/hooks/useLocalStora
 import { useProductSearch } from '@/features/products/hooks/useProductSearch';
 import { useShoppingCart } from '@/features/products/hooks/useShoppingCart';
 import { formatNutritionValue, isNutritionNote, nutritionLabel } from '@/lib/nutritionLabels';
-import { useModalA11y } from '@/lib/useModalA11y';
+import { useModalDialog } from '@/lib/useModalDialog';
 import { toErrorMessage } from '@/lib/errorUtils';
 import { LlmService, type RecipeWithCaloriesResponse } from '@/services/llmService';
 import type { Product, ProductDepotInfo, RouteInfo } from '@/types';
@@ -112,8 +112,14 @@ export default function AiChatPage() {
   const [realRouteTime, setRealRouteTime] = useState<number | undefined>();
   const [realRouteLegs, setRealRouteLegs] = useState<RouteLeg[] | undefined>();
 
-  const recipeDialogRef = useModalA11y<HTMLDivElement>(showRecipeModal, () => setShowRecipeModal(false));
   const recipeData = recipeResult?.data ?? null;
+  const recipeDialogRef = useRef<HTMLDialogElement>(null);
+  const closeRecipeModal = useCallback(() => setShowRecipeModal(false), []);
+  const closeRecipeDialog = useModalDialog(
+    recipeDialogRef,
+    Boolean(showRecipeModal && recipeData),
+    closeRecipeModal,
+  );
   // Girdi, tarifin üretildiği andan farklıysa sonuç "önceki tarif" olarak işaretlenir.
   const recipeIsStale = Boolean(recipeResult && recipeResult.request !== pipeline.recipeRequest);
 
@@ -289,20 +295,18 @@ export default function AiChatPage() {
         <Card className="bg-[#DCE3EA] border-[#BCC7D2] shadow-md rounded-3xl p-4 sm:p-6">
           <CardContent className="pt-2">
             {/* Modal for Recipe Details & Calories */}
-            {showRecipeModal && recipeData && (
-              <div
-                ref={recipeDialogRef}
-                tabIndex={-1}
-                className="fixed inset-0 z-50 flex items-center justify-center bg-[#253341]/60 p-4 backdrop-blur-md outline-none"
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="recipe-modal-title"
-              >
-                <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-3xl bg-[#EDF3EE] border border-[#BCC7D2] shadow-2xl">
+            <dialog
+              ref={recipeDialogRef}
+              aria-labelledby="recipe-modal-title"
+              {...({ closedby: 'any' } as Record<string, string>)}
+              className="mwg-dialog mwg-dialog-scale m-auto w-[calc(100%-2rem)] max-w-5xl rounded-3xl shadow-2xl"
+            >
+              {showRecipeModal && recipeData ? (
+                <div className="max-h-[90vh] w-full overflow-hidden rounded-3xl bg-[#EDF3EE] border border-[#BCC7D2]">
                   <div className="relative bg-[#DCE3EA] p-6 border-b border-[#BCC7D2] text-[#253341]">
                     <button
                       type="button"
-                      onClick={() => setShowRecipeModal(false)}
+                      onClick={closeRecipeDialog}
                       className="absolute right-4 top-4 rounded-full bg-[#EDF3EE] p-2 text-[#253341] hover:bg-[#DBE6DD] border border-[#BCC7D2] transition-colors"
                       aria-label="Kapat"
                     >
@@ -349,7 +353,7 @@ export default function AiChatPage() {
                     </div>
                   </div>
 
-                  <div className="max-h-[calc(90vh-220px)] overflow-y-auto p-6 space-y-6">
+                  <div className="max-h-[calc(90vh-220px)] overflow-y-auto overscroll-contain custom-scrollbar p-6 space-y-6">
                     <div className="grid gap-6 md:grid-cols-2">
                       <div className="rounded-2xl border border-[#BCC7D2] bg-[#DCE3EA] p-5 space-y-3">
                         <h3 className="flex items-center gap-2 text-lg font-bold font-heading text-[#253341]">
@@ -434,8 +438,8 @@ export default function AiChatPage() {
                     )}
                   </div>
                 </div>
-              </div>
-            )}
+              ) : null}
+            </dialog>
 
             {/* Modals for Routes */}
             {searchSettings && (
@@ -519,6 +523,9 @@ export default function AiChatPage() {
 
                 <div className="mx-auto max-w-md space-y-4 text-left">
                   <div className="relative">
+                    <label htmlFor="foodName" className="sr-only">
+                      Yemek adı
+                    </label>
                     <input
                       type="text"
                       id="foodName"
@@ -526,7 +533,13 @@ export default function AiChatPage() {
                       onChange={(e) => pipeline.setFoodName(e.target.value)}
                       placeholder="Örn: Mercimek Çorbası, Tavuk Sote, Lazanya"
                       disabled={pipeline.isLoading}
-                      onKeyDown={(e) => e.key === 'Enter' && pipeline.handleSubmit()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                          pipeline.handleSubmit();
+                        }
+                      }}
                       className="w-full rounded-2xl border-2 border-[#BCC7D2] bg-[#F5F9F5] px-4 py-3.5 text-base font-semibold text-[#253341] placeholder:text-[#3E5164]/65 focus:border-[#EC7D55] focus:outline-none shadow-xs"
                     />
                     <Search className="absolute right-4 top-4 h-5 w-5 text-[#3E5164]" aria-hidden />

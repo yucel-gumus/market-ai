@@ -1,9 +1,12 @@
+'use client';
+
+import { useId, useRef } from 'react';
 import { X, Navigation, Clock, MapPin, Package, Car } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { StoreBadge } from '@/components/StoreBadge';
 import { RouteStep, SearchSettings } from '@/types';
-import { useModalA11y } from '@/lib/useModalA11y';
+import { useModalDialog } from '@/lib/useModalDialog';
 import { formatBranchName } from '@/lib/stringUtils';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -38,8 +41,10 @@ export function MultiStoreRouteModal({
   realRouteLegs,
   onMultiRouteFound
 }: MultiStoreRouteModalProps) {
-  const dialogRef = useModalA11y<HTMLDivElement>(isOpen, onClose);
-  if (!isOpen || !routeSteps || routeSteps.length === 0) return null;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const hasRoute = Boolean(isOpen && routeSteps && routeSteps.length > 0);
+  const closeDialog = useModalDialog(dialogRef, hasRoute, onClose);
 
   // Özet ile durak satırları AYNI hesabı göstermeli: araç rotası varsa toplamlar da
   // durak bacaklarının toplamıdır. Bacak verisi boş/eksikse özet tek başına kullanılır
@@ -56,29 +61,36 @@ export function MultiStoreRouteModal({
   );
 
   return (
-    <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="Alışveriş rotası" className="fixed inset-0 bg-[#253341]/60 backdrop-blur-md z-50 flex items-center justify-center p-4 outline-none">
-      <Card className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-[#EDF3EE] border-[#BCC7D2] shadow-2xl rounded-3xl">
-        <CardHeader className="pb-3 border-b border-[#BCC7D2] bg-[#DCE3EA]">
-          <CardTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-[#EC7D55] text-[#253341]">
-                <Navigation className="h-5 w-5 stroke-[2.5]" />
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      {...({ closedby: 'any' } as Record<string, string>)}
+      className="mwg-dialog m-auto w-[calc(100%-2rem)] max-w-6xl rounded-3xl shadow-2xl"
+    >
+      {hasRoute ? (
+        <Card className="w-full max-h-[90vh] overflow-hidden bg-[#EDF3EE] border-[#BCC7D2] rounded-3xl">
+          <CardHeader className="pb-3 border-b border-[#BCC7D2] bg-[#DCE3EA]">
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-[#EC7D55] text-[#253341]">
+                  <Navigation className="h-5 w-5 stroke-[2.5]" />
+                </div>
+                <span id={titleId} className="text-[#253341] font-bold font-heading text-lg">Çoklu Mağaza Rotası</span>
               </div>
-              <span className="text-[#253341] font-bold font-heading text-lg">Çoklu Mağaza Rotası</span>
-            </div>
-            <Button 
-              aria-label="Rotayı kapat"
-              onClick={onClose}
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 rounded-full hover:bg-[#DBE6DD] text-[#253341]"
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </CardTitle>
-        </CardHeader>
+              <Button
+                type="button"
+                aria-label="Rotayı kapat"
+                onClick={closeDialog}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 rounded-full hover:bg-[#DBE6DD] text-[#253341]"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </CardTitle>
+          </CardHeader>
 
-        <CardContent className="space-y-4 p-6 max-h-[calc(90vh-7rem)] overflow-y-auto">
+          <CardContent className="space-y-4 p-6 max-h-[calc(90vh-7rem)] overflow-y-auto overscroll-contain custom-scrollbar">
           {/* Route Summary */}
           <p className="text-xs text-[#3E5164]">{useRealRoute ? 'Mesafe ve süreler araç rotasına (OSRM) göre hesaplanmıştır; aşağıdaki durak değerlerinin toplamı özetle aynıdır.' : 'Araç rotası alınamadı; mesafeler kuş uçuşu, süreler yaklaşık yürüyüş hesabıdır. Durak sırası yaklaşık belirlenir; eve dönüş ve alışveriş süresi dahil değildir.'}</p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-[#DCE3EA] border border-[#BCC7D2] rounded-2xl">
@@ -108,7 +120,7 @@ export function MultiStoreRouteModal({
                 Sırasıyla Uğranacak Mağazalar
               </h3>
               
-              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
                 {routeSteps.map((step, index) => (
                   <RouteStepCard key={index} step={step} leg={realRouteLegs?.[index]} hideEstimate={useRealRoute && !realRouteLegs?.length} />
                 ))}
@@ -137,9 +149,10 @@ export function MultiStoreRouteModal({
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      ) : null}
+    </dialog>
   );
 }
 

@@ -26,7 +26,7 @@ export function useMarketFiltering(markets: Market[], preselectedKeys?: string[]
   // tekrar uygulanmaz; aksi halde her yeniden çekmede/sayfaya dönüşte kullanıcının filtre
   // seçimi "hepsi aktif" hâline sıfırlanırdı.
   const marketSignature = useMemo(() => markets.map(marketKey).join('|'), [markets]);
-  const preselectionSignature = preselectedKeys ? [...preselectedKeys].sort().join('|') : '';
+  const preselectionSignature = preselectedKeys ? preselectedKeys.toSorted().join('|') : '';
   const seedSignature = `${preselectionSignature}::${marketSignature}`;
   const appliedSeedRef = useRef<string | null>(null);
 

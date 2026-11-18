@@ -44,6 +44,9 @@
     --accent-foreground: var(--ink-main);
     --ring: var(--accent-main);
 
+    --scrollbar-thumb: #3E5164;
+    --scrollbar-track: #EDF3EE;
+
     --radius: 1rem;
   }
 
@@ -70,6 +73,9 @@
     --accent: #F2A488;
     --accent-foreground: #253341;
     --ring: #EC7D55;
+
+    --scrollbar-thumb: #BCC7D2;
+    --scrollbar-track: #253341;
   }
 
   * {
@@ -198,25 +204,113 @@
   color: #253341 !important;
 }
 
-/* Smooth Scrolling & Custom Scrollbar */
+/* Smooth Scrolling & Standard Scrollbar */
 html {
   scroll-behavior: smooth;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.custom-scrollbar {
+  --scrollbar-thumb: #3E5164;
+  --scrollbar-track: #DCE3EA;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
-::-webkit-scrollbar-track {
-  background: #EDF3EE;
+@supports not (scrollbar-color: auto) {
+  .custom-scrollbar {
+    scrollbar-width: auto;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #253341;
+  }
 }
 
-::-webkit-scrollbar-thumb {
-  background: #BCC7D2;
-  border-radius: 9999px;
+/* Native Top-Layer Modal Dialogs */
+dialog.mwg-dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #253341;
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.25s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #3E5164;
+dialog.mwg-dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog.mwg-dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background-color: rgba(37, 51, 65, 0);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.25s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.mwg-dialog.mwg-dialog-scale {
+    transform: scale(0.96);
+  }
+}
+
+dialog.mwg-dialog[open]:where(:not([data-closing])) {
+  opacity: 1;
+}
+
+@starting-style {
+  dialog.mwg-dialog[open]:where(:not([data-closing])) {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  dialog.mwg-dialog.mwg-dialog-scale[open]:where(:not([data-closing])) {
+    transform: scale(1);
+  }
+
+  @starting-style {
+    dialog.mwg-dialog.mwg-dialog-scale[open]:where(:not([data-closing])) {
+      transform: scale(0.96);
+    }
+  }
+}
+
+dialog.mwg-dialog[open]:where(:not([data-closing]))::backdrop {
+  background-color: rgba(37, 51, 65, 0.6);
+}
+
+@starting-style {
+  dialog.mwg-dialog[open]:where(:not([data-closing]))::backdrop {
+    background-color: rgba(37, 51, 65, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.mwg-dialog,
+  dialog.mwg-dialog::backdrop {
+    transition-duration: 0.1s;
+  }
 }
